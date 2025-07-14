@@ -1,0 +1,224 @@
+.role-selection__container {
+  max-width: 700px;
+  margin: 4rem auto;
+  background: var(--card-bg);
+  border-radius: 2rem;
+  box-shadow: 0 4px 32px rgba(16,185,129,0.04);
+  padding: 2.5rem 2rem 2.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.role-selection__heading {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 0.7rem;
+  text-align: center;
+}
+
+.role-selection__subheading {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  margin-bottom: 2.2rem;
+  text-align: center;
+}
+
+.role-selection__cards {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+  justify-content: center;
+}
+
+.role-selection__card {
+  background: var(--card-bg);
+  border-radius: 1.5rem;
+  box-shadow: 0 6px 32px rgba(16,185,129,0.13);
+  padding: 1.5rem 1.2rem 1.2rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  border: 2px solid var(--input-border);
+  transition: border 0.2s, box-shadow 0.2s;
+  min-width: 180px;
+  max-width: 220px;
+  min-height: 220px;
+  position: relative;
+  overflow: hidden;
+}
+
+.role-selection__bg {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 120%;
+  height: 120%;
+  object-fit: contain;
+  opacity: 0.13;
+  z-index: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.role-selection__card--active {
+  border: 2px solid #10b981;
+  box-shadow: 0 8px 40px rgba(16,185,129,0.18);
+}
+
+.role-selection__img {
+  width: 90px;
+  height: 90px;
+  object-fit: contain;
+  margin-bottom: 1rem;
+}
+
+.role-selection__user-imgs {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  margin-bottom: 1rem;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.role-selection__img--phone {
+  position: absolute;
+  left: 0;
+  top: 10px;
+  width: 55px;
+  height: 70px;
+  z-index: 1;
+}
+
+.role-selection__img--human {
+  position: absolute;
+  left: 35px;
+  top: 0;
+  width: 55px;
+  height: 80px;
+  z-index: 2;
+}
+
+.role-selection__label {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.role-selection__dots {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2.2rem;
+}
+
+.role-selection__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #e0e7ef;
+  display: inline-block;
+  transition: background 0.2s;
+}
+
+.role-selection__dot--active {
+  background: #10b981;
+}
+
+.role-selection__next {
+  background: var(--bestie-gradient);
+  color: #fff;
+  padding: 1.1rem 0;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 1.15rem;
+  transition: filter 0.2s;
+  box-shadow: 0 2px 8px rgba(25,198,172,0.08);
+  border: none;
+  display: block;
+  margin: 2.5rem auto 0 auto;
+  cursor: pointer;
+  width: 400px;
+  max-width: 98vw;
+  text-align: center;
+  letter-spacing: 0.5px;
+}
+
+.role-selection__next:hover {
+  filter: brightness(0.95);
+}
+
+@media (max-width: 900px) {
+  .role-selection__container {
+    padding: 1.2rem 0.2rem;
+  }
+  .role-selection__cards {
+    gap: 1rem;
+  }
+  .role-selection__card {
+    min-width: 140px;
+    max-width: 180px;
+    min-height: 160px;
+    padding: 1rem 0.5rem 1rem 0.5rem;
+  }
+  .role-selection__user-imgs {
+    width: 60px;
+    height: 60px;
+  }
+  .role-selection__img--phone {
+    width: 30px;
+    height: 40px;
+    top: 7px;
+    left: 0;
+  }
+  .role-selection__img--human {
+    width: 30px;
+    height: 45px;
+    left: 18px;
+    top: 0;
+  }
+  .role-selection__label {
+    font-size: 1rem;
+    margin-top: 0.5rem;
+  }
+  .role-selection__next {
+    width: 90vw;
+    font-size: 1rem;
+    padding: 1rem 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .role-selection__container {
+    margin: 1.5rem 0.2rem;
+    padding: 1rem 0.2rem;
+  }
+  .role-selection__heading {
+    font-size: 1.2rem;
+  }
+  .role-selection__cards {
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+  .role-selection__user-imgs {
+    width: 60px;
+    height: 60px;
+  }
+  .role-selection__img--phone {
+    width: 45px;
+    height: 45px;
+    top: 7px;
+  }
+  .role-selection__img--human {
+    width: 35px;
+    height: 50px;
+    left: 18px;
+    top: 0;
+  }
+} 
