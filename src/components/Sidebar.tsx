@@ -31,8 +31,7 @@ const Sidebar: React.FC = () => {
     }}>
       {/* Logo */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 32px', marginBottom: 36 }}>
-        <img src="/logo.png" alt="Bestie Logo" style={{ width: 38, height: 38 }} />
-        <span style={{ fontWeight: 900, fontSize: 22, letterSpacing: 0.5, color: '#111' }}>BESTIE</span>
+        <img src="/logo.png" alt="Bestie Logo" style={{ width: 100, height: 38 }} />
       </div>
       {/* Nav Links */}
       <nav style={{ flex: 1 }}>

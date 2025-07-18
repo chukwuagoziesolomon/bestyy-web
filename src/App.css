@@ -42,12 +42,18 @@ body, .App {
   border-radius: 2rem;
   box-shadow: 0 4px 32px rgba(16,185,129,0.07);
   padding: 1.7rem 1.7rem 1.7rem 1.7rem;
-  max-width: 380px;
+  max-width: 500px;
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   margin: 0;
+}
+
+@media (min-width: 900px) {
+  .user-login__card {
+    max-width: 550px;
+  }
 }
 
 .user-login__heading {
@@ -171,4 +177,28 @@ section {
   box-shadow: 0 8px 40px rgba(16,24,40,0.08);
   padding: 24px;
   margin-bottom: 32px;
+}
+
+.user-login__form {
+  width: 90%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.3rem;
+  box-sizing: border-box;
+  margin: 0 auto;
+}
+
+.user-login__form input {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border-radius: 0.7rem;
+  border: 1.5px solid var(--input-border);
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  outline: none;
+  transition: border 0.2s;
+  background: var(--input-bg);
+  color: var(--text);
+  box-sizing: border-box;
+  max-width: 100%;
 }

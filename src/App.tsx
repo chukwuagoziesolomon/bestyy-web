@@ -34,6 +34,18 @@ import TermsAndConditions from './TermsAndConditions';
 import CourierDashboardHome from './dashboard/CourierDashboardHome';
 import DeliveryListPage from './dashboard/DeliveryListPage';
 import CourierDashboardLayout from './dashboard/CourierDashboardLayout';
+import RoleSelector from './RoleSelector';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+// PrivateRoute component to protect dashboard routes
+function PrivateRoute({ children }: { children: React.ReactNode }) {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    return <Navigate to="/login/user" replace />;
+  }
+  return <>{children}</>;
+}
 
 function AppContent({ darkMode, toggleDarkMode }: { darkMode: boolean, toggleDarkMode: () => void }) {
   const location = useLocation();
@@ -58,11 +70,17 @@ function AppContent({ darkMode, toggleDarkMode }: { darkMode: boolean, toggleDar
         <Route path="/signup/user" element={<SignUp />} />
         <Route path="/signup/vendor" element={<VendorSignUp />} />
         <Route path="/signup/courier" element={<CourierSignUp />} />
+        <Route path="/select-role" element={<RoleSelector />} />
         <Route path="/terms" element={<TermsAndConditions />} />
         <Route path="/vendor/plans" element={<PlanSelection />} />
         <Route path="/vendor/success" element={<SuccessPage />} />
         <Route path="/vendor/payment" element={<PaymentPage />} />
-        <Route path="/dashboard/*" element={<VendorDashboardLayout />}>
+        {/* Protect dashboard routes with PrivateRoute */}
+        <Route path="/dashboard/*" element={
+          <PrivateRoute>
+            <VendorDashboardLayout />
+          </PrivateRoute>
+        }>
           <Route index element={<DashboardHome />} />
           <Route path="orders" element={<OrdersPage />} />
           <Route path="menu" element={<MenuPage />} />
@@ -72,7 +90,11 @@ function AppContent({ darkMode, toggleDarkMode }: { darkMode: boolean, toggleDar
           <Route path="profile" element={<ProfilePage />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
-        <Route path="/courier/*" element={<CourierDashboardLayout />}>
+        <Route path="/courier/*" element={
+          <PrivateRoute>
+            <CourierDashboardLayout />
+          </PrivateRoute>
+        }>
           <Route path="dashboard" element={<CourierDashboardHome />} />
           <Route path="delivery-list" element={<DeliveryListPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
@@ -80,7 +102,11 @@ function AppContent({ darkMode, toggleDarkMode }: { darkMode: boolean, toggleDar
           <Route path="profile" element={<ProfilePage />} />
         </Route>
         {/* User dashboard routes */}
-        <Route path="/user/dashboard" element={<UserDashboardLayout />}>
+        <Route path="/user/dashboard" element={
+          <PrivateRoute>
+            <UserDashboardLayout />
+          </PrivateRoute>
+        }>
           <Route index element={<UserDashboardHome />} />
           <Route path="bookings" element={<UserBookings />} />
           <Route path="addresses" element={<UserSavedAddresses />} />
@@ -115,6 +141,7 @@ function App() {
   return (
     <BrowserRouter>
       <AppContent darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+      <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover />
     </BrowserRouter>
   );
 }
