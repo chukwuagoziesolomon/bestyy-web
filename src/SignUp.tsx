@@ -100,9 +100,7 @@ const SignUp = () => {
         confirmPassword: '',
         phone: ''
       });
-    setTimeout(() => {
-        navigate('/login/user');
-      }, 1000);
+      navigate('/role-selection'); // Redirect to role selection page
     } catch (err: any) {
       let message = 'Sign up failed';
       if (err && err.message) {

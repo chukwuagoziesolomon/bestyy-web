@@ -56,9 +56,9 @@ function App() {
   };
 
   useEffect(() => {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    setDarkMode(prefersDark);
-    if (prefersDark) document.documentElement.classList.add('dark-mode');
+    // Remove automatic dark mode detection. Only set dark mode if user toggles it.
+    document.documentElement.classList.remove('dark-mode');
+    setDarkMode(false);
   }, []);
 
   return (
@@ -76,15 +76,15 @@ function App() {
           </>
         } />
         
-        <Route path="/role-select" element={<RoleSelection />} />
-        <Route path="/login/user" element={<UserLogin />} />
-        <Route path="/sign-up" element={<SignUp />} />
-        <Route path="/vendor/sign-up" element={<VendorSignUp />} />
-        <Route path="/courier/sign-up" element={<CourierSignUp />} />
+        <Route path="/role-selection" element={<RoleSelection />} />
+        <Route path="/signup/user" element={<SignUp />} />
+        <Route path="/signup/vendor" element={<VendorSignUp />} />
+        <Route path="/signup/courier" element={<CourierSignUp />} />
         <Route path="/terms" element={<TermsAndConditions />} />
         <Route path="/vendor/plan-selection" element={<PlanSelection />} />
         <Route path="/vendor/payment" element={<PaymentPage />} />
         <Route path="/vendor/success" element={<SuccessPage />} />
+        <Route path="/login/user" element={<UserLogin />} />
 
         <Route path="/vendor/dashboard" element={
           <PrivateRoute>

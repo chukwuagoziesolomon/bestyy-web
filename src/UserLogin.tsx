@@ -60,7 +60,7 @@ const UserLogin = () => {
         </form>
         <div className="user-login__divider"></div>
         <div className="user-login__signup-prompt">
-          Don’t have an account? <a href="/signup" className="user-login__signup-link">Sign up</a>
+          Don’t have an account? <a href="/role-selection" className="user-login__signup-link">Sign up</a>
         </div>
       </div>
     </div>
