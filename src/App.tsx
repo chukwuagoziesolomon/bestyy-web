@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, useLocation, Link, Outlet, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './Navbar';
 import HeroSection from './HeroSection';
 import HowItWorks from './HowItWorks';
@@ -19,6 +19,8 @@ import StockPage from './dashboard/StockPage';
 import AnalyticsPage from './dashboard/AnalyticsPage';
 import PayoutsPage from './dashboard/PayoutsPage';
 import ProfilePage from './dashboard/ProfilePage';
+import EditMenuItemPage from './dashboard/EditMenuItemPage';
+import AddMenuItemPage from './dashboard/AddMenuItemPage';
 import PlanSelection from './PlanSelection';
 import PaymentPage from './PaymentPage';
 import SuccessPage from './SuccessPage';
@@ -34,11 +36,9 @@ import TermsAndConditions from './TermsAndConditions';
 import CourierDashboardHome from './dashboard/CourierDashboardHome';
 import DeliveryListPage from './dashboard/DeliveryListPage';
 import CourierDashboardLayout from './dashboard/CourierDashboardLayout';
-import RoleSelector from './RoleSelector';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-// PrivateRoute component to protect dashboard routes
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem('token');
   if (!token) {
@@ -47,17 +47,27 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function AppContent({ darkMode, toggleDarkMode }: { darkMode: boolean, toggleDarkMode: () => void }) {
-  const location = useLocation();
-  // Show navbar only on home page for now, but can extend this array for other routes
-  const showNavbar = location.pathname === '/';
+function App() {
+  const [darkMode, setDarkMode] = useState(false);
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+    document.documentElement.classList.toggle('dark-mode');
+  };
+
+  useEffect(() => {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    setDarkMode(prefersDark);
+    if (prefersDark) document.documentElement.classList.add('dark-mode');
+  }, []);
 
   return (
-    <>
-      {showNavbar && <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />}
+    <BrowserRouter>
+      <ToastContainer />
       <Routes>
         <Route path="/" element={
           <>
+            <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
             <HeroSection />
             <HowItWorks />
             <Testimonials />
@@ -65,18 +75,18 @@ function AppContent({ darkMode, toggleDarkMode }: { darkMode: boolean, toggleDar
             <Footer />
           </>
         } />
-        <Route path="/signup" element={<RoleSelection />} />
+        
+        <Route path="/role-select" element={<RoleSelection />} />
         <Route path="/login/user" element={<UserLogin />} />
-        <Route path="/signup/user" element={<SignUp />} />
-        <Route path="/signup/vendor" element={<VendorSignUp />} />
-        <Route path="/signup/courier" element={<CourierSignUp />} />
-        <Route path="/select-role" element={<RoleSelector />} />
+        <Route path="/sign-up" element={<SignUp />} />
+        <Route path="/vendor/sign-up" element={<VendorSignUp />} />
+        <Route path="/courier/sign-up" element={<CourierSignUp />} />
         <Route path="/terms" element={<TermsAndConditions />} />
-        <Route path="/vendor/plans" element={<PlanSelection />} />
-        <Route path="/vendor/success" element={<SuccessPage />} />
+        <Route path="/vendor/plan-selection" element={<PlanSelection />} />
         <Route path="/vendor/payment" element={<PaymentPage />} />
-        {/* Protect dashboard routes with PrivateRoute */}
-        <Route path="/dashboard/*" element={
+        <Route path="/vendor/success" element={<SuccessPage />} />
+
+        <Route path="/vendor/dashboard" element={
           <PrivateRoute>
             <VendorDashboardLayout />
           </PrivateRoute>
@@ -84,64 +94,36 @@ function AppContent({ darkMode, toggleDarkMode }: { darkMode: boolean, toggleDar
           <Route index element={<DashboardHome />} />
           <Route path="orders" element={<OrdersPage />} />
           <Route path="menu" element={<MenuPage />} />
+          <Route path="menu/edit/:id" element={<EditMenuItemPage />} />
+          <Route path="menu/add" element={<AddMenuItemPage />} />
           <Route path="stock" element={<StockPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="payouts" element={<PayoutsPage />} />
           <Route path="profile" element={<ProfilePage />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
-        <Route path="/courier/*" element={
+
+        <Route path="/courier/dashboard" element={
           <PrivateRoute>
             <CourierDashboardLayout />
           </PrivateRoute>
         }>
-          <Route path="dashboard" element={<CourierDashboardHome />} />
-          <Route path="delivery-list" element={<DeliveryListPage />} />
-          <Route path="analytics" element={<AnalyticsPage />} />
-          <Route path="payouts" element={<PayoutsPage />} />
-          <Route path="profile" element={<ProfilePage />} />
+          <Route index element={<CourierDashboardHome />} />
+          <Route path="deliveries" element={<DeliveryListPage />} />
         </Route>
-        {/* User dashboard routes */}
+
         <Route path="/user/dashboard" element={
           <PrivateRoute>
             <UserDashboardLayout />
           </PrivateRoute>
         }>
           <Route index element={<UserDashboardHome />} />
-          <Route path="bookings" element={<UserBookings />} />
           <Route path="addresses" element={<UserSavedAddresses />} />
-          <Route path="payments" element={<UserPaymentMethods />} />
-          <Route path="payments/add" element={<UserAddCard />} />
-          <Route path="favorite" element={<UserFavourites />} />
-          <Route path="profile" element={<ProfilePage />} />
-          {/* Add more user dashboard routes here as needed */}
+          <Route path="favourites" element={<UserFavourites />} />
+          <Route path="bookings" element={<UserBookings />} />
+          <Route path="payment-methods" element={<UserPaymentMethods />} />
+          <Route path="payment-methods/add" element={<UserAddCard />} />
         </Route>
       </Routes>
-    </>
-  );
-}
-
-function App() {
-  const [darkMode, setDarkMode] = useState(() => {
-    const stored = localStorage.getItem('darkMode');
-    return stored === 'true';
-  });
-
-  useEffect(() => {
-    if (darkMode) {
-      document.body.classList.add('dark-mode');
-    } else {
-      document.body.classList.remove('dark-mode');
-    }
-    localStorage.setItem('darkMode', darkMode ? 'true' : 'false');
-  }, [darkMode]);
-
-  const toggleDarkMode = () => setDarkMode((d) => !d);
-
-  return (
-    <BrowserRouter>
-      <AppContent darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
-      <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover />
     </BrowserRouter>
   );
 }

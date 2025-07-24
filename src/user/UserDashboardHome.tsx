@@ -62,10 +62,7 @@ const UserDashboardHome = () => {
                       rel="noopener noreferrer"
                       style={{ textDecoration: 'none', color: '#10b981', display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}
                     >
-                      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                        <circle cx="24" cy="24" r="24" fill="#25D366"/>
-                        <path d="M34.6 28.7c-.5-.2-2.8-1.4-3.2-1.6-.4-.2-.7-.2-1 .2-.3.4-1.1 1.6-1.4 1.9-.2.3-.5.3-.9.1-2.5-1.2-4.1-2.2-5.7-5.1-.4-.7.4-.7 1.1-2.3.1-.3 0-.6-.1-.8-.1-.2-.9-2.2-1.2-3-.3-.7-.6-.6-.9-.6h-.8c-.3 0-.8.1-1.2.6-.4.5-1.5 1.5-1.5 3.7 0 2.2 1.6 4.3 1.8 4.6.2.3 3.2 5 7.8 6.8.7.3 1.3.5 1.7.6.7.2 1.3.2 1.8.1.6-.1 1.8-.7 2-1.4.2-.7.2-1.3.1-1.4-.1-.1-.4-.2-.9-.4z" fill="#fff"/>
-                      </svg>
+                      <img src="/whatsapp.png" alt="WhatsApp" width={48} height={48} style={{ display: 'block' }} />
                       <span style={{ fontWeight: 700, fontSize: 18, marginTop: 8 }}>No orders yet</span>
                       <span style={{ color: '#888', fontSize: 16, marginTop: 4, marginBottom: 8 }}>Click here to place your first order on WhatsApp!</span>
                     </a>
@@ -97,23 +94,134 @@ const UserDashboardHome = () => {
       <div>
         <h2 style={{ fontWeight: 600, fontSize: 32, marginBottom: 0 }}>My Bookings</h2>
         <div style={{ color: '#888', fontSize: 16, marginBottom: 18 }}>See your upcoming and past bookings. View details, get directions, or modify plans through Bestie</div>
-        <div style={{ display: 'flex', gap: 24 }}>
+        
           {bookings.length === 0 ? (
             <div style={{ color: '#888', fontSize: 18, padding: 32 }}>No bookings found.</div>
           ) : (
-            bookings.map((booking, i) => (
-              <div key={i} style={{ background: '#fff', borderRadius: 16, boxShadow: '0 2px 12px #f3f4f6', padding: '32px 32px 24px 32px', minWidth: 320, flex: 1, border: '1.5px solid #f3f4f6', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div style={{ fontWeight: 800, fontSize: 22, marginBottom: 8 }}>{booking.name || booking.hotel || 'Booking'}</div>
-                <div style={{ color: '#888', fontSize: 16, marginBottom: 18 }}>{booking.date || booking.created_at || '-'}</div>
-                <div style={{ fontWeight: 600, fontSize: 22, marginBottom: 18 }}>{booking.price || booking.amount || '-'}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ background: '#d1fae5', color: '#10b981', borderRadius: 8, padding: '8px 18px', fontWeight: 700, fontSize: 15 }}>{booking.status || 'Confirmed'}</span>
-                  <button style={{ background: '#f8fafc', color: '#222', fontWeight: 700, fontSize: 15, border: '1.5px solid #e5e7eb', borderRadius: 8, padding: '10px 22px', cursor: 'pointer' }}>Track Order</button>
+          <div style={{ position: 'relative', overflow: 'hidden' }}>
+            {/* Bookings Carousel */}
+            <div style={{ 
+              display: 'flex', 
+              gap: 24, 
+              overflowX: 'auto', 
+              padding: '8px 0', 
+              scrollbarWidth: 'none', 
+              msOverflowStyle: 'none',
+              // Hide scrollbar for webkit browsers
+              ...(typeof window !== 'undefined' && 'webkitScrollbar' in document.createElement('div').style ? {
+                '::-webkit-scrollbar': { display: 'none' }
+              } : {})
+            }}>
+              {bookings.map((booking, i) => (
+                <div key={i} style={{ 
+                  minWidth: 320, 
+                  flex: '0 0 auto',
+                  position: 'relative',
+                  borderRadius: 16,
+                  overflow: 'hidden',
+                  boxShadow: '0 2px 12px #f3f4f6',
+                  border: '1.5px solid #f3f4f6'
+                }}>
+                  {/* Booking Image */}
+                  <div style={{ 
+                    width: '100%', 
+                    height: 200, 
+                    background: `url(${booking.image || booking.hotel_image || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80'}) center/cover`,
+                    position: 'relative'
+                  }}>
+                    {/* Navigation Arrows */}
+                    <div style={{ 
+                      position: 'absolute', 
+                      top: '50%', 
+                      left: 12, 
+                      transform: 'translateY(-50%)',
+                      width: 32,
+                      height: 32,
+                      borderRadius: '50%',
+                      background: 'rgba(255, 255, 255, 0.9)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                    }}>
+                      <svg width="16" height="16" fill="none" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                        <polyline points="15,18 9,12 15,6"></polyline>
+                      </svg>
+                    </div>
+                    <div style={{ 
+                      position: 'absolute', 
+                      top: '50%', 
+                      right: 12, 
+                      transform: 'translateY(-50%)',
+                      width: 32,
+                      height: 32,
+                      borderRadius: '50%',
+                      background: 'rgba(255, 255, 255, 0.9)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                    }}>
+                      <svg width="16" height="16" fill="none" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                        <polyline points="9,18 15,12 9,6"></polyline>
+                      </svg>
+                    </div>
+                  </div>
+                  
+                  {/* Booking Info Overlay */}
+                  <div style={{ 
+                    position: 'absolute', 
+                    bottom: 0, 
+                    left: 0, 
+                    right: 0, 
+                    background: 'linear-gradient(transparent, rgba(0,0,0,0.8))',
+                    padding: '60px 20px 20px 20px',
+                    color: '#fff'
+                  }}>
+                    <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 4 }}>
+                      {booking.name || booking.hotel || 'Hotel Booking'}
+                    </div>
+                    <div style={{ fontSize: 14, opacity: 0.9, marginBottom: 8 }}>
+                      {booking.date || booking.created_at || 'Check-in date'}
+                    </div>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between',
+                      marginTop: 12
+                    }}>
+                      <span style={{ 
+                        background: 'rgba(255,255,255,0.2)', 
+                        color: '#fff', 
+                        borderRadius: 6, 
+                        padding: '4px 12px', 
+                        fontWeight: 600, 
+                        fontSize: 12 
+                      }}>
+                        {booking.status || 'Confirmed'}
+                      </span>
+                      <button style={{ 
+                        background: 'rgba(255,255,255,0.2)', 
+                        color: '#fff', 
+                        fontWeight: 600, 
+                        fontSize: 12, 
+                        border: '1px solid rgba(255,255,255,0.3)', 
+                        borderRadius: 6, 
+                        padding: '6px 12px', 
+                        cursor: 'pointer',
+                        backdropFilter: 'blur(10px)'
+                      }}>
+                        View Details
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
                 </div>
               </div>
-            ))
           )}
-        </div>
       </div>
     </div>
   );

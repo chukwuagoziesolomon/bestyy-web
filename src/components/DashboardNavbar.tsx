@@ -10,6 +10,7 @@ interface DashboardNavbarProps {
   showDarkMode?: boolean;
   showNotification?: boolean;
   showProfileImage?: boolean;
+  initials?: string; // Add initials prop
 }
 
 const DashboardNavbar: React.FC<DashboardNavbarProps> = ({
@@ -20,6 +21,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({
   showDarkMode = true,
   showNotification = true,
   showProfileImage = true,
+  initials, // Add initials prop
 }) => (
   <div style={{
     width: '100%',
@@ -74,7 +76,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({
         </div>
       )}
       {showProfileImage && (
-        <ProfileImage src={profileImageSrc} size={40} />
+        <ProfileImage src={profileImageSrc} size={40} initials={initials} />
       )}
     </div>
   </div>

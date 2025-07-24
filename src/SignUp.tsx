@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './UserLogin.css';
 import { signupUser } from './api';
-import { toast } from 'react-toastify';
+import { showError, showSuccess } from './toast';
 import { useNavigate } from 'react-router-dom';
 
 const SignUp = () => {
@@ -90,7 +90,7 @@ const SignUp = () => {
         },
         phone: formData.phone
       });
-      toast.success('Account created successfully! Welcome to Besties!');
+      showSuccess('Account created successfully! Welcome to Besties!');
       setFormData({
         username: '',
         firstName: '',
@@ -108,7 +108,7 @@ const SignUp = () => {
       if (err && err.message) {
         message = err.message;
       }
-      toast.error(message);
+      showError(message);
     } finally {
       setIsLoading(false);
     }

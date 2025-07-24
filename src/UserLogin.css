@@ -339,35 +339,34 @@
 .input-icon-flex {
   display: flex;
   align-items: center;
+  position: relative;
   width: 100%;
-  background: #fff;
-  border-radius: 0.7rem;
-  border: 1.5px solid #e5e7eb;
   margin-bottom: 1rem;
-  padding: 0;
 }
+
 .input-icon-flex__icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  padding-left: 0.7rem;
-  padding-right: 0.2rem;
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #888;
+  pointer-events: none; /* Make icon non-interactive */
 }
+
 .input-icon-flex__icon svg {
   width: 20px;
   height: 20px;
-  color: #10b981;
 }
-.input-icon-flex input {
-  border: none;
-  outline: none;
-  font-size: 1.1rem;
-  font-family: 'Montserrat', Arial, sans-serif;
-  padding: 0.9rem 1rem 0.9rem 0.2rem;
-  width: 100%;
-  background: transparent;
-  line-height: 1;
+
+.input-icon-flex input.user-login__input {
+  padding-left: 3rem; /* Make space for the icon */
+  border: 1.5px solid #e5e7eb; /* Default border */
+  transition: border-color 0.2s;
+  margin-bottom: 0; /* Remove margin from input inside this container */
+}
+
+.input-icon-flex input.user-login__input:focus {
+  border-color: #10b981; /* Focus border on the input itself */
 }
 
 .form-group {

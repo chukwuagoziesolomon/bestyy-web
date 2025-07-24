@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Landmark, Eye, EyeOff, CreditCard, Calendar } from 'lucide-react';
+import { fetchVendorTransactions } from '../api';
 
 const maskedCards = [
   'Opay ******2206',
@@ -8,17 +9,34 @@ const maskedCards = [
   'Opay ******4040',
 ];
 
-const transactions = Array(8).fill({
-  name: 'SilverSnow',
-  card: 'Opay ******2206',
-  amount: 6000,
-  date: '24 July, 2025',
-  status: 'Accepted',
-});
-
 const PayoutsPage = () => {
   const [showBalance, setShowBalance] = useState(true);
-  const [dateRange, setDateRange] = useState('8th July - 8th July 2025');
+  const [dateRange, setDateRange] = useState('');
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [totalAmount, setTotalAmount] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const token = localStorage.getItem('token');
+
+  useEffect(() => {
+    async function getTransactions() {
+      setLoading(true);
+      setError(null);
+      try {
+        if (token) {
+          const data = await fetchVendorTransactions(token);
+          setTransactions(data.transactions || []);
+          setTotalAmount(data.total_amount || 0);
+          if (data.date_range) setDateRange(data.date_range);
+        }
+      } catch (err: any) {
+        setError(err.message || 'Could not fetch transactions');
+      } finally {
+        setLoading(false);
+      }
+    }
+    getTransactions();
+  }, [token]);
 
   return (
     <div style={{ fontFamily: 'Nunito Sans, sans-serif', background: '#fff', minHeight: '100vh', padding: '0 0 2rem 0' }}>
@@ -42,8 +60,8 @@ const PayoutsPage = () => {
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontWeight: 900, fontSize: 32, color: '#222' }}>{showBalance ? '₦2,000,000' : '••••••••'}</span>
-              <span style={{ color: '#888', fontWeight: 600, fontSize: 16 }}>Available to Withdraw</span>
+              <span style={{ fontWeight: 900, fontSize: 32, color: '#222' }}>{showBalance ? `₦${totalAmount.toLocaleString()}` : '••••••••'}</span>
+              <span style={{ color: '#888', fontWeight: 600, fontSize: 16 }}>Total Amount Made</span>
               <span style={{ cursor: 'pointer' }} onClick={() => setShowBalance(v => !v)}>
                 {showBalance ? <Eye size={22} color="#bbb" /> : <EyeOff size={22} color="#bbb" />}
               </span>
@@ -57,7 +75,6 @@ const PayoutsPage = () => {
               ))}
             </div>
           </div>
-          <button style={{ background: '#10b981', color: '#fff', fontWeight: 700, fontSize: 18, border: 'none', borderRadius: 8, padding: '16px 38px', cursor: 'pointer', boxShadow: '0 2px 8px #e5e7eb' }}>Withdraw</button>
         </div>
       </div>
       {/* Transactions History Card */}
@@ -79,19 +96,27 @@ const PayoutsPage = () => {
             </tr>
           </thead>
           <tbody>
-            {transactions.map((tx, i, arr) => (
-              <tr key={i} style={{ background: '#fff' }}>
-                <td style={{ padding: '24px 18px', borderRight: '1px solid #D1D5DB', borderBottom: i !== arr.length - 1 ? '1px solid #D1D5DB' : 'none' }}>
-                  <div style={{ fontWeight: 700, color: '#222' }}>{tx.name}</div>
-                  <div style={{ color: '#888', fontWeight: 600, fontSize: 15 }}>{tx.card}</div>
-                </td>
-                <td style={{ padding: '24px 18px', fontWeight: 700, borderRight: '1px solid #D1D5DB', borderBottom: i !== arr.length - 1 ? '1px solid #D1D5DB' : 'none' }}>₦ {tx.amount.toLocaleString()}</td>
-                <td style={{ padding: '24px 18px', color: '#555', borderRight: '1px solid #D1D5DB', borderBottom: i !== arr.length - 1 ? '1px solid #D1D5DB' : 'none' }}>{tx.date}</td>
-                <td style={{ padding: '24px 18px', borderBottom: i !== arr.length - 1 ? '1px solid #D1D5DB' : 'none' }}>
-                  <span style={{ background: '#d1fae5', color: '#10b981', borderRadius: 8, padding: '8px 28px', fontWeight: 700, fontSize: 16 }}>Accepted</span>
-                </td>
-              </tr>
-            ))}
+            {loading ? (
+              <tr><td colSpan={4} style={{ textAlign: 'center', padding: 32, color: '#888' }}>Loading transactions...</td></tr>
+            ) : error ? (
+              <tr><td colSpan={4} style={{ textAlign: 'center', padding: 32, color: '#ef4444' }}>{error}</td></tr>
+            ) : transactions.length === 0 ? (
+              <tr><td colSpan={4} style={{ textAlign: 'center', padding: 32, color: '#888' }}>No transactions found.</td></tr>
+            ) : (
+              transactions.map((tx, i, arr) => (
+                <tr key={i} style={{ background: '#fff' }}>
+                  <td style={{ padding: '24px 18px', borderRight: '1px solid #D1D5DB', borderBottom: i !== arr.length - 1 ? '1px solid #D1D5DB' : 'none' }}>
+                    <div style={{ fontWeight: 700, color: '#222' }}>{tx.name || tx.id || '-'}</div>
+                    <div style={{ color: '#888', fontWeight: 600, fontSize: 15 }}>{tx.card || '-'}</div>
+                  </td>
+                  <td style={{ padding: '24px 18px', fontWeight: 700, borderRight: '1px solid #D1D5DB', borderBottom: i !== arr.length - 1 ? '1px solid #D1D5DB' : 'none' }}>₦ {tx.amount?.toLocaleString?.() ?? tx.amount}</td>
+                  <td style={{ padding: '24px 18px', color: '#555', borderRight: '1px solid #D1D5DB', borderBottom: i !== arr.length - 1 ? '1px solid #D1D5DB' : 'none' }}>{tx.date || '-'}</td>
+                  <td style={{ padding: '24px 18px', borderBottom: i !== arr.length - 1 ? '1px solid #D1D5DB' : 'none' }}>
+                    <span style={{ background: '#d1fae5', color: '#10b981', borderRadius: 8, padding: '8px 28px', fontWeight: 700, fontSize: 16 }}>{tx.status || 'Accepted'}</span>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

@@ -1,13 +1,13 @@
 import React from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Home, List, Utensils, Archive, BarChart2, CreditCard, User } from 'lucide-react';
+import { Home, List, Utensils, Archive, BarChart2, CreditCard, User, Table } from 'lucide-react';
 import DashboardNavbar from '../components/DashboardNavbar';
 
 const mainLinks = [
   { label: 'Dashboard', path: '/dashboard', icon: <Home size={20} /> },
   { label: 'Food Orders', path: '/dashboard/orders', icon: <List size={20} /> },
   { label: 'Menu', path: '/dashboard/menu', icon: <Utensils size={20} /> },
-  { label: 'Item Stock', path: '/dashboard/stock', icon: <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#e6f7f2', borderRadius: '50%', width: 32, height: 32 }}><Archive size={18} color="#10b981" /></span> },
+  { label: 'Item Stock', path: '/dashboard/stock', icon: <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#e6f7f2', borderRadius: '50%', width: 32, height: 32 }}><Table size={18} color="#222" /></span> },
   { label: 'Reports and Analytics', path: '/dashboard/analytics', icon: <BarChart2 size={20} /> },
 ];
 
@@ -18,6 +18,17 @@ const bottomLinks = [
 
 function VendorDashboardLayout() {
   const location = useLocation();
+  // Get business logo and name from localStorage vendor_profile
+  let businessLogo = '';
+  let businessName = '';
+  const savedVendor = localStorage.getItem('vendor_profile');
+  if (savedVendor) {
+    try {
+      const vendor = JSON.parse(savedVendor);
+      businessLogo = vendor.logo || '';
+      businessName = vendor.business_name || '';
+    } catch (e) {}
+  }
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc' }}>
       <aside style={{ width: 240, background: '#fff', borderRight: '1px solid #eee', padding: '2rem 1.2rem 1.2rem 1.2rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
@@ -61,7 +72,8 @@ function VendorDashboardLayout() {
       </aside>
       <main style={{ flex: 1, background: '#f8fafc', minHeight: '100vh', padding: '0.5rem 2.5rem 2.5rem 2.5rem' }}>
         <DashboardNavbar
-          profileImageSrc="https://randomuser.me/api/portraits/men/32.jpg"
+          profileImageSrc={businessLogo || ""}
+          initials={businessName ? businessName[0] : 'V'}
         />
         <Outlet />
       </main>

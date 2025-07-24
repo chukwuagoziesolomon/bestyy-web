@@ -1,65 +1,47 @@
-import React, { useState } from 'react';
-import { Edit, Trash2, Plus, Search, Bell, Moon } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Edit, Trash2, Plus } from 'lucide-react';
+import { listMenuItems, API_URL } from '../api';
 import '../MenuPage.css';
 import ProfileImage from '../components/ProfileImage';
 
-const stockItems = [
-  {
-    image: 'https://images.pexels.com/photos/1437267/pexels-photo-1437267.jpeg?auto=compress&w=60&h=60&fit=crop',
-    name: 'Jollof Rice',
-    description: 'With chicken,Plantain....',
-    price: 6900,
-    category: 'Lunch',
-    inStock: true,
-  },
-  {
-    image: 'https://images.pexels.com/photos/1437267/pexels-photo-1437267.jpeg?auto=compress&w=60&h=60&fit=crop',
-    name: 'Jollof Rice',
-    description: 'With chicken,Plantain....',
-    price: 6900,
-    category: 'Lunch',
-    inStock: false,
-  },
-  {
-    image: 'https://images.pexels.com/photos/1437267/pexels-photo-1437267.jpeg?auto=compress&w=60&h=60&fit=crop',
-    name: 'Jollof Rice',
-    description: 'With chicken,Plantain....',
-    price: 6900,
-    category: 'Lunch',
-    inStock: true,
-  },
-  {
-    image: 'https://images.pexels.com/photos/1437267/pexels-photo-1437267.jpeg?auto=compress&w=60&h=60&fit=crop',
-    name: 'Jollof Rice',
-    description: 'With chicken,Plantain....',
-    price: 6900,
-    category: 'Lunch',
-    inStock: true,
-  },
-  {
-    image: 'https://images.pexels.com/photos/1437267/pexels-photo-1437267.jpeg?auto=compress&w=60&h=60&fit=crop',
-    name: 'Jollof Rice',
-    description: 'With chicken,Plantain....',
-    price: 6900,
-    category: 'Lunch',
-    inStock: true,
-  },
-  {
-    image: 'https://images.pexels.com/photos/1437267/pexels-photo-1437267.jpeg?auto=compress&w=60&h=60&fit=crop',
-    name: 'Jollof Rice',
-    description: 'With chicken,Plantain....',
-    price: 6900,
-    category: 'Lunch',
-    inStock: true,
-  },
-];
-
 const StockPage = () => {
   const [search, setSearch] = useState('');
-  const [items, setItems] = useState(stockItems);
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const token = localStorage.getItem('token');
+
+  useEffect(() => {
+    async function fetchMenuItems() {
+      setLoading(true);
+      try {
+        if (token) {
+          const data = await listMenuItems(token);
+          setItems(data.menu_items || data || []);
+        }
+      } catch (err) {
+        // Optionally handle error
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchMenuItems();
+  }, [token]);
 
   const handleToggle = (idx: number) => {
     setItems(items => items.map((item, i) => i === idx ? { ...item, inStock: !item.inStock } : item));
+  };
+
+  const getCorrectImageUrl = (imagePath?: string) => {
+    if (!imagePath) {
+      return '/image1.png';
+    }
+    if (imagePath.startsWith('http')) {
+      return imagePath;
+    }
+    if (imagePath.startsWith('/')) {
+      return `${API_URL}${imagePath}`;
+    }
+    return '/image1.png';
   };
 
   return (
@@ -73,6 +55,9 @@ const StockPage = () => {
       </div>
       {/* Table Card */}
       <div className="dashboard-card" style={{ borderRadius: 16, padding: 0, maxWidth: 1200, margin: '0 auto', overflowX: 'auto', border: '1.5px solid #f3f4f6', boxShadow: '0 2px 16px #f3f4f6' }}>
+        {loading ? (
+          <div style={{ padding: 40, textAlign: 'center', color: '#888' }}>Loading menu items...</div>
+        ) : (
         <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, fontSize: 17, fontFamily: 'inherit' }}>
           <thead>
             <tr style={{ color: '#222', fontWeight: 800, background: '#fff' }}>
@@ -86,18 +71,18 @@ const StockPage = () => {
             </tr>
           </thead>
           <tbody>
-            {items.filter(item => item.name.toLowerCase().includes(search.toLowerCase())).map((item, i, arr) => (
+            {items.filter(item => (item.dish_name || item.name || '').toLowerCase().includes(search.toLowerCase())).map((item, i, arr) => (
               <tr key={i} style={{ background: '#fff' }}>
                 <td style={{ padding: '24px 18px', borderRight: '1px solid #D1D5DB', borderBottom: i !== arr.length - 1 ? '1px solid #D1D5DB' : 'none' }}>
-                  <img src={item.image} alt={item.name} style={{ width: 54, height: 54, borderRadius: 12, objectFit: 'cover' }} />
+                  <img src={getCorrectImageUrl(item.image)} alt={item.dish_name || item.name} style={{ width: 54, height: 54, borderRadius: 12, objectFit: 'cover' }} />
                 </td>
-                <td style={{ padding: '24px 18px', fontWeight: 700, borderRight: '1px solid #D1D5DB', borderBottom: i !== arr.length - 1 ? '1px solid #D1D5DB' : 'none' }}>{item.name}</td>
-                <td style={{ padding: '24px 18px', color: '#555', maxWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', borderRight: '1px solid #D1D5DB', borderBottom: i !== arr.length - 1 ? '1px solid #D1D5DB' : 'none' }}>{item.description}</td>
-                <td style={{ padding: '24px 18px', fontWeight: 700, borderRight: '1px solid #D1D5DB', borderBottom: i !== arr.length - 1 ? '1px solid #D1D5DB' : 'none' }}>₦{item.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                <td style={{ padding: '24px 18px', fontWeight: 700, borderRight: '1px solid #D1D5DB', borderBottom: i !== arr.length - 1 ? '1px solid #D1D5DB' : 'none' }}>{item.dish_name || item.name}</td>
+                <td style={{ padding: '24px 18px', color: '#555', maxWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', borderRight: '1px solid #D1D5DB', borderBottom: i !== arr.length - 1 ? '1px solid #D1D5DB' : 'none' }}>{item.item_description || item.description}</td>
+                <td style={{ padding: '24px 18px', fontWeight: 700, borderRight: '1px solid #D1D5DB', borderBottom: i !== arr.length - 1 ? '1px solid #D1D5DB' : 'none' }}>₦{parseFloat(item.price).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                 <td style={{ padding: '24px 18px', color: '#555', borderRight: '1px solid #D1D5DB', borderBottom: i !== arr.length - 1 ? '1px solid #D1D5DB' : 'none' }}>{item.category}</td>
                 <td style={{ padding: '24px 18px', textAlign: 'center', borderRight: '1px solid #D1D5DB', borderBottom: i !== arr.length - 1 ? '1px solid #D1D5DB' : 'none' }}>
                   <label className="switch">
-                    <input type="checkbox" checked={item.inStock} onChange={() => handleToggle(i)} />
+                    <input type="checkbox" checked={item.available_now ?? item.inStock} onChange={() => handleToggle(i)} />
                     <span className="slider"></span>
                   </label>
                 </td>
@@ -113,6 +98,7 @@ const StockPage = () => {
             ))}
           </tbody>
         </table>
+        )}
       </div>
     </div>
   );
