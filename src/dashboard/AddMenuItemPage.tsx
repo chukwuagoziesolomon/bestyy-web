@@ -71,7 +71,7 @@ const AddMenuItemPage = () => {
         available_now: menuItem.available_now,
       });
       showSuccess('Menu item added successfully!');
-      navigate('/dashboard/menu');
+      navigate('/vendor/dashboard/menu');
     } catch (err: any) {
       showError(err.message || 'Failed to add menu item.');
     } finally {
