@@ -15,9 +15,7 @@ const UserLogin = () => {
     setLoading(true);
     try {
       const data = await loginUser(email, password);
-      showSuccess(data?.message || 'Login successful!');
       const roles = data?.roles || [];
-      console.log('Roles:', roles);
       if (data?.token) {
         localStorage.setItem('token', data.token);
       }
@@ -26,12 +24,12 @@ const UserLogin = () => {
       }
       if (roles.length === 1) {
         let dashboardRoute = '/user/dashboard';
-        if (roles[0] === 'vendor') dashboardRoute = '/dashboard';
+        if (roles[0] === 'vendor') dashboardRoute = '/vendor/dashboard';
         else if (roles[0] === 'courier') dashboardRoute = '/courier/dashboard';
-        console.log('Redirecting to:', dashboardRoute);
+        showSuccess(data?.message || 'Login successful!');
         window.location.href = dashboardRoute;
       } else if (roles.length > 1) {
-        console.log('Redirecting to: /select-role with roles', roles);
+        showSuccess(data?.message || 'Login successful!');
         navigate('/select-role', { state: { roles } });
       } else {
         showError('No roles assigned to this account.');

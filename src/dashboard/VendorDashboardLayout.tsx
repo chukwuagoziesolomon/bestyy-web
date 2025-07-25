@@ -4,16 +4,16 @@ import { Home, List, Utensils, Archive, BarChart2, CreditCard, User, Table } fro
 import DashboardNavbar from '../components/DashboardNavbar';
 
 const mainLinks = [
-  { label: 'Dashboard', path: '/dashboard', icon: <Home size={20} /> },
-  { label: 'Food Orders', path: '/dashboard/orders', icon: <List size={20} /> },
-  { label: 'Menu', path: '/dashboard/menu', icon: <Utensils size={20} /> },
-  { label: 'Item Stock', path: '/dashboard/stock', icon: <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#e6f7f2', borderRadius: '50%', width: 32, height: 32 }}><Table size={18} color="#222" /></span> },
-  { label: 'Reports and Analytics', path: '/dashboard/analytics', icon: <BarChart2 size={20} /> },
+  { label: 'Dashboard', path: '/vendor/dashboard', icon: <Home size={20} /> },
+  { label: 'Food Orders', path: '/vendor/dashboard/orders', icon: <List size={20} /> },
+  { label: 'Menu', path: '/vendor/dashboard/menu', icon: <Utensils size={20} /> },
+  { label: 'Item Stock', path: '/vendor/dashboard/stock', icon: <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#e6f7f2', borderRadius: '50%', width: 32, height: 32 }}><Table size={18} color="#222" /></span> },
+  { label: 'Reports and Analytics', path: '/vendor/dashboard/analytics', icon: <BarChart2 size={20} /> },
 ];
 
 const bottomLinks = [
-  { label: 'Payouts', path: '/dashboard/payouts', icon: <CreditCard size={20} /> },
-  { label: 'Profile Settings', path: '/dashboard/profile', icon: <User size={20} /> },
+  { label: 'Payouts', path: '/vendor/dashboard/payouts', icon: <CreditCard size={20} /> },
+  { label: 'Profile Settings', path: '/vendor/dashboard/profile', icon: <User size={20} /> },
 ];
 
 function VendorDashboardLayout() {
