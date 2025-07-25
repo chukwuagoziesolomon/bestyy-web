@@ -256,7 +256,7 @@ const VendorSignUp = () => {
       setStep(5); // Move to success page
       localStorage.removeItem('vendor_signup_data');
       localStorage.removeItem('vendor_signup_step');
-      localStorage.removeItem('vendor_token');
+      // Do NOT remove vendor_token here so dashboard works after sign-up
     } catch (err: any) {
       showError(err.message || 'Failed to add menu items');
     } finally {
@@ -645,6 +645,24 @@ const VendorSignUp = () => {
               </div>
               <button className="user-login__main-btn" style={{ margin: '0 0.5rem' }} onClick={() => navigate('/vendor/dashboard')}>Continue to Dashboard</button>
               <button className="user-login__main-btn" style={{ margin: '0 0.5rem', background: '#25D366' }}>Chat on WhatsApp</button>
+              <button className="user-login__main-btn" style={{ margin: '0 0.5rem', background: '#f87171' }} onClick={() => {
+                // Clear all vendor-related localStorage and reset form/step
+                localStorage.removeItem('vendor_signup_data');
+                localStorage.removeItem('vendor_signup_step');
+                localStorage.removeItem('vendor_token');
+                localStorage.removeItem('vendor_profile');
+                setFormData({
+                  fullName: '', email: '', phone: '', password: '', confirmPassword: '',
+                  businessName: '', businessCategory: '', otherBusinessCategory: '', cacNumber: '', businessDescription: '', logo: '',
+                  businessAddress: '', deliveryRadius: '', serviceAreas: '', openingHours: '', closingHours: '', offersDelivery: false,
+                  menuItems: [{
+                    dishName: '', price: '', category: '', otherCategory: '', image: undefined, available: true, item_description: '', quantity: ''
+                  }]
+                });
+                setStep(0);
+              }}>
+                Start New Business
+              </button>
             </div>
           </>
         )}

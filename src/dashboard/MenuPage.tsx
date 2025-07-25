@@ -88,7 +88,7 @@ const MenuPage = () => {
             cursor: 'pointer',
             boxShadow: '0 2px 8px #e5e7eb',
           }}
-          onClick={() => navigate('/dashboard/menu/add')}
+          onClick={() => navigate('/vendor/dashboard/menu/add')}
         >
           + Add Item
         </button>
