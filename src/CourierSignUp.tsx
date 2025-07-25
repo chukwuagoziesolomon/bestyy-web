@@ -179,7 +179,7 @@ const CourierSignUp = () => {
     step === 4 ? (
       <CourierTermsStep
         onCancel={() => setStep(3)}
-        onAgree={() => navigate('/vendor/plans', { state: { userType: 'courier' } })}
+        onAgree={() => navigate('/courier/dashboard', { state: { userType: 'courier' } })}
       />
     ) : (
       <div style={{ minHeight: '100vh', background: '#fafbfc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Nunito Sans, sans-serif' }}>

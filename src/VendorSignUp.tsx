@@ -643,7 +643,7 @@ const VendorSignUp = () => {
               <div className="user-login__subheading" style={{ marginBottom: 16 }}>
                 Thanks for signing up with Bestyy. We're reviewing your information and will notify you as soon as your account is approved.
               </div>
-              <button className="user-login__main-btn" style={{ margin: '0 0.5rem' }} onClick={() => navigate('/dashboard')}>Continue to Dashboard</button>
+              <button className="user-login__main-btn" style={{ margin: '0 0.5rem' }} onClick={() => navigate('/vendor/dashboard')}>Continue to Dashboard</button>
               <button className="user-login__main-btn" style={{ margin: '0 0.5rem', background: '#25D366' }}>Chat on WhatsApp</button>
             </div>
           </>

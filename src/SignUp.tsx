@@ -100,7 +100,7 @@ const SignUp = () => {
         confirmPassword: '',
         phone: ''
       });
-      navigate('/role-selection'); // Redirect to role selection page
+      navigate('/user/dashboard'); // Redirect to user dashboard after sign up
     } catch (err: any) {
       let message = 'Sign up failed';
       if (err && err.message) {
