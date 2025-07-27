@@ -1,6 +1,10 @@
 import React, { useEffect } from 'react';
 import HowItWorksStep from './HowItWorksStep';
+import TransparentSplitting from './TransparentSplitting';
+import SecureCompliant from './SecureCompliant';
 import './HowItWorks.css';
+import './TransparentSplitting.css';
+import './SecureCompliant.css';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 
@@ -22,7 +26,7 @@ const HowItWorks = () => {
           description={"Craving pizza, jollof rice, or shawarma? Just message Bestie and get a curated list of the best restaurants near you with delivery sorted too."}
           buttonText="Get Started"
           phoneImage="/image4.png"
-          tipEmoji="🫱"
+          tipEmoji="/emoji.png"
           tipText="Just tell bestie what you need"
         />
       </div>
@@ -32,10 +36,17 @@ const HowItWorks = () => {
           description={"No confusing totals or hidden charges here. Bestie combines the item price, delivery cost, and its service fee into one simple amount. Then, it automatically splits that total at checkout so the vendor, courier, and Bestie all get paid instantly and fairly. You get clarity and peace of mind with every order."}
           buttonText="Get Started"
           phoneImage="/image4.png"
-          tipEmoji="🫱"
+          tipEmoji="/emoji.png"
           tipText="Bestie breaks it down so you never overpay"
           reverse
         />
+        <div data-aos="fade-up" data-aos-delay="200">
+          <TransparentSplitting />
+        </div>
+        
+        <div data-aos="fade-up" data-aos-delay="200">
+          <SecureCompliant />
+        </div>
       </div>
     </section>
   );

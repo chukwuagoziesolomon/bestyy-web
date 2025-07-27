@@ -28,7 +28,7 @@ const HeroSection = () => (
         </span>
         <span className="hero__gradient-text">Bestyy</span>
       </h1>
-      <p>Book with ease using Bestyy's AI chat, fast,<br />affordable and convenient.</p>
+      <p className="hero__text">Book with ease using Bestyy's AI chat, fast,<br />affordable and convenient.</p>
       <Link to="/login/user" className="hero__cta">Get Started</Link>
     </div>
     <div className="hero__image">

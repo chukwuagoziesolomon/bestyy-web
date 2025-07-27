@@ -32,11 +32,11 @@ const HowItWorksStep: React.FC<HowItWorksStepProps> = ({
     </div>
     <div className="how-it-works__right">
       <div className="how-it-works__tip-card">
-        <span className="how-it-works__tip-emoji" role="img" aria-label="emoji">{tipEmoji}</span>
+        <img src={tipEmoji} alt="Emoji" className="how-it-works__tip-emoji" />
         <span>{tipText}</span>
       </div>
     </div>
   </div>
 );
 
-export default HowItWorksStep; 
+export default HowItWorksStep;
