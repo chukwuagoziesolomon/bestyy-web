@@ -62,7 +62,7 @@ const UserDashboardHome = () => {
                       rel="noopener noreferrer"
                       style={{ textDecoration: 'none', color: '#10b981', display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}
                     >
-                      <img src="/whatsapp.png" alt="WhatsApp" width={48} height={48} style={{ display: 'block' }} />
+                      <img src="/WhatsApp.png" alt="WhatsApp" width={48} height={48} style={{ display: 'block' }} />
                       <span style={{ fontWeight: 700, fontSize: 18, marginTop: 8 }}>No orders yet</span>
                       <span style={{ color: '#888', fontSize: 16, marginTop: 4, marginBottom: 8 }}>Click here to place your first order on WhatsApp!</span>
                     </a>
