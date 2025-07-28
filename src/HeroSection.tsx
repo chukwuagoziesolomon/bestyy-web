@@ -23,7 +23,7 @@ const HeroSection = () => (
             cursorStyle="|"
             typeSpeed={100}
             deleteSpeed={100}
-            delaySpeed={1800}
+            delaySpeed={2000}
           />
         </span>
         <span className="hero__gradient-text">Bestyy</span>

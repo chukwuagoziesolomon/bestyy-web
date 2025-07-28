@@ -1,13 +1,13 @@
-.hero {
+.hero__image {
+  position: relative;
+  width: 100%;
+  max-width: 700px;
+  margin: 0 auto;
   display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
-  padding: 4rem 2rem 2rem 2rem;
-  background: var(--bg);
-  min-height: 80vh;
+  align-items: center;
+  min-height: 400px;
 }
-
 .hero__content {
   max-width: 700px;
   text-align: center;
@@ -18,7 +18,7 @@
 .hero__content h1 {
   font-size: 3rem;
   font-weight: 900;
-  margin-bottom: 1.2rem;
+  margin-bottom: 2rem; /* Increased from 1.2rem to 2rem */
   line-height: 1.1;
   text-transform: uppercase;
   color: var(--text);
@@ -159,66 +159,37 @@
 
 @media (max-width: 600px) {
   .hero {
-    padding: 1.5rem 0.5rem 1rem 0.5rem;
+    padding: 1.5rem 0.5rem 0 0.5rem; /* Remove bottom padding - changed from 1rem to 0 */
     min-height: 90vh;
     justify-content: flex-start;
   }
 
   .hero__content {
     max-width: 100%;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem; /* Reduced from 1rem */
     text-align: center;
     padding: 0 0.5rem;
   }
 
+  .hero__image {
+    width: 700px;
+    max-width: 450px;
+    min-height: 300px;
+    margin: 0 auto 0; /* Remove the 1.5rem top margin */
+    align-items: center;
+    justify-content: center;
+    display: flex;
+  }
+}
+
+.how-it-works { /* Replace with your actual class name */
+    margin-top: -4rem; /* Pull it closer on mobile */
+  }
+
   .hero__content h1 {
     font-size: 1.5rem;
-    margin-bottom: 0.8rem;
+    margin-bottom: 1.5rem; /* Increased from 0.8rem to 1.5rem */
     line-height: 1.2;
   }
 
-  .hero__gradient-text {
-    font-size: 1.3rem;
-  }
-
-  .hero__content p {
-    font-size: 0.9rem;
-    margin-bottom: 1rem;
-  }
-
-  .hero__cta {
-    font-size: 1rem;
-    padding: 0.7rem 1.8rem;
-    margin-top: 1rem;
-  }
-
-  .hero__image {
-    width: 90vw;
-    max-width: 300px;
-    min-height: 200px;
-    margin: 1rem auto 0;
-    align-items: flex-end;
-  }
-
-  .hero__phone-mockup {
-    width: 100%;
-    max-width: 200px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-  }
-
-  .hero__chat-bubble--green {
-    width: 65%;
-    max-width: 130px;
-    right: 5%;
-    bottom: 50%;
-    transform: rotate(-5deg);
-  }
-
-  .hero__chat-bubble--white {
-    width: 75%;
-    max-width: 150px;
-    left: 5%;
-    bottom: 15%;
-    transform: rotate(5deg);
-  }
-}
+  
