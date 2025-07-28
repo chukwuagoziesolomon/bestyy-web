@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchVendorOrders } from '../api';
+import '../styles/OrdersPage.css';
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState<any[]>([]);
@@ -25,51 +26,139 @@ const OrdersPage = () => {
     getOrders();
   }, [token]);
 
-  return (
-    <div style={{ fontFamily: 'Nunito Sans, sans-serif' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 40 }}>
-        <h1 style={{ fontWeight: 900, fontSize: 32, letterSpacing: 0.5 }}>Order List</h1>
+  const getStatusStyles = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'rejected':
+        return { background: '#fee2e2', color: '#ef4444' };
+      case 'pending':
+        return { background: '#fef3c7', color: '#d97706' };
+      case 'completed':
+        return { background: '#d1fae5', color: '#10b981' };
+      case 'delivered':
+        return { background: '#dbeafe', color: '#2563eb' };
+      default:
+        return { background: '#e5e7eb', color: '#4b5563' };
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="orders-container">
+        <div className="orders-header">
+          <h1>Order List</h1>
+        </div>
+        <div className="loading-state">
+          <div className="loading-spinner"></div>
+          <p>Loading orders...</p>
+        </div>
       </div>
-      <div className="dashboard-card" style={{ borderRadius: 28, padding: 48, margin: '0 auto', maxWidth: 1200 }}>
-        {loading ? (
-          <div style={{ color: '#888', fontSize: 18 }}>Loading orders...</div>
-        ) : error ? (
-          <div style={{ color: '#ef4444', fontSize: 18 }}>{error}</div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="orders-container">
+        <div className="orders-header">
+          <h1>Order List</h1>
+        </div>
+        <div className="error-state">
+          <p>{error}</p>
+          <button onClick={() => window.location.reload()} className="retry-button">
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="orders-container">
+      <div className="orders-header">
+        <h1>Order List</h1>
+      </div>
+
+      <div className="orders-content">
+        {orders.length === 0 ? (
+          <div className="empty-state">
+            <p>No orders found.</p>
+          </div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 19, border: '1px solid #e5e7eb', fontFamily: 'inherit' }}>
-            <thead>
-              <tr style={{ color: '#888', fontWeight: 700, textAlign: 'left' }}>
-                <th style={{ padding: '24px 18px', borderRight: '1px solid #D1D5DB', borderBottom: '1px solid #D1D5DB' }}>ID</th>
-                <th style={{ borderRight: '1px solid #D1D5DB', padding: '24px 18px', borderBottom: '1px solid #D1D5DB' }}>Name</th>
-                <th style={{ borderRight: '1px solid #D1D5DB', padding: '24px 18px', borderBottom: '1px solid #D1D5DB' }}>Address</th>
-                <th style={{ borderRight: '1px solid #D1D5DB', padding: '24px 18px', borderBottom: '1px solid #D1D5DB' }}>Item</th>
-                <th style={{ borderRight: '1px solidrgb(6, 6, 6)', padding: '24px 18px', borderBottom: '1px solid #D1D5DB' }}>Total</th>
-                <th style={{ padding: '24px 18px', borderBottom: '1px solid #D1D5DB' }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.length === 0 ? (
-                <tr><td colSpan={6} style={{ textAlign: 'center', color: '#888', padding: 32 }}>No orders found.</td></tr>
-              ) : (
-                orders.map((order: any, i: number) => (
-                  <tr key={order.id || i}>
-                    <td style={{ padding: '24px 18px', borderRight: '1px solid #D1D5DB' }}>{order.id || '-'}</td>
-                    <td style={{ borderRight: '1px solid #D1D5DB', padding: '24px 18px' }}>{order.customer_name || '-'}</td>
-                    <td style={{ borderRight: '1px solid #D1D5DB', padding: '24px 18px' }}>{order.delivery_address || '-'}</td>
-                    <td style={{ borderRight: '1px solid #D1D5DB', padding: '24px 18px' }}>{order.item_name || '-'}</td>
-                    <td style={{ borderRight: '1px solid #D1D5DB', padding: '24px 18px' }}>{order.total_amount ? `₦${order.total_amount}` : '-'}</td>
-                    <td style={{ padding: '24px 18px' }}>
-                      <span style={{ background: order.status === 'Rejected' ? '#fee2e2' : '#d1fae5', color: order.status === 'Rejected' ? '#ef4444' : '#10b981', borderRadius: 8, padding: '10px 28px', fontWeight: 700, fontSize: 17, fontFamily: 'inherit' }}>{order.status || '-'}</span>
-                    </td>
+          <div className="orders-grid">
+            {/* Desktop Table */}
+            <div className="desktop-orders">
+              <table className="orders-table">
+                <thead>
+                  <tr>
+                    <th>Order ID</th>
+                    <th>Customer</th>
+                    <th>Address</th>
+                    <th>Items</th>
+                    <th>Total</th>
+                    <th>Status</th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                </thead>
+                <tbody>
+                  {orders.map((order) => (
+                    <tr key={order.id}>
+                      <td data-label="Order ID">{order.id || '-'}</td>
+                      <td data-label="Customer">{order.customer_name || '-'}</td>
+                      <td data-label="Address">{order.delivery_address || '-'}</td>
+                      <td data-label="Items">{order.item_name || '-'}</td>
+                      <td data-label="Total">{order.total_amount ? `₦${order.total_amount.toLocaleString()}` : '-'}</td>
+                      <td data-label="Status">
+                        <span className="status-badge" style={getStatusStyles(order.status)}>
+                          {order.status || 'Pending'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Cards */}
+            <div className="mobile-orders">
+              {orders.map((order) => (
+                <div key={`mobile-${order.id}`} className="order-card">
+                  <div className="order-card-header">
+                    <h3>Order #{order.id || 'N/A'}</h3>
+                    <span 
+                      className="status-badge" 
+                      style={getStatusStyles(order.status)}
+                    >
+                      {order.status || 'Pending'}
+                    </span>
+                  </div>
+                  <div className="order-details">
+                    <div className="detail-row">
+                      <span className="detail-label">Customer:</span>
+                      <span className="detail-value">{order.customer_name || '-'}</span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Items:</span>
+                      <span className="detail-value">{order.item_name || '-'}</span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Total:</span>
+                      <span className="detail-value">
+                        {order.total_amount ? `₦${order.total_amount.toLocaleString()}` : '-'}
+                      </span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Address:</span>
+                      <span className="detail-value address">
+                        {order.delivery_address || 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </div>
     </div>
   );
 };
 
-export default OrdersPage; 
+export default OrdersPage;
