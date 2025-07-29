@@ -6,24 +6,49 @@ import MobileDashboardHome from './MobileDashboardHome';
 import MobileOrdersPage from './MobileOrdersPage';
 
 function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 900);
+  const [isMobile, setIsMobile] = useState(false);
+  
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth <= 900);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    console.log('Checking if mobile...');
+    const checkIfMobile = () => {
+      const mobile = window.innerWidth <= 900;
+      console.log('Window width:', window.innerWidth, 'Is mobile:', mobile);
+      setIsMobile(mobile);
+    };
+    
+    // Initial check
+    checkIfMobile();
+    
+    // Add event listener
+    window.addEventListener('resize', checkIfMobile);
+    
+    // Clean up
+    return () => {
+      window.removeEventListener('resize', checkIfMobile);
+    };
   }, []);
+  
   return isMobile;
 }
 
 const UserDashboardLayout: React.FC = () => {
   const isMobile = useIsMobile();
   const location = useLocation();
+  
+  console.log('UserDashboardLayout rendering...');
+  console.log('isMobile:', isMobile);
+  console.log('Current path:', location.pathname);
+  
   if (isMobile) {
+    console.log('Rendering mobile view...');
     if (location.pathname.startsWith('/user/dashboard/orders')) {
+      console.log('Rendering MobileOrdersPage');
       return <MobileOrdersPage />;
     }
+    console.log('Rendering MobileDashboardHome');
     return <MobileDashboardHome />;
   }
+  
   return (
     <div className="user-dashboard-layout">
       <Sidebar />
