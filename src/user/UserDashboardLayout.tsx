@@ -1,9 +1,17 @@
 import React from 'react';
+import { Outlet, useLocation, Link } from 'react-router-dom';
+import { Home, ShoppingBag, User, Bell, Menu } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import { Outlet } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 
 const UserDashboardLayout: React.FC = () => {
+  const location = useLocation();
+
+  const isActive = (path: string) => {
+    return location.pathname === path ? 'active' : '';
+  };
+
   return (
     <div className="user-dashboard-layout">
       <Sidebar className="sidebar-desktop" />
@@ -17,4 +25,4 @@ const UserDashboardLayout: React.FC = () => {
   );
 };
 
-export default UserDashboardLayout; 
+export default UserDashboardLayout;
