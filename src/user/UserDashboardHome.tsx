@@ -2,14 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Moon, Bell, User } from 'lucide-react';
 import { fetchUserOrders } from '../api';
 import { showError } from '../toast';
-import { useOutletContext } from 'react-router-dom';
-
-interface DashboardContext {
-  isMobile: boolean;
-}
 
 const UserDashboardHome = () => {
-  const { isMobile } = useOutletContext<DashboardContext>() || { isMobile: false };
   const firstName = localStorage.getItem('first_name') || 'there';
   const token = localStorage.getItem('token');
   const [orders, setOrders] = useState<any[]>([]);
@@ -32,16 +26,6 @@ const UserDashboardHome = () => {
 
   return (
     <div style={{ fontFamily: 'Nunito Sans, sans-serif', color: '#111' }}>
-      {/* Mobile Header */}
-      {isMobile && (
-        <div className="mobile-header">
-          <img src={localStorage.getItem('profile_image') || '/user1.png'} alt="Profile" style={{ width: 48, height: 48, borderRadius: '50%' }} />
-          <span style={{ fontWeight: 700, fontSize: 22 }}>Welcome Back, {firstName} !</span>
-          <button style={{ background: 'none', border: 'none', padding: 0, margin: 0 }}>
-            <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#222" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
-          </button>
-        </div>
-      )}
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
         <div>
