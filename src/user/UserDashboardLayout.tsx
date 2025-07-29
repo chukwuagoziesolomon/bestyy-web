@@ -1,18 +1,46 @@
 import React from 'react';
+import { Outlet, useLocation, Link } from 'react-router-dom';
+import { Home, ShoppingBag, User, Bell, Menu } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
-import { Outlet } from 'react-router-dom';
+import './UserDashboard.css';
 
 const UserDashboardLayout: React.FC = () => {
+  const location = useLocation();
+
+  const isActive = (path: string) => {
+    return location.pathname === path ? 'active' : '';
+  };
+
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc', fontFamily: 'Nunito Sans, sans-serif' }}>
+    <div className="user-dashboard">
       <Sidebar />
-      <main style={{ flex: 1, padding: '0 0 0 0', background: '#f8fafc', minHeight: '100vh' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 0 0 0' }}>
+      <main>
+        <div className="content-container">
           <Outlet />
         </div>
       </main>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="mobile-bottom-nav">
+        <Link to="/user/dashboard" className={`nav-item ${isActive('/user/dashboard')}`}>
+          <Home size={20} />
+          <span>Home</span>
+        </Link>
+        <Link to="/user/orders" className={`nav-item ${isActive('/user/orders')}`}>
+          <ShoppingBag size={20} />
+          <span>Orders</span>
+        </Link>
+        <Link to="/user/notifications" className={`nav-item ${isActive('/user/notifications')}`}>
+          <Bell size={20} />
+          <span>Alerts</span>
+        </Link>
+        <Link to="/user/profile" className={`nav-item ${isActive('/user/profile')}`}>
+          <User size={20} />
+          <span>Account</span>
+        </Link>
+      </nav>
     </div>
   );
 };
 
-export default UserDashboardLayout; 
+export default UserDashboardLayout;
