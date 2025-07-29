@@ -72,7 +72,7 @@ const OrdersPage = () => {
   }
 
   return (
-    <div className="orders-container">
+    <div className="dashboard-orders orders-container">
       <div className="orders-header">
         <h1>Order List</h1>
       </div>

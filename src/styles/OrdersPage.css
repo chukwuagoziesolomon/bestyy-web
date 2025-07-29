@@ -1,5 +1,20 @@
-/* Base styles */
-.orders-container {
+/* Base styles with higher specificity */
+.dashboard-orders.orders-container {
+  /* Reset any conflicting styles */
+  all: initial;
+  /* Now apply our styles */
+  font-family: 'Nunito Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif !important;
+  padding: 16px !important;
+  max-width: 1200px !important;
+  margin: 0 auto !important;
+  box-sizing: border-box !important;
+  display: block !important;
+}
+
+/* Target the orders container specifically in the dashboard */
+#vendor-dashboard .orders-container,
+.vendor-dashboard .orders-container,
+.dashboard-orders.orders-container {
   font-family: 'Nunito Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   padding: 16px;
   max-width: 1200px;
