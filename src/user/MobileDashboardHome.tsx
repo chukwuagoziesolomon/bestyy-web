@@ -1,5 +1,6 @@
 import React from 'react';
 import BottomNav from '../components/BottomNav';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const orders = [
   {
@@ -40,7 +41,7 @@ const MobileDashboardHome = () => {
         <h2 style={{ fontWeight: 600, fontSize: 32, marginBottom: 0 }}>My Orders</h2>
         <div style={{ color: '#888', fontSize: 16, marginBottom: 18 }}>Track your recent food orders, check delivery status, or re-order your favorite meals instantly via WhatsApp</div>
         {orders.map((order, i) => (
-          <div key={i} style={{ background: '#fff', borderRadius: 16, boxShadow: '0 2px 12px #f3f4f6', padding: '18px 16px', marginBottom: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div key={i} style={{ background: '#fff', borderRadius: 16, boxShadow: '0 2px 12px #f3f4f6', padding: '18px 16px', marginBottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: i !== orders.length - 1 ? '1.5px solid #f3f4f6' : 'none' }}>
             <div>
               <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180 }}>{order.name}</div>
               <div style={{ color: '#888', fontSize: 15 }}>{order.restaurant}</div>
@@ -59,8 +60,16 @@ const MobileDashboardHome = () => {
         <h2 style={{ fontWeight: 600, fontSize: 32, marginBottom: 0 }}>My Bookings</h2>
         <div style={{ color: '#888', fontSize: 16, marginBottom: 18 }}>Track your recent food orders, check delivery status, or re-order your favorite meals instantly via WhatsApp</div>
         {bookings.map((booking, i) => (
-          <div key={i} style={{ background: '#fff', borderRadius: 16, boxShadow: '0 2px 12px #f3f4f6', overflow: 'hidden', marginBottom: 18 }}>
-            <div style={{ width: '100%', height: 160, background: `url(${booking.image}) center/cover` }}></div>
+          <div key={i} style={{ background: '#fff', borderRadius: 16, boxShadow: '0 2px 12px #f3f4f6', overflow: 'hidden', marginBottom: 18, position: 'relative' }}>
+            {/* Carousel Image with Arrows */}
+            <div style={{ width: '100%', height: 160, background: `url(${booking.image}) center/cover`, position: 'relative' }}>
+              <button style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.8)', border: 'none', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', cursor: 'pointer' }}>
+                <ChevronLeft size={22} color="#222" />
+              </button>
+              <button style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.8)', border: 'none', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', cursor: 'pointer' }}>
+                <ChevronRight size={22} color="#222" />
+              </button>
+            </div>
             <div style={{ padding: '16px' }}>
               <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 4 }}>{booking.hotel}</div>
               <div style={{ color: '#888', fontSize: 15 }}>{booking.date}</div>
