@@ -19,7 +19,7 @@ const UserDashboardLayout: React.FC = () => {
   const isMobile = useIsMobile();
   const location = useLocation();
   if (isMobile) {
-    if (location.pathname === '/user/dashboard/orders') {
+    if (location.pathname.startsWith('/user/dashboard/orders')) {
       return <MobileOrdersPage />;
     }
     return <MobileDashboardHome />;
