@@ -202,3 +202,33 @@ section {
   box-sizing: border-box;
   max-width: 100%;
 }
+
+.user-dashboard-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #f8fafc;
+  font-family: 'Nunito Sans', sans-serif;
+}
+
+.sidebar-desktop {
+  display: block;
+}
+
+.bottom-nav-mobile {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .user-dashboard-layout {
+    flex-direction: column;
+  }
+  .sidebar-desktop {
+    display: none !important;
+  }
+  .bottom-nav-mobile {
+    display: block !important;
+  }
+  main {
+    padding-bottom: 80px !important; /* space for bottom nav */
+  }
+}
