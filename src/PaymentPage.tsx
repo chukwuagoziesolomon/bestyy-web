@@ -39,12 +39,12 @@ const PaymentPage = () => {
   const navigate = useNavigate();
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate('/vendor/success', { state: { userType: 'courier' } });
+    navigate('/vendor/signup-success');
   };
   return (
     <div style={{ minHeight: '100vh', background: '#fafbfb', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2.5rem 0', fontFamily: 'Montserrat, Nunito Sans, Arial, sans-serif' }}>
       <div style={{ maxWidth: 420, width: '100%', background: '#fff', borderRadius: 18, boxShadow: '0 8px 40px rgba(16,24,40,0.08)', padding: '2.5rem 2.2rem 2.5rem 2.2rem', margin: '2.5rem 0', position: 'relative' }}>
-        <button onClick={() => navigate('/vendor/plans')} style={{ background: 'none', border: 'none', position: 'absolute', left: 24, top: 24, cursor: 'pointer', padding: 0 }} aria-label="Back">
+        <button onClick={() => navigate('/vendor/plan-selection')} style={{ background: 'none', border: 'none', position: 'absolute', left: 24, top: 24, cursor: 'pointer', padding: 0 }} aria-label="Back">
           {backArrow}
         </button>
         <div style={{ textAlign: 'center', fontWeight: 800, fontSize: '1.45rem', marginBottom: '2.2rem', letterSpacing: '-0.5px' }}>

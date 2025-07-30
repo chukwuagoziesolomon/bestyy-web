@@ -36,7 +36,7 @@ const UserPaymentMethods = () => {
           <h2 style={{ fontWeight: 600, fontSize: 32, marginBottom: 0 }}>Payment Methods</h2>
           <div style={{ color: '#888', fontSize: 16, marginBottom: 0 }}>Securely manage your cards for faster checkouts. Add new cards or remove old ones easily</div>
         </div>
-        <button onClick={() => navigate('/user/dashboard/payments/add')} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#10b981', color: '#fff', fontWeight: 700, fontSize: 17, border: 'none', borderRadius: 8, padding: '12px 28px', cursor: 'pointer' }}>
+        <button onClick={() => navigate('/user/dashboard/payment-methods/add')} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#10b981', color: '#fff', fontWeight: 700, fontSize: 17, border: 'none', borderRadius: 8, padding: '12px 28px', cursor: 'pointer' }}>
           <CreditCard size={20} /> Add Payment Method
         </button>
       </div>

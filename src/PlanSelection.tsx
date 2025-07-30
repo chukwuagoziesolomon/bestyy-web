@@ -26,7 +26,7 @@ const PlanSelection = () => {
             <li><span className="plan-card__check">✔</span> Receive Payout Via Bestie</li>
             <li><span className="plan-card__check">✔</span> Basic Dashboard Access</li>
           </ul>
-          <button className="plan-card__cta plan-card__cta--free" onClick={() => navigate('/vendor/success', { state: { userType } })}>Get Started For Free</button>
+          <button className="plan-card__cta plan-card__cta--free" onClick={() => navigate('/vendor/signup-success')}>Get Started For Free</button>
         </div>
         <div className="plan-card plan-card--pro">
           <div className="plan-card__title">Bestie Pro</div>
@@ -39,7 +39,7 @@ const PlanSelection = () => {
             <li><span className="plan-card__check">✔</span> Early Access to New Features</li>
             <li><span className="plan-card__check">✔</span> Premium Support line</li>
           </ul>
-          <button className="plan-card__cta plan-card__cta--pro" onClick={() => navigate('/vendor/payment', { state: { userType } })}>Get Started</button>
+          <button className="plan-card__cta plan-card__cta--pro" onClick={() => navigate('/vendor/payment')}>Get Started</button>
         </div>
       </div>
     </div>

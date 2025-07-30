@@ -1,7 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
-import { ChevronRight, Clock, Calendar } from 'lucide-react';
+import HamburgerMenu from '../components/HamburgerMenu';
+import { ChevronRight, Clock, Calendar, ChevronLeft } from 'lucide-react';
+import { useResponsive } from '../hooks/useResponsive';
 
 // Types
 interface Order {
@@ -54,6 +56,7 @@ const upcomingBookings: Booking[] = [
 const MobileDashboardHome: React.FC = () => {
   const navigate = useNavigate();
   const firstName = localStorage.getItem('first_name') || 'there';
+  const { isTablet } = useResponsive();
   const profileImage = localStorage.getItem('profile_image') || '/user1.png';
   
   const getStatusStyles = (status: string) => {
@@ -69,12 +72,14 @@ const MobileDashboardHome: React.FC = () => {
   };
 
   return (
-    <div style={{ 
-      fontFamily: 'Nunito Sans, sans-serif', 
-      color: '#111', 
+    <div style={{
+      fontFamily: 'Nunito Sans, sans-serif',
+      color: '#111',
       minHeight: '100vh',
       paddingBottom: '80px',
-      background: '#f8fafc'
+      background: '#f8fafc',
+      maxWidth: isTablet ? '768px' : '414px', // Tablet: 768px, Mobile: 414px
+      margin: '0 auto'
     }}>
       {/* Header */}
       <div style={{
@@ -97,16 +102,16 @@ const MobileDashboardHome: React.FC = () => {
             objectFit: 'cover'
           }} 
         />
-        <h1 style={{ 
-          fontSize: '20px', 
-          fontWeight: 700, 
+        <h1 style={{
+          fontSize: '20px',
+          fontWeight: 700,
           margin: 0,
           flex: 1,
-          textAlign: 'center',
-          paddingRight: '40px'
+          textAlign: 'center'
         }}>
           Dashboard
         </h1>
+        <HamburgerMenu size={24} color="#333" />
       </div>
 
       {/* Welcome Section */}
@@ -463,220 +468,3 @@ const MobileDashboardHome: React.FC = () => {
 };
 
 export default MobileDashboardHome;
-
-const MobileDashboardHome: React.FC = () => {
-  const navigate = useNavigate();
-  const firstName = localStorage.getItem('first_name') || 'there';
-  const profileImage = localStorage.getItem('profile_image') || '/user1.png';
-  
-  const getStatusStyles = (status: string) => {
-    switch(status.toLowerCase()) {
-      case 'delivered':
-      case 'confirmed':
-        return { background: '#D1FAE5', color: '#065F46' };
-      case 'in transit':
-        return { background: '#DBEAFE', color: '#1E40AF' };
-      default:
-        return { background: '#F3F4F6', color: '#4B5563' };
-    }
-  };
-
-  return (
-    <div style={{ 
-      fontFamily: 'Nunito Sans, sans-serif', 
-      color: '#111', 
-      minHeight: '100vh',
-      paddingBottom: '80px',
-      background: '#f8fafc'
-    }}>
-      {/* Header */}
-      <div style={{
-        display: 'flex', 
-        alignItems: 'center', 
-        padding: '20px 16px 16px', 
-        background: '#fff', 
-        position: 'sticky', 
-        top: 0, 
-        zIndex: 50,
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-      }}>
-        <img 
-          src={profileImage} 
-          alt="Profile" 
-          style={{ 
-            width: 40, 
-            height: 40, 
-            borderRadius: '50%',
-            objectFit: 'cover'
-          }} 
-        />
-        <h1 style={{ 
-          fontSize: '20px', 
-          fontWeight: 700, 
-          margin: 0,
-          flex: 1,
-          textAlign: 'center',
-          paddingRight: '40px'
-        }}>
-          Dashboard
-        </h1>
-      </div>
-
-      {/* Rest of the component... */}
-    </div>
-  );
-};
-
-export default MobileDashboardHome;
-    switch(status.toLowerCase()) {
-      case 'delivered':
-        return { background: '#D1FAE5', color: '#065F46' };
-      case 'in transit':
-        return { background: '#DBEAFE', color: '#1E40AF' };
-      case 'confirmed':
-        return { background: '#D1FAE5', color: '#065F46' };
-      default:
-        return { background: '#F3F4F6', color: '#4B5563' };
-    }
-  };
-
-  return (
-    <div style={{ 
-      fontFamily: 'Nunito Sans, sans-serif', 
-      color: '#111', 
-      minHeight: '100vh',
-      paddingBottom: '80px', // Space for bottom nav
-      background: '#f8fafc'
-    }}>
-      {/* Header */}
-      <div style={{
-        display: 'flex', 
-        alignItems: 'center', 
-        padding: '20px 16px 16px', 
-        background: '#fff', 
-        position: 'sticky', 
-        top: 0, 
-        zIndex: 50,
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-      }}>
-        <img 
-          src={profileImage} 
-          alt="Profile" 
-          style={{ 
-            width: 40, 
-            height: 40, 
-            borderRadius: '50%',
-            objectFit: 'cover'
-          }} 
-        />
-        <h1 style={{ 
-          fontSize: '20px', 
-          fontWeight: 700, 
-          margin: 0,
-          flex: 1,
-          textAlign: 'center',
-          paddingRight: '40px' // Balance the flex layout
-        }}>
-          Dashboard
-        </h1>
-      </div>
-
-      {/* Welcome Section */}
-      <div style={{ 
-        padding: '24px 16px 16px',
-        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-        color: 'white',
-        marginBottom: '24px'
-      }}>
-        <h2 style={{ 
-          margin: '0 0 8px 0', 
-          fontSize: '24px',
-          fontWeight: 700
-        }}>
-          Welcome back, {firstName}!
-        </h2>
-        <p style={{ 
-          margin: 0, 
-          fontSize: '14px',
-          opacity: 0.9
-        }}>
-          Track your orders and bookings in one place
-        </p>
-      </div>
-
-      {/* Quick Actions */}
-      <div style={{ 
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: '12px',
-        padding: '0 16px 24px',
-        marginBottom: '16px'
-      }}>
-        <button 
-          onClick={() => navigate('/user/dashboard/orders')}
-          style={{
-            background: '#fff',
-            border: 'none',
-            borderRadius: '12px',
-            padding: '16px',
-            textAlign: 'left',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-            cursor: 'pointer'
-          }}
-        >
-          <div style={{
-            background: '#D1FAE5',
-            width: '40px',
-            height: '40px',
-            borderRadius: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: '12px'
-          }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-              <line x1="3" y1="6" x2="21" y2="6"></line>
-              <path d="M16 10a4 4 0 0 1-8 0"></path>
-            </svg>
-                <button style={{ background: '#f3fefb', color: '#10b981', fontWeight: 700, fontSize: 15, border: 'none', borderRadius: 8, padding: '8px 18px', marginTop: 8, cursor: 'pointer' }}>View Details</button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* My Bookings */}
-      <div style={{ padding: '24px 18px 0 18px' }}>
-        <h2 style={{ fontWeight: 600, fontSize: 32, marginBottom: 0 }}>My Bookings</h2>
-        <div style={{ color: '#888', fontSize: 16, marginBottom: 18 }}>Track your recent food orders, check delivery status, or re-order your favorite meals instantly via WhatsApp</div>
-        {bookings.map((booking, i) => (
-          <div key={i} style={{ background: '#fff', borderRadius: 16, boxShadow: '0 2px 12px #f3f4f6', overflow: 'hidden', marginBottom: 18, position: 'relative' }}>
-            {/* Carousel Image with Arrows */}
-            <div style={{ width: '100%', height: 160, background: `url(${booking.image}) center/cover`, position: 'relative' }}>
-              <button style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.8)', border: 'none', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', cursor: 'pointer' }}>
-                <ChevronLeft size={22} color="#222" />
-              </button>
-              <button style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.8)', border: 'none', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', cursor: 'pointer' }}>
-                <ChevronRight size={22} color="#222" />
-              </button>
-            </div>
-            <div style={{ padding: '16px' }}>
-              <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 4 }}>{booking.hotel}</div>
-              <div style={{ color: '#888', fontSize: 15 }}>{booking.date}</div>
-              <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ background: '#e6f9f2', color: '#10b981', borderRadius: 6, padding: '4px 12px', fontWeight: 600, fontSize: 12 }}>{booking.status}</span>
-                <button style={{ background: '#f3fefb', color: '#10b981', fontWeight: 700, fontSize: 15, border: 'none', borderRadius: 8, padding: '8px 18px', cursor: 'pointer' }}>View Details</button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Bottom Navigation */}
-      <BottomNav />
-    </div>
-  );
-};
-
-export default MobileDashboardHome; 

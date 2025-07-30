@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Landmark, Eye, EyeOff, CreditCard, Calendar } from 'lucide-react';
+import { Landmark, Eye, EyeOff, CreditCard, Calendar, ChevronDown } from 'lucide-react';
 import { fetchVendorTransactions } from '../api';
 
 const maskedCards = [
@@ -11,12 +11,21 @@ const maskedCards = [
 
 const PayoutsPage = () => {
   const [showBalance, setShowBalance] = useState(true);
-  const [dateRange, setDateRange] = useState('');
+  const [dateRange, setDateRange] = useState('Last 30 Days');
+  const [showDateDropdown, setShowDateDropdown] = useState(false);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [totalAmount, setTotalAmount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const token = localStorage.getItem('token');
+
+  const dateOptions = [
+    'Last 7 Days',
+    'Last 30 Days',
+    'Last 3 Months',
+    'Last 6 Months',
+    'This Year'
+  ];
 
   useEffect(() => {
     async function getTransactions() {
@@ -81,9 +90,98 @@ const PayoutsPage = () => {
       <div className="dashboard-card" style={{ borderRadius: 16, padding: 0, maxWidth: 1200, margin: '0 auto', overflowX: 'auto', border: '1.5px solid #f3f4f6', boxShadow: '0 2px 16px #f3f4f6' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '28px 32px 0 32px' }}>
           <h2 style={{ fontWeight: 800, fontSize: 24, color: '#222', margin: 0 }}>Transactions History</h2>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#888', fontWeight: 600, fontSize: 15, background: '#f8fafc', borderRadius: 8, padding: '8px 18px' }}>
-            <Calendar size={18} style={{ marginRight: 6 }} />
-            {dateRange}
+          <div style={{ position: 'relative' }}>
+            <div
+              onClick={() => setShowDateDropdown(!showDateDropdown)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                color: '#888',
+                fontWeight: 600,
+                fontSize: 15,
+                background: '#f8fafc',
+                borderRadius: 8,
+                padding: '8px 18px',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#f1f5f9';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#f8fafc';
+              }}
+            >
+              <Calendar size={18} style={{ marginRight: 6 }} />
+              {dateRange}
+              <ChevronDown size={16} style={{ marginLeft: 4 }} />
+            </div>
+
+            {/* Date Dropdown */}
+            {showDateDropdown && (
+              <>
+                {/* Backdrop */}
+                <div
+                  onClick={() => setShowDateDropdown(false)}
+                  style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    zIndex: 40
+                  }}
+                />
+
+                {/* Dropdown Content */}
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  marginTop: '8px',
+                  background: '#fff',
+                  borderRadius: '8px',
+                  boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+                  zIndex: 50,
+                  minWidth: '160px',
+                  overflow: 'hidden',
+                  border: '1px solid #e5e7eb'
+                }}>
+                  {dateOptions.map((option, index) => (
+                    <div
+                      key={index}
+                      onClick={() => {
+                        setDateRange(option);
+                        setShowDateDropdown(false);
+                      }}
+                      style={{
+                        padding: '12px 16px',
+                        cursor: 'pointer',
+                        background: dateRange === option ? '#f0fdf4' : 'transparent',
+                        color: dateRange === option ? '#10b981' : '#374151',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        transition: 'all 0.2s ease',
+                        borderBottom: index < dateOptions.length - 1 ? '1px solid #f3f4f6' : 'none'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (dateRange !== option) {
+                          e.currentTarget.style.background = '#f9fafb';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (dateRange !== option) {
+                          e.currentTarget.style.background = 'transparent';
+                        }
+                      }}
+                    >
+                      {option}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
         <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, fontSize: 17, fontFamily: 'inherit', marginTop: 18 }}>

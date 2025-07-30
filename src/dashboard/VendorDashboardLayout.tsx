@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Home, List, Utensils, Archive, BarChart2, CreditCard, User, Table } from 'lucide-react';
 import DashboardNavbar from '../components/DashboardNavbar';
+import { useResponsive } from '../hooks/useResponsive';
 
 const mainLinks = [
   { label: 'Dashboard', path: '/vendor/dashboard', icon: <Home size={20} /> },
@@ -18,6 +19,8 @@ const bottomLinks = [
 
 function VendorDashboardLayout() {
   const location = useLocation();
+  const { isMobile, isTablet } = useResponsive();
+
   // Get business logo and name from localStorage vendor_profile
   let businessLogo = '';
   let businessName = '';
@@ -29,6 +32,23 @@ function VendorDashboardLayout() {
       businessName = vendor.business_name || '';
     } catch (e) {}
   }
+
+  // Mobile/Tablet view - render outlet directly without sidebar
+  if (isMobile || isTablet) {
+    return (
+      <div style={{
+        maxWidth: '100vw',
+        overflowX: 'hidden',
+        position: 'relative',
+        minHeight: '100vh',
+        backgroundColor: '#f8fafc'
+      }}>
+        <Outlet />
+      </div>
+    );
+  }
+
+  // Desktop view with sidebar
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc' }}>
       <aside style={{ width: 240, background: '#fff', borderRight: '1px solid #eee', padding: '2rem 1.2rem 1.2rem 1.2rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>

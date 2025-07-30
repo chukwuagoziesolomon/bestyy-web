@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
+import { useResponsive } from '../hooks/useResponsive';
 
 function sidebarLinkStyle(active: boolean): React.CSSProperties {
   return {
@@ -13,6 +14,14 @@ function sidebarLinkStyle(active: boolean): React.CSSProperties {
 
 const CourierDashboardLayout: React.FC = () => {
   const location = useLocation();
+  const { isMobile, isTablet } = useResponsive();
+
+  // For mobile and tablet, render content directly without sidebar
+  if (isMobile || isTablet) {
+    return <Outlet />;
+  }
+
+  // Desktop layout with sidebar
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc', fontFamily: 'Nunito Sans, sans-serif' }}>
       <aside style={{

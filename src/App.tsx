@@ -12,8 +12,18 @@ import SignUp from './SignUp';
 import VendorSignUp from './VendorSignUp';
 import './App.css';
 import VendorDashboardLayout from './dashboard/VendorDashboardLayout';
-import DashboardHome from './dashboard/DashboardHome';
-import OrdersPage from './dashboard/OrdersPage';
+import ResponsiveVendorDashboard from './dashboard/ResponsiveVendorDashboard';
+import ResponsiveOrders from './dashboard/ResponsiveOrders';
+import ResponsiveMenu from './dashboard/ResponsiveMenu';
+import ResponsiveStock from './dashboard/ResponsiveStock';
+import ResponsiveAddMenu from './dashboard/ResponsiveAddMenu';
+import ResponsiveAnalytics from './dashboard/ResponsiveAnalytics';
+import ResponsivePayout from './dashboard/ResponsivePayout';
+import CourierDashboard from './dashboard/CourierDashboard';
+import CourierDeliveryList from './dashboard/CourierDeliveryList';
+import CourierAnalytics from './dashboard/CourierAnalytics';
+import CourierPayout from './dashboard/CourierPayout';
+import CourierProfile from './dashboard/CourierProfile';
 import MenuPage from './dashboard/MenuPage';
 import StockPage from './dashboard/StockPage';
 import AnalyticsPage from './dashboard/AnalyticsPage';
@@ -24,18 +34,23 @@ import AddMenuItemPage from './dashboard/AddMenuItemPage';
 import PlanSelection from './PlanSelection';
 import PaymentPage from './PaymentPage';
 import SuccessPage from './SuccessPage';
+import VendorSuccessPage from './VendorSuccessPage';
 import UserDashboardLayout from './user/UserDashboardLayout';
-import UserDashboardHome from './user/UserDashboardHome';
-import UserSavedAddresses from './user/UserSavedAddresses';
-import UserFavourites from './user/UserFavourites';
-import UserBookings from './user/UserBookings';
-import UserPaymentMethods from './user/UserPaymentMethods';
-import UserAddCard from './user/UserAddCard';
+import ResponsiveDashboardHome from './user/ResponsiveDashboardHome';
+import ResponsiveSavedAddresses from './user/ResponsiveSavedAddresses';
+import ResponsiveFavorites from './user/ResponsiveFavorites';
+import ResponsiveBookings from './user/ResponsiveBookings';
+import ResponsivePaymentMethods from './user/ResponsivePaymentMethods';
+import ResponsiveAddCard from './user/ResponsiveAddCard';
+import ResponsiveProfileSettings from './user/ResponsiveProfileSettings';
 import CourierSignUp from './CourierSignUp';
 import TermsAndConditions from './TermsAndConditions';
 import CourierDashboardHome from './dashboard/CourierDashboardHome';
 import DeliveryListPage from './dashboard/DeliveryListPage';
 import CourierDashboardLayout from './dashboard/CourierDashboardLayout';
+import MobileOrdersPage from './user/MobileOrdersPage';
+import MobileAddAddressPage from './user/MobileAddAddressPage';
+import ResponsiveOrderDetails from './components/ResponsiveOrderDetails';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -84,6 +99,7 @@ function App() {
         <Route path="/vendor/plan-selection" element={<PlanSelection />} />
         <Route path="/vendor/payment" element={<PaymentPage />} />
         <Route path="/vendor/success" element={<SuccessPage />} />
+        <Route path="/vendor/signup-success" element={<VendorSuccessPage />} />
         <Route path="/login/user" element={<UserLogin />} />
 
         <Route path="/vendor/dashboard" element={
@@ -91,24 +107,31 @@ function App() {
             <VendorDashboardLayout />
           </PrivateRoute>
         }>
-          <Route index element={<DashboardHome />} />
-          <Route path="orders" element={<OrdersPage />} />
-          <Route path="menu" element={<MenuPage />} />
+          <Route index element={<ResponsiveVendorDashboard />} />
+          <Route path="orders" element={<ResponsiveOrders />} />
+          <Route path="menu" element={<ResponsiveMenu />} />
           <Route path="menu/edit/:id" element={<EditMenuItemPage />} />
-          <Route path="menu/add" element={<AddMenuItemPage />} />
-          <Route path="stock" element={<StockPage />} />
+          <Route path="menu/add" element={<ResponsiveAddMenu />} />
+          <Route path="stock" element={<ResponsiveStock />} />
+          <Route path="analytics" element={<ResponsiveAnalytics />} />
+          <Route path="payout" element={<ResponsivePayout />} />
+          <Route path="profile" element={<ResponsiveProfileSettings />} />
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="payouts" element={<PayoutsPage />} />
           <Route path="profile" element={<ProfilePage />} />
         </Route>
 
-        <Route path="/courier/dashboard" element={
+        <Route path="/courier" element={
           <PrivateRoute>
             <CourierDashboardLayout />
           </PrivateRoute>
         }>
-          <Route index element={<CourierDashboardHome />} />
-          <Route path="deliveries" element={<DeliveryListPage />} />
+          <Route index element={<Navigate to="/courier/dashboard" replace />} />
+          <Route path="dashboard" element={<CourierDashboard />} />
+          <Route path="delivery-list" element={<CourierDeliveryList />} />
+          <Route path="analytics" element={<CourierAnalytics />} />
+          <Route path="payouts" element={<CourierPayout />} />
+          <Route path="profile" element={<CourierProfile />} />
         </Route>
 
         <Route path="/user/dashboard" element={
@@ -116,12 +139,16 @@ function App() {
             <UserDashboardLayout />
           </PrivateRoute>
         }>
-          <Route index element={<UserDashboardHome />} />
-          <Route path="addresses" element={<UserSavedAddresses />} />
-          <Route path="favourites" element={<UserFavourites />} />
-          <Route path="bookings" element={<UserBookings />} />
-          <Route path="payment-methods" element={<UserPaymentMethods />} />
-          <Route path="payment-methods/add" element={<UserAddCard />} />
+          <Route index element={<ResponsiveDashboardHome />} />
+          <Route path="orders" element={<MobileOrdersPage />} />
+          <Route path="orders/:orderId" element={<ResponsiveOrderDetails />} />
+          <Route path="addresses" element={<ResponsiveSavedAddresses />} />
+          <Route path="addresses/add" element={<MobileAddAddressPage />} />
+          <Route path="favorite" element={<ResponsiveFavorites />} />
+          <Route path="bookings" element={<ResponsiveBookings />} />
+          <Route path="payment-methods" element={<ResponsivePaymentMethods />} />
+          <Route path="payment-methods/add" element={<ResponsiveAddCard />} />
+          <Route path="profile" element={<ResponsiveProfileSettings />} />
         </Route>
       </Routes>
     </BrowserRouter>

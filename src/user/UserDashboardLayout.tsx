@@ -1,96 +1,68 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import BottomNav from '../components/BottomNav';
 import MobileDashboardHome from './MobileDashboardHome';
 import MobileOrdersPage from './MobileOrdersPage';
+import { useResponsive } from '../hooks/useResponsive';
 
-// Debug component
-const DebugInfo = ({ isMobile }: { isMobile: boolean }) => (
-  <div style={{
-    position: 'fixed',
-    top: '10px',
-    right: '10px',
-    background: '#333',
-    color: '#fff',
-    padding: '4px 8px',
-    borderRadius: '4px',
-    fontSize: '12px',
-    zIndex: 1000
-  }}>
-    {isMobile ? 'Mobile' : 'Desktop'} View
-  </div>
-);
 
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
-  
-  useEffect(() => {
-    const checkIfMobile = () => {
-      const mobile = window.innerWidth <= 900;
-      console.log('Window width:', window.innerWidth, 'Is mobile:', mobile);
-      setIsMobile(mobile);
-    };
-    
-    // Initial check
-    checkIfMobile();
-    
-    // Add event listener
-    window.addEventListener('resize', checkIfMobile);
-    
-    // Clean up
-    return () => window.removeEventListener('resize', checkIfMobile);
-  }, []);
-  
-  return isMobile;
-}
 
 const UserDashboardLayout: React.FC = () => {
-  const isMobile = useIsMobile();
+  const { isMobile, isTablet, windowSize } = useResponsive();
   const location = useLocation();
   const navigate = useNavigate();
-  
+
+  // TEMPORARY: Force mobile view for testing - REMOVE THIS LATER
+  const forceMobile = window.innerWidth < 1200; // Temporarily force mobile for larger screens
+
   // Debug logs
   useEffect(() => {
+    console.log('UserDashboardLayout - windowSize:', windowSize);
     console.log('UserDashboardLayout - isMobile:', isMobile);
+    console.log('UserDashboardLayout - isTablet:', isTablet);
+    console.log('UserDashboardLayout - forceMobile:', forceMobile);
     console.log('UserDashboardLayout - Current path:', location.pathname);
-  }, [isMobile, location.pathname]);
+  }, [isMobile, isTablet, location.pathname, windowSize, forceMobile]);
   
-  // Redirect to mobile home if on mobile and not on a mobile route
+  // Redirect to appropriate view based on device
   useEffect(() => {
-    if (isMobile && !location.pathname.startsWith('/user/dashboard')) {
-      console.log('Redirecting to mobile home...');
-      navigate('/user/dashboard');
+    if (isMobile || isTablet || forceMobile) {
+      if (!location.pathname.startsWith('/user/dashboard')) {
+        console.log('Redirecting to mobile/tablet home...');
+        navigate('/user/dashboard');
+      }
     }
-  }, [isMobile, location.pathname, navigate]);
-  
-  // Mobile view
-  if (isMobile) {
+  }, [isMobile, isTablet, forceMobile, location.pathname, navigate]);
+
+  // Mobile or Tablet view (including forced mobile for testing)
+  if (isMobile || isTablet || forceMobile) {
     return (
       <div style={{ 
         maxWidth: '100vw', 
         overflowX: 'hidden',
-        position: 'relative'
+        position: 'relative',
+        // Add some padding for tablet view
+        padding: isTablet ? '0 20px' : '0',
+        minHeight: '100vh',
+        backgroundColor: '#f8fafc'
       }}>
-        {process.env.NODE_ENV === 'development' && <DebugInfo isMobile={isMobile} />}
+
         
-        {location.pathname.startsWith('/user/dashboard/orders') ? (
-          <MobileOrdersPage />
-        ) : (
-          <MobileDashboardHome />
-        )}
+        {/* Use Outlet for nested routes */}
+        <Outlet context={{ isMobile, isTablet }} />
       </div>
     );
   }
   
   // Desktop view
   return (
-    <div className="user-dashboard-layout" style={{
+    <div style={{
       display: 'flex',
       minHeight: '100vh',
       backgroundColor: '#f8fafc'
     }}>
-      {process.env.NODE_ENV === 'development' && <DebugInfo isMobile={isMobile} />}
+
       
       <Sidebar />
       <main style={{ 

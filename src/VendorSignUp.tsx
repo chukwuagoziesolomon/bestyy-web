@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './UserLogin.css';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { signupVendor, createMenuItem } from './api';
 import { showError, showSuccess, showInfo } from './toast';
 
@@ -47,6 +47,7 @@ type VendorFormData = {
 
 const VendorSignUp = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   type FieldKey = keyof VendorFormData;
 
   const [formData, setFormData] = useState<VendorFormData>(() => {
@@ -78,6 +79,11 @@ const VendorSignUp = () => {
   });
 
   const [step, setStep] = useState(() => {
+    // Check URL parameter first
+    const urlStep = searchParams.get('step');
+    if (urlStep) {
+      return parseInt(urlStep, 10);
+    }
     const savedStep = localStorage.getItem('vendor_signup_step');
     return savedStep ? parseInt(savedStep, 10) : 0;
   });
@@ -253,7 +259,7 @@ const VendorSignUp = () => {
         });
       }
       showSuccess('Menu items added successfully!');
-      setStep(5); // Move to success page
+      setStep(4); // Move to plan selection page
       localStorage.removeItem('vendor_signup_data');
       localStorage.removeItem('vendor_signup_step');
       // Do NOT remove vendor_token here so dashboard works after sign-up
@@ -625,16 +631,17 @@ const VendorSignUp = () => {
               <div className="signup-btn-group--wide">
                 {formData.menuItems.some(item => item.dishName.trim() !== '') ? (
                   <button className="signup-btn-back" type="button" onClick={handleMenuSubmit} disabled={isLoading}>
-                    {isLoading ? 'Submitting...' : 'Finish & Submit'}
+                    {isLoading ? 'Submitting...' : 'Save Menu & Continue'}
                   </button>
                 ) : (
-                  <button className="signup-btn-back" type="button" onClick={() => navigate('/vendor/plans')}>Skip for Now</button>
+                  <button className="signup-btn-back" type="button" onClick={() => navigate('/vendor/plan-selection')}>Skip for Now</button>
                 )}
-                <button className="signup-btn-next" type="submit">Add More</button>
+                <button className="signup-btn-next" type="button" onClick={() => navigate('/vendor/plan-selection')}>Next</button>
               </div>
             </form>
           </>
         )}
+
         {step === 5 && (
           <>
             <div style={{ textAlign: 'center', margin: '2rem 0' }}>
@@ -672,7 +679,7 @@ const VendorSignUp = () => {
             {step > 0 && (
               <button className="signup-btn-back" onClick={back} disabled={isLoading}>Back</button>
             )}
-            {step < 4 && (
+            {step < 3 && (
               <button 
                 className="signup-btn-next" 
                 onClick={next}

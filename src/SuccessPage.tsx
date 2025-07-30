@@ -11,7 +11,7 @@ const SuccessPage = () => {
   return (
     <div className="success-bg">
       <div className="success-card">
-        <img src="/confetti.svg" alt="Confetti" className="success-confetti" />
+        <img src="confetti.svg" alt="Confetti" className="success-confetti" />
         <div className="success-checkmark-wrapper">
           <div className="success-checkmark-circle">
             <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
