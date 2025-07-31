@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getMenuItem, updateMenuItem } from '../api';
-import { showError, showSuccess } from '../toast';
+import { showError, showSuccess, showApiError } from '../toast';
 import '../UserLogin.css'; // Reusing styles
 
 type MenuItemData = {
@@ -102,7 +102,7 @@ const EditMenuItemPage = () => {
       showSuccess('Menu item updated successfully!');
       navigate('/dashboard/menu');
     } catch (err: any) {
-      showError(err.message || 'Failed to update menu item.');
+      showApiError(err, 'Failed to update menu item.');
     } finally {
       setIsUpdating(false);
     }

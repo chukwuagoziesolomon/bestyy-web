@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './UserLogin.css';
 import { loginUser } from './api';
-import { showSuccess, showError } from './toast';
+import { showSuccess, showError, showApiError } from './toast';
 import { useNavigate } from 'react-router-dom';
 
 const UserLogin = () => {
@@ -35,7 +35,7 @@ const UserLogin = () => {
         showError('No roles assigned to this account.');
       }
     } catch (err: any) {
-      showError(err.message || 'Login failed');
+      showApiError(err, 'Login failed');
     } finally {
       setLoading(false);
     }

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createMenuItem } from '../api';
-import { showError, showSuccess } from '../toast';
+import { showError, showSuccess, showApiError } from '../toast';
 import './AddMenuItemPage.css';
 
 type NewMenuItem = {
@@ -73,7 +73,7 @@ const AddMenuItemPage = () => {
       showSuccess('Menu item added successfully!');
       navigate('/vendor/dashboard/menu');
     } catch (err: any) {
-      showError(err.message || 'Failed to add menu item.');
+      showApiError(err, 'Failed to add menu item.');
     } finally {
       setIsSubmitting(false);
     }

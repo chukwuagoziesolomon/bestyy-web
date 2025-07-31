@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './UserLogin.css';
 import { signupUser } from './api';
-import { showError, showSuccess } from './toast';
+import { showError, showSuccess, showApiError } from './toast';
 import { useNavigate } from 'react-router-dom';
 
 const SignUp = () => {
@@ -103,13 +103,7 @@ const SignUp = () => {
       
       navigate('/user/dashboard'); // Redirect to user dashboard after sign up
     } catch (err: any) {
-      let message = 'Sign up failed. Please try again.';
-      if (err?.response?.data?.message) {
-        message = err.response.data.message;
-      } else if (err.message) {
-        message = err.message;
-      }
-      showError(message);
+      showApiError(err, 'Sign up failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -256,23 +250,28 @@ const SignUp = () => {
           </button>
         </form>
         
-        <div style={{ 
-          textAlign: 'center', 
+        <div style={{
+          textAlign: 'center',
           marginTop: '24px',
           color: '#666666',
           fontSize: '14px'
         }}>
           Already have an account?{' '}
-          <a 
-            href="/login" 
-            style={{ 
-              color: '#10B981', 
-              textDecoration: 'none', 
-              fontWeight: '600' 
+          <button
+            type="button"
+            onClick={() => navigate('/login/user')}
+            style={{
+              color: '#10B981',
+              textDecoration: 'none',
+              fontWeight: '600',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '14px'
             }}
           >
             Log in
-          </a>
+          </button>
         </div>
       </div>
     </div>

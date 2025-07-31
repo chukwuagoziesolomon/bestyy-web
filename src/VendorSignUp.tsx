@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './UserLogin.css';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { signupVendor, createMenuItem } from './api';
-import { showError, showSuccess, showInfo } from './toast';
+import { showError, showSuccess, showInfo, showApiError } from './toast';
 
 const steps = [
   'Account',
@@ -89,6 +89,7 @@ const VendorSignUp = () => {
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const [hasAddedMenuItem, setHasAddedMenuItem] = useState(false); // Track if user has added at least one menu item
 
   useEffect(() => {
     localStorage.setItem('vendor_signup_data', JSON.stringify(formData));
@@ -222,6 +223,8 @@ const VendorSignUp = () => {
         if (res && res.token) {
           localStorage.setItem('vendor_token', res.token);
         }
+        // Show success message for completing step 3 (Location & Delivery)
+        showSuccess('Account setup completed successfully! Now add your menu items.');
         setStep(3); // Move to menu items step
       } else {
         setStep(s => Math.min(s + 1, steps.length - 1));
@@ -230,7 +233,7 @@ const VendorSignUp = () => {
         }
       }
     } catch (err: any) {
-      showError(err.message || 'Failed to create vendor account');
+      showApiError(err, 'Failed to create vendor account');
     } finally {
       setIsLoading(false);
     }
@@ -238,36 +241,61 @@ const VendorSignUp = () => {
 
   const back = () => setStep(s => Math.max(s - 1, 0));
 
-  // Menu item submission handler for step 3
-  const handleMenuSubmit = async () => {
+  // Add single menu item handler
+  const handleAddSingleMenuItem = async () => {
+    // Find the first menu item that has a dish name (the current one being added)
+    const currentItem = formData.menuItems.find(item => item.dishName.trim() !== '');
+    if (!currentItem) {
+      showError('Please fill in the dish name before adding.');
+      return;
+    }
+
     setIsLoading(true);
     try {
       const token = localStorage.getItem('vendor_token');
       if (!token) throw new Error('No vendor token found. Please log in again.');
-      // Collect menu items (filter out empty ones)
-      const items: MenuItem[] = formData.menuItems.filter((item: MenuItem) => item.dishName.trim() && item.price.trim());
-      for (const item of items) {
-        console.log('Image type:', typeof item.image, 'instanceof File:', item.image instanceof File, 'value:', item.image);
-        await createMenuItem(token, {
-          dish_name: item.dishName,
-          item_description: item.item_description,
-          price: parseFloat(item.price).toFixed(2),
-          category: item.category === 'Other' ? (item.otherCategory || 'Other') : item.category,
-          quantity: parseInt(item.quantity, 10),
-          image: item.image,
-          available_now: item.available,
-        });
-      }
-      showSuccess('Menu items added successfully!');
-      setStep(4); // Move to plan selection page
-      localStorage.removeItem('vendor_signup_data');
-      localStorage.removeItem('vendor_signup_step');
-      // Do NOT remove vendor_token here so dashboard works after sign-up
+
+      await createMenuItem(token, {
+        dish_name: currentItem.dishName,
+        item_description: currentItem.item_description,
+        price: parseFloat(currentItem.price).toFixed(2),
+        category: currentItem.category === 'Other' ? (currentItem.otherCategory || 'Other') : currentItem.category,
+        quantity: parseInt(currentItem.quantity, 10),
+        image: currentItem.image,
+        available_now: currentItem.available,
+      });
+
+      showSuccess('Menu item added successfully!');
+
+      // Mark that user has added at least one menu item
+      setHasAddedMenuItem(true);
+
+      // Reset form to empty state for adding another item
+      setFormData(prev => ({
+        ...prev,
+        menuItems: [{
+          dishName: '',
+          price: '',
+          category: '',
+          otherCategory: '',
+          image: undefined,
+          available: true,
+          item_description: '',
+          quantity: '',
+        }]
+      }));
     } catch (err: any) {
-      showError(err.message || 'Failed to add menu items');
+      showApiError(err, 'Failed to add menu item');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Skip menu items and go to plan selection
+  const handleSkipMenuItems = () => {
+    localStorage.removeItem('vendor_signup_data');
+    localStorage.removeItem('vendor_signup_step');
+    navigate('/vendor/plan-selection'); // Navigate directly to plan selection page
   };
 
   return (
@@ -507,20 +535,12 @@ const VendorSignUp = () => {
             </div>
             <h2 className="user-login__heading">Add some Items to Your Menu</h2>
             <h3 className="user-login__subheading">Help customers discover your food, you can add more later</h3>
-            <form autoComplete="off" onSubmit={(e) => { e.preventDefault(); addMenuItem(); }}>
-              {formData.menuItems.map((item, index) => (
+            <form autoComplete="off" onSubmit={(e) => { e.preventDefault(); handleAddSingleMenuItem(); }}>
+              {/* Show only the first menu item for adding */}
+              {formData.menuItems.slice(0, 1).map((item, index) => (
                 <div key={index} style={{ marginBottom: 20, padding: 16, border: '1px solid #e5e7eb', borderRadius: 8 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <h4 style={{ margin: 0 }}>Item {index + 1}</h4>
-                    {formData.menuItems.length > 1 && (
-                      <button 
-                        type="button" 
-                        onClick={() => removeMenuItem(index)}
-                        style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: 4, padding: '4px 8px', cursor: 'pointer' }}
-                      >
-                        Remove
-                      </button>
-                    )}
+                    <h4 style={{ margin: 0 }}>Add Menu Item</h4>
                   </div>
               <div className="form-group">
                 <label className="floating-label">Dish Name</label>
@@ -629,14 +649,22 @@ const VendorSignUp = () => {
                 </div>
               ))}
               <div className="signup-btn-group--wide">
-                {formData.menuItems.some(item => item.dishName.trim() !== '') ? (
-                  <button className="signup-btn-back" type="button" onClick={handleMenuSubmit} disabled={isLoading}>
-                    {isLoading ? 'Submitting...' : 'Save Menu & Continue'}
-                  </button>
-                ) : (
-                  <button className="signup-btn-back" type="button" onClick={() => navigate('/vendor/plan-selection')}>Skip for Now</button>
-                )}
-                <button className="signup-btn-next" type="button" onClick={() => navigate('/vendor/plan-selection')}>Next</button>
+                <button
+                  className="signup-btn-back"
+                  type="button"
+                  onClick={handleSkipMenuItems}
+                  disabled={isLoading}
+                >
+                  {hasAddedMenuItem ? 'Next' : 'Skip Now'}
+                </button>
+                <button
+                  className="signup-btn-next"
+                  type="button"
+                  onClick={handleAddSingleMenuItem}
+                  disabled={isLoading || !formData.menuItems.some(item => item.dishName.trim() !== '')}
+                >
+                  {isLoading ? 'Adding...' : 'Add'}
+                </button>
               </div>
             </form>
           </>

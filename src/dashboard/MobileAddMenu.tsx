@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Camera, ChevronDown } from 'lucide-react';
 import { createMenuItem } from '../api';
-import { showError, showSuccess } from '../toast';
+import { showError, showSuccess, showApiError } from '../toast';
 
 const MobileAddMenu: React.FC = () => {
   const navigate = useNavigate();
@@ -70,7 +70,7 @@ const MobileAddMenu: React.FC = () => {
       showSuccess('Menu item added successfully!');
       navigate('/vendor/dashboard/menu');
     } catch (err: any) {
-      showError(err.message || 'Failed to add menu item');
+      showApiError(err, 'Failed to add menu item');
     } finally {
       setLoading(false);
     }

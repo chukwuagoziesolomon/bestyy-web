@@ -53,6 +53,7 @@ import MobileAddAddressPage from './user/MobileAddAddressPage';
 import ResponsiveOrderDetails from './components/ResponsiveOrderDetails';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import './toast.css'; // Custom toast styling
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem('token');
@@ -78,7 +79,20 @@ function App() {
 
   return (
     <BrowserRouter>
-      <ToastContainer />
+      <ToastContainer
+        position="top-center"
+        autoClose={6000}
+        hideProgressBar={true}
+        newestOnTop={true}
+        closeOnClick={true}
+        rtl={false}
+        pauseOnFocusLoss={false}
+        draggable={false}
+        pauseOnHover={true}
+        theme="light"
+        limit={3}
+        closeButton={false}
+      />
       <Routes>
         <Route path="/" element={
           <>

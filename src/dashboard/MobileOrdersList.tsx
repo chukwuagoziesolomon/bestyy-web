@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, List, Utensils, Table, Filter, ChevronDown, Menu } from 'lucide-react';
+import { Home, List, Utensils, Table, Filter, ChevronDown, Menu, X, BarChart3, CreditCard, HelpCircle, Settings } from 'lucide-react';
 import { fetchVendorOrders } from '../api';
 import { showError } from '../toast';
 
@@ -18,6 +18,7 @@ const MobileOrdersList: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedFilter, setSelectedFilter] = useState('Last 30 Days');
+  const [showDropdown, setShowDropdown] = useState(false);
   
   const token = localStorage.getItem('vendor_token');
 
@@ -127,8 +128,112 @@ const MobileOrdersList: React.FC = () => {
         }}>
           Orders List
         </h1>
-        <Menu size={24} color="#6b7280" />
+        <div
+          onClick={() => setShowDropdown(!showDropdown)}
+          style={{
+            cursor: 'pointer',
+            padding: '8px',
+            borderRadius: '8px',
+            transition: 'background-color 0.2s ease'
+          }}
+        >
+          <Menu size={24} color="#6b7280" />
+        </div>
       </div>
+
+      {/* Dropdown Menu */}
+      {showDropdown && (
+        <>
+          {/* Backdrop */}
+          <div
+            onClick={() => setShowDropdown(false)}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0,0,0,0.5)',
+              zIndex: 40
+            }}
+          />
+
+          {/* Dropdown Content */}
+          <div style={{
+            position: 'fixed',
+            top: '80px',
+            right: '16px',
+            background: '#fff',
+            borderRadius: '12px',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+            zIndex: 50,
+            minWidth: '200px',
+            overflow: 'hidden'
+          }}>
+            {/* Header */}
+            <div style={{
+              padding: '16px 20px',
+              borderBottom: '1px solid #f3f4f6',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <span style={{
+                fontSize: '16px',
+                fontWeight: 600,
+                color: '#1f2937'
+              }}>
+                Menu
+              </span>
+              <X
+                size={20}
+                color="#6b7280"
+                style={{ cursor: 'pointer' }}
+                onClick={() => setShowDropdown(false)}
+              />
+            </div>
+
+            {/* Menu Items */}
+            <div style={{ padding: '8px 0' }}>
+              {[
+                { icon: <BarChart3 size={20} />, label: 'Analytics', onClick: () => navigate('/vendor/dashboard/analytics') },
+                { icon: <CreditCard size={20} />, label: 'Payout', onClick: () => navigate('/vendor/dashboard/payouts') },
+                { icon: <HelpCircle size={20} />, label: 'Help/Support', onClick: () => navigate('/vendor/dashboard/support') },
+                { icon: <Settings size={20} />, label: 'Profile', onClick: () => navigate('/vendor/dashboard/profile') }
+              ].map((item, index) => (
+                <div
+                  key={index}
+                  onClick={() => {
+                    item.onClick();
+                    setShowDropdown(false);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '12px 20px',
+                    cursor: 'pointer',
+                    background: 'transparent',
+                    color: '#374151',
+                    transition: 'all 0.2s ease',
+                    fontSize: '14px',
+                    fontWeight: 500
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#f9fafb';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent';
+                  }}
+                >
+                  {item.icon}
+                  {item.label}
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Filters */}
       <div style={{

@@ -673,6 +673,62 @@
 .plan-card__cta--pro:hover {
   filter: brightness(0.95);
 }
+
+/* Responsive Plan Section */
+@media (max-width: 768px) {
+  .plan-cards-row {
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 0 1rem;
+    max-width: 100%;
+  }
+
+  .plan-card {
+    min-width: unset;
+    max-width: 100%;
+    padding: 2rem 1.5rem 0 1.5rem;
+  }
+
+  .plan-card__title {
+    font-size: 1.3rem;
+  }
+
+  .plan-card__price {
+    font-size: 2.2rem;
+  }
+
+  .plan-card__features li {
+    font-size: 1rem;
+  }
+
+  .plan-card__cta {
+    font-size: 1rem;
+    padding: 1rem 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .plan-cards-row {
+    padding: 0 0.5rem;
+  }
+
+  .plan-card {
+    padding: 1.5rem 1rem 0 1rem;
+    border-radius: 1.5rem;
+  }
+
+  .plan-card__title {
+    font-size: 1.2rem;
+  }
+
+  .plan-card__price {
+    font-size: 2rem;
+  }
+
+  .plan-card__cta {
+    border-radius: 0 0 1.5rem 1.5rem;
+  }
+}
 .user-login__heading {
   text-align: center;
   font-size: 2.2rem;
