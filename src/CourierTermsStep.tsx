@@ -1,6 +1,12 @@
 import React from 'react';
 
-const CourierTermsStep = ({ onCancel, onAgree }: { onCancel: () => void; onAgree: () => void }) => (
+interface CourierTermsStepProps {
+  onCancel: () => void;
+  onAgree: () => void;
+  isLoading?: boolean;
+}
+
+const CourierTermsStep: React.FC<CourierTermsStepProps> = ({ onCancel, onAgree, isLoading = false }) => (
   <div style={{ minHeight: '100vh', background: '#fafbfc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Nunito Sans, sans-serif' }}>
     <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 2px 24px #f3f4f6', padding: '40px 36px 32px 36px', maxWidth: 700, width: '100%' }}>
       <h2 style={{ fontWeight: 700, fontSize: 26, color: '#059669', marginBottom: 18 }}>Terms and Conditions</h2>
@@ -38,7 +44,7 @@ const CourierTermsStep = ({ onCancel, onAgree }: { onCancel: () => void; onAgree
       </div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 24 }}>
         <button type="button" onClick={onCancel} style={{ background: '#fff', color: '#059669', fontWeight: 600, fontSize: 18, border: '2px solid #e5e7eb', borderRadius: 12, padding: '14px 36px', cursor: 'pointer' }}>Cancel</button>
-        <button type="button" onClick={onAgree} style={{ background: '#059669', color: '#fff', fontWeight: 700, fontSize: 18, border: 'none', borderRadius: 12, padding: '14px 36px', cursor: 'pointer' }}>Agree</button>
+        <button type="button" onClick={onAgree} disabled={isLoading} style={{ background: '#059669', color: '#fff', fontWeight: 700, fontSize: 18, border: 'none', borderRadius: 12, padding: '14px 36px', cursor: 'pointer', opacity: isLoading ? 0.7 : 1 }}>{isLoading ? 'Signing up...' : 'Agree'}</button>
       </div>
     </div>
   </div>

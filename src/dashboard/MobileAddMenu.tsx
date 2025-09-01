@@ -114,15 +114,16 @@ const MobileAddMenu: React.FC = () => {
       </div>
 
       {/* Form Content */}
-      <div style={{ padding: '24px 16px' }}>
-        {/* Upload Photo Section */}
+      <div style={{ padding: '16px 12px' }}>
+        {/* Photo Upload Section */}
         <div style={{
           background: '#fff',
-          borderRadius: '12px',
-          padding: '32px 24px',
-          marginBottom: '24px',
+          borderRadius: '8px',
+          padding: '20px 16px',
+          marginBottom: '16px',
           textAlign: 'center',
-          border: '2px dashed #e5e7eb'
+          border: '2px dashed #e5e7eb',
+          position: 'relative'
         }}>
           {imagePreview ? (
             <div style={{ position: 'relative' }}>
@@ -175,22 +176,25 @@ const MobileAddMenu: React.FC = () => {
             onChange={handleImageUpload}
             style={{
               position: 'absolute',
+              top: 0,
+              left: 0,
               opacity: 0,
               width: '100%',
               height: '100%',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              zIndex: 1
             }}
           />
         </div>
 
         {/* Item Name */}
-        <div style={{ marginBottom: '24px' }}>
+        <div style={{ marginBottom: '16px' }}>
           <label style={{
             display: 'block',
-            fontSize: '16px',
+            fontSize: '14px',
             fontWeight: 600,
             color: '#374151',
-            marginBottom: '8px'
+            marginBottom: '6px'
           }}>
             Item Name
           </label>
@@ -201,25 +205,26 @@ const MobileAddMenu: React.FC = () => {
             placeholder="Jollof rice"
             style={{
               width: '100%',
-              padding: '16px',
+              padding: '12px',
               border: '1px solid #e5e7eb',
-              borderRadius: '12px',
+              borderRadius: '8px',
               fontSize: '16px',
               background: '#fff',
               outline: 'none',
-              transition: 'border-color 0.2s ease'
+              transition: 'border-color 0.2s ease',
+              boxSizing: 'border-box'
             }}
           />
         </div>
 
         {/* Item Description */}
-        <div style={{ marginBottom: '24px' }}>
+        <div style={{ marginBottom: '16px' }}>
           <label style={{
             display: 'block',
-            fontSize: '16px',
+            fontSize: '14px',
             fontWeight: 600,
             color: '#374151',
-            marginBottom: '8px'
+            marginBottom: '6px'
           }}>
             Item Description
           </label>
@@ -227,29 +232,30 @@ const MobileAddMenu: React.FC = () => {
             value={formData.item_description}
             onChange={(e) => setFormData(prev => ({ ...prev, item_description: e.target.value }))}
             placeholder="Smoky jollof rice with sausage, carrot and diced chunks"
-            rows={4}
+            rows={3}
             style={{
               width: '100%',
-              padding: '16px',
+              padding: '12px',
               border: '1px solid #e5e7eb',
-              borderRadius: '12px',
+              borderRadius: '8px',
               fontSize: '16px',
               background: '#fff',
               outline: 'none',
               resize: 'vertical',
-              transition: 'border-color 0.2s ease'
+              transition: 'border-color 0.2s ease',
+              boxSizing: 'border-box'
             }}
           />
         </div>
 
         {/* Category */}
-        <div style={{ marginBottom: '24px', position: 'relative' }}>
+        <div style={{ marginBottom: '16px', position: 'relative' }}>
           <label style={{
             display: 'block',
-            fontSize: '16px',
+            fontSize: '14px',
             fontWeight: 600,
             color: '#374151',
-            marginBottom: '8px'
+            marginBottom: '6px'
           }}>
             Category
           </label>
@@ -257,15 +263,16 @@ const MobileAddMenu: React.FC = () => {
             onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
             style={{
               width: '100%',
-              padding: '16px',
+              padding: '12px',
               border: '1px solid #e5e7eb',
-              borderRadius: '12px',
+              borderRadius: '8px',
               fontSize: '16px',
               background: '#fff',
               cursor: 'pointer',
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center'
+              alignItems: 'center',
+              boxSizing: 'border-box'
             }}
           >
             <span style={{ color: formData.category ? '#374151' : '#9ca3af' }}>
@@ -282,7 +289,7 @@ const MobileAddMenu: React.FC = () => {
               right: 0,
               background: '#fff',
               border: '1px solid #e5e7eb',
-              borderRadius: '12px',
+              borderRadius: '8px',
               boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
               zIndex: 10,
               maxHeight: '200px',
@@ -296,7 +303,7 @@ const MobileAddMenu: React.FC = () => {
                     setShowCategoryDropdown(false);
                   }}
                   style={{
-                    padding: '12px 16px',
+                    padding: '10px 12px',
                     cursor: 'pointer',
                     borderBottom: index < categories.length - 1 ? '1px solid #f3f4f6' : 'none',
                     transition: 'background-color 0.2s ease'
@@ -316,13 +323,13 @@ const MobileAddMenu: React.FC = () => {
         </div>
 
         {/* Optional Variation */}
-        <div style={{ marginBottom: '24px' }}>
+        <div style={{ marginBottom: '16px' }}>
           <label style={{
             display: 'block',
-            fontSize: '16px',
+            fontSize: '14px',
             fontWeight: 600,
             color: '#374151',
-            marginBottom: '8px'
+            marginBottom: '6px'
           }}>
             Optional Variation
           </label>
@@ -333,25 +340,26 @@ const MobileAddMenu: React.FC = () => {
             placeholder="Size, Portions"
             style={{
               width: '100%',
-              padding: '16px',
+              padding: '12px',
               border: '1px solid #e5e7eb',
-              borderRadius: '12px',
+              borderRadius: '8px',
               fontSize: '16px',
               background: '#fff',
               outline: 'none',
-              transition: 'border-color 0.2s ease'
+              transition: 'border-color 0.2s ease',
+              boxSizing: 'border-box'
             }}
           />
         </div>
 
         {/* Price */}
-        <div style={{ marginBottom: '40px' }}>
+        <div style={{ marginBottom: '24px' }}>
           <label style={{
             display: 'block',
-            fontSize: '16px',
+            fontSize: '14px',
             fontWeight: 600,
             color: '#374151',
-            marginBottom: '8px'
+            marginBottom: '6px'
           }}>
             Price
           </label>
@@ -362,35 +370,36 @@ const MobileAddMenu: React.FC = () => {
             placeholder="1500"
             style={{
               width: '100%',
-              padding: '16px',
+              padding: '12px',
               border: '1px solid #e5e7eb',
-              borderRadius: '12px',
+              borderRadius: '8px',
               fontSize: '16px',
               background: '#fff',
               outline: 'none',
-              transition: 'border-color 0.2s ease'
+              transition: 'border-color 0.2s ease',
+              boxSizing: 'border-box'
             }}
           />
         </div>
 
-        {/* Upload Button */}
+        {/* Add Item Button */}
         <button
           onClick={handleSubmit}
           disabled={loading}
           style={{
             width: '100%',
-            padding: '16px',
+            padding: '14px',
             background: loading ? '#9ca3af' : '#10b981',
             color: '#fff',
             border: 'none',
-            borderRadius: '12px',
-            fontSize: '16px',
+            borderRadius: '8px',
+            fontSize: '15px',
             fontWeight: 600,
             cursor: loading ? 'not-allowed' : 'pointer',
             transition: 'background-color 0.2s ease'
           }}
         >
-          {loading ? 'Uploading...' : 'Upload'}
+          {loading ? 'Adding Item...' : 'Add Item'}
         </button>
       </div>
     </div>

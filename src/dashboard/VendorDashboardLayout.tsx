@@ -1,10 +1,20 @@
-import React from 'react';
+import React, { ReactNode } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Home, List, Utensils, Archive, BarChart2, CreditCard, User, Table } from 'lucide-react';
 import DashboardNavbar from '../components/DashboardNavbar';
 import { useResponsive } from '../hooks/useResponsive';
 
-const mainLinks = [
+interface VendorDashboardLayoutProps {
+  children?: ReactNode;
+}
+
+interface LinkItem {
+  label: string;
+  path: string;
+  icon: React.ReactNode;
+}
+
+const mainLinks: LinkItem[] = [
   { label: 'Dashboard', path: '/vendor/dashboard', icon: <Home size={20} /> },
   { label: 'Food Orders', path: '/vendor/dashboard/orders', icon: <List size={20} /> },
   { label: 'Menu', path: '/vendor/dashboard/menu', icon: <Utensils size={20} /> },
@@ -17,7 +27,7 @@ const bottomLinks = [
   { label: 'Profile Settings', path: '/vendor/dashboard/profile', icon: <User size={20} /> },
 ];
 
-function VendorDashboardLayout() {
+const VendorDashboardLayout: React.FC<VendorDashboardLayoutProps> = ({ children }) => {
   const location = useLocation();
   const { isMobile, isTablet } = useResponsive();
 

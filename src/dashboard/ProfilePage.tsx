@@ -4,16 +4,25 @@ import { showError, showSuccess } from '../toast';
 import { Edit2, Camera } from 'lucide-react';
 
 const ProfilePage = () => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('vendor_token') || localStorage.getItem('token');
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
-  // Editable fields
+  // Editable fields - expanded to include all vendor signup data
   const [fullName, setFullName] = useState('');
   const [nickName, setNickName] = useState('');
   const [language, setLanguage] = useState('en');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [businessAddress, setBusinessAddress] = useState('');
+  const [businessCategory, setBusinessCategory] = useState('');
+  const [businessDescription, setBusinessDescription] = useState('');
+  const [deliveryRadius, setDeliveryRadius] = useState('');
+  const [serviceAreas, setServiceAreas] = useState('');
+  const [openingHours, setOpeningHours] = useState('');
+  const [closingHours, setClosingHours] = useState('');
+  const [offersDelivery, setOffersDelivery] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(false);
   const [pushNotifications, setPushNotifications] = useState(false);
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
@@ -21,18 +30,32 @@ const ProfilePage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // First, try to populate from localStorage vendor_profile
+    // First, try to populate from localStorage vendor_profile with ALL signup data
     const savedVendor = localStorage.getItem('vendor_profile');
     if (savedVendor) {
       try {
         const vendor = JSON.parse(savedVendor);
-        setFullName(vendor.business_name || '');
+        console.log('Loading vendor profile data:', vendor);
+
+        // Populate all fields from signup data
+        setFullName(vendor.user?.full_name || vendor.business_name || '');
         setNickName(vendor.user?.first_name || '');
         setEmail(vendor.user?.email || '');
+        setPhone(vendor.phone || '');
+        setBusinessAddress(vendor.business_address || '');
+        setBusinessCategory(vendor.business_category || '');
+        setBusinessDescription(vendor.business_description || '');
+        setDeliveryRadius(vendor.delivery_radius || '');
+        setServiceAreas(vendor.service_areas || '');
+        setOpeningHours(vendor.opening_hours?.replace(':00', '') || ''); // Remove seconds
+        setClosingHours(vendor.closing_hours?.replace(':00', '') || ''); // Remove seconds
+        setOffersDelivery(vendor.offers_delivery || false);
         setProfilePicture(vendor.logo || null);
-        // Optionally set other fields if available
+
+        console.log('Profile fields populated from signup data');
       } catch (e) {
-        // Ignore parse errors and proceed to fetch from backend
+        console.error('Error parsing vendor profile:', e);
+        // Continue to fetch from backend
       }
     }
     async function getProfile() {
@@ -84,14 +107,50 @@ const ProfilePage = () => {
         nick_name: nickName,
         language: language,
         email: email,
+        phone: phone,
+        business_address: businessAddress,
+        business_category: businessCategory,
+        business_description: businessDescription,
+        delivery_radius: deliveryRadius,
+        service_areas: serviceAreas,
+        opening_hours: openingHours ? `${openingHours}:00` : '', // Add seconds for backend
+        closing_hours: closingHours ? `${closingHours}:00` : '', // Add seconds for backend
+        offers_delivery: offersDelivery,
         email_notifications: emailNotifications,
         push_notifications: pushNotifications,
         profile_picture: previewPicture !== null ? previewPicture : profilePicture,
+        logo: previewPicture !== null ? previewPicture : profilePicture, // Also save as logo
       };
+
       await updateUserProfile(token, profileData);
       setProfile((prev: any) => ({ ...prev, ...profileData }));
       setProfilePicture(profileData.profile_picture);
       setPreviewPicture(null);
+
+      // Update the vendor_profile in localStorage with the new data
+      const currentVendorProfile = JSON.parse(localStorage.getItem('vendor_profile') || '{}');
+      const updatedVendorProfile = {
+        ...currentVendorProfile,
+        business_name: fullName,
+        phone: phone,
+        business_address: businessAddress,
+        business_category: businessCategory,
+        business_description: businessDescription,
+        delivery_radius: deliveryRadius,
+        service_areas: serviceAreas,
+        opening_hours: profileData.opening_hours,
+        closing_hours: profileData.closing_hours,
+        offers_delivery: offersDelivery,
+        logo: profileData.logo,
+        user: {
+          ...currentVendorProfile.user,
+          email: email,
+          first_name: nickName,
+          full_name: fullName
+        }
+      };
+      localStorage.setItem('vendor_profile', JSON.stringify(updatedVendorProfile));
+
       showSuccess('Profile updated successfully!');
       setEditMode(false);
     } catch (error: any) {
@@ -183,6 +242,119 @@ const ProfilePage = () => {
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="example@gmail.com" style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6 }} disabled={!editMode} />
             </div>
         </div>
+
+          {/* Business Information Section */}
+          <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 2px 12px #f3f4f6', border: '1.5px solid #f3f4f6', marginBottom: 32, padding: 32 }}>
+            <div style={{ fontWeight: 700, fontSize: 20, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span role="img" aria-label="business">🏢</span> Business Information
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
+              <div>
+                <label style={{ fontWeight: 600, fontSize: 15 }}>Phone Number</label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={e => setPhone(e.target.value)}
+                  placeholder="Phone Number"
+                  style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6 }}
+                  disabled={!editMode}
+                />
+              </div>
+              <div>
+                <label style={{ fontWeight: 600, fontSize: 15 }}>Business Category</label>
+                <input
+                  type="text"
+                  value={businessCategory}
+                  onChange={e => setBusinessCategory(e.target.value)}
+                  placeholder="Business Category"
+                  style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6 }}
+                  disabled={!editMode}
+                />
+              </div>
+            </div>
+            <div style={{ marginBottom: 24 }}>
+              <label style={{ fontWeight: 600, fontSize: 15 }}>Business Address</label>
+              <input
+                type="text"
+                value={businessAddress}
+                onChange={e => setBusinessAddress(e.target.value)}
+                placeholder="Business Address"
+                style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6 }}
+                disabled={!editMode}
+              />
+            </div>
+            <div style={{ marginBottom: 24 }}>
+              <label style={{ fontWeight: 600, fontSize: 15 }}>Business Description</label>
+              <textarea
+                value={businessDescription}
+                onChange={e => setBusinessDescription(e.target.value)}
+                placeholder="Describe your business..."
+                rows={3}
+                style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6, resize: 'vertical' }}
+                disabled={!editMode}
+              />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
+              <div>
+                <label style={{ fontWeight: 600, fontSize: 15 }}>Delivery Radius (km)</label>
+                <input
+                  type="text"
+                  value={deliveryRadius}
+                  onChange={e => setDeliveryRadius(e.target.value)}
+                  placeholder="Delivery Radius"
+                  style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6 }}
+                  disabled={!editMode}
+                />
+              </div>
+              <div>
+                <label style={{ fontWeight: 600, fontSize: 15 }}>Service Areas</label>
+                <input
+                  type="text"
+                  value={serviceAreas}
+                  onChange={e => setServiceAreas(e.target.value)}
+                  placeholder="Service Areas"
+                  style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6 }}
+                  disabled={!editMode}
+                />
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
+              <div>
+                <label style={{ fontWeight: 600, fontSize: 15 }}>Opening Hours</label>
+                <input
+                  type="time"
+                  value={openingHours}
+                  onChange={e => setOpeningHours(e.target.value)}
+                  style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6 }}
+                  disabled={!editMode}
+                />
+              </div>
+              <div>
+                <label style={{ fontWeight: 600, fontSize: 15 }}>Closing Hours</label>
+                <input
+                  type="time"
+                  value={closingHours}
+                  onChange={e => setClosingHours(e.target.value)}
+                  style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6 }}
+                  disabled={!editMode}
+                />
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <input
+                type="checkbox"
+                id="offersDelivery"
+                checked={offersDelivery}
+                onChange={e => setOffersDelivery(e.target.checked)}
+                disabled={!editMode}
+                style={{ width: 18, height: 18 }}
+              />
+              <label htmlFor="offersDelivery" style={{ fontWeight: 600, fontSize: 15, cursor: editMode ? 'pointer' : 'default' }}>
+                Offers Delivery Service
+              </label>
+            </div>
+          </div>
+
           {/* Notifications Section */}
           <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 2px 12px #f3f4f6', border: '1.5px solid #f3f4f6', marginBottom: 32, padding: 32 }}>
             <div style={{ fontWeight: 700, fontSize: 20, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10 }}>

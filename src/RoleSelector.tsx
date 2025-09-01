@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import './RoleSelection.css';
 import { showError } from './toast';
 
@@ -28,14 +28,22 @@ const roleToDashboard: Record<string, string> = {
   courier: '/courier/dashboard',
 };
 
-const RoleSelector = () => {
-  const location = useLocation();
-  const roles: string[] = location.state?.roles || [];
+interface RoleSelectorProps {
+  roles: string[];
+  onRoleSelect?: (role: string) => void;
+}
+
+const RoleSelector: React.FC<RoleSelectorProps> = ({ roles, onRoleSelect }) => {
+  const navigate = useNavigate();
 
   const handleSelect = (role: string) => {
     const route = roleToDashboard[role];
     if (route) {
-      window.location.href = route;
+      if (onRoleSelect) {
+        onRoleSelect(role);
+      } else {
+        navigate(route, { replace: true });
+      }
     } else {
       showError('Unknown role selected.');
     }

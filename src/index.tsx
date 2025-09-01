@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
+import './App.css'; // Import App.css to make CSS variables available globally
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 

@@ -1,42 +1,129 @@
-import React, { useEffect, useState } from 'react';
-import { Moon, Bell, User } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { Moon, Bell, User, Loader2 } from 'lucide-react';
 import { fetchUserOrders } from '../api';
-import { showError } from '../toast';
+import { showError, showSuccess } from '../toast';
 
 const UserDashboardHome = () => {
-  const firstName = localStorage.getItem('first_name') || 'there';
-  const token = localStorage.getItem('token');
-  const [orders, setOrders] = useState<any[]>([]);
-  const [bookings, setBookings] = useState<any[]>([]);
+  const { user } = useAuth();
+  const [orders, setOrders] = useState([]);
+  const [bookings, setBookings] = useState([]);
+  const [isLoading, setIsLoading] = useState(false); // Changed to false initially
+  const [error, setError] = useState<string | null>(null);
 
+  // Get user data safely
   useEffect(() => {
-    async function getOrdersAndBookings() {
-      try {
-        if (token) {
-          const data = await fetchUserOrders(token);
-          setOrders(data.orders || []);
-          setBookings(data.bookings || []);
-        }
-      } catch (err: any) {
-        showError(err.message || 'Could not fetch orders/bookings');
+    try {
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        setUser(JSON.parse(userData));
       }
+    } catch (err) {
+      console.error('Error parsing user data:', err);
+      setUser({});
     }
-    getOrdersAndBookings();
-  }, [token]);
+  }, []);
+
+  const firstName = user?.first_name || 'there';
+
+  const fetchData = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        setError('No authentication token found. Please log in again.');
+        return;
+      }
+      
+      setIsLoading(true);
+      setError(null);
+      
+      const data = await fetchUserOrders(token);
+      console.log('Fetched orders data:', data);
+      
+      if (!data) {
+        throw new Error('No data received from server');
+      }
+      
+      setOrders(Array.isArray(data.orders) ? data.orders : []);
+      setBookings(Array.isArray(data.bookings) ? data.bookings : []);
+      
+      if ((!data.orders || data.orders.length === 0) && (!data.bookings || data.bookings.length === 0)) {
+        showSuccess('No orders or bookings found. Start ordering now!');
+      }
+    } catch (err) {
+      const errorMsg = err.response?.data?.detail || err.message || 'Could not fetch orders and bookings';
+      console.error('Error fetching data:', err);
+      setError(errorMsg);
+      showError(errorMsg);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []); // Remove dependencies to prevent infinite loop
+
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchData();
+  }, []); // Only run once on mount
+
+  if (isLoading) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '50vh',
+        fontFamily: 'Nunito Sans, sans-serif',
+      }}>
+        <Loader2 className="animate-spin" size={40} />
+        <p style={{ marginTop: '1rem' }}>Loading your dashboard...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{
+        padding: '2rem',
+        textAlign: 'center',
+        fontFamily: 'Nunito Sans, sans-serif',
+      }}>
+        <h2 style={{ color: '#ef4444' }}>Error Loading Dashboard</h2>
+        <p style={{ color: '#6b7280', margin: '1rem 0' }}>{error}</p>
+        <button 
+          onClick={fetchData}
+          style={{
+            padding: '0.5rem 1rem',
+            backgroundColor: '#4f46e5',
+            color: 'white',
+            border: 'none',
+            borderRadius: '0.375rem',
+            cursor: 'pointer',
+            fontWeight: 600,
+          }}
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div style={{ fontFamily: 'Nunito Sans, sans-serif', color: '#111' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
         <div>
-          <h2 style={{ fontWeight: 600, fontSize: 28, margin: 0 }}>Welcome Back, {firstName}!</h2>
+          <h2 style={{ fontWeight: 600, fontSize: 28, margin: 0 }}>Welcome Back, {user?.first_name || 'User'}!</h2>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
           <Moon size={22} style={{ color: '#222', cursor: 'pointer' }} />
           <Bell size={22} style={{ color: '#222', cursor: 'pointer' }} />
-          <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Profile" style={{ width: 38, height: 38, borderRadius: '50%' }} />
+          <div style={{ width: 38, height: 38, borderRadius: '50%', backgroundColor: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold' }}>
+            {user?.first_name?.[0]?.toUpperCase() || <User size={20} />}
+          </div>
         </div>
       </div>
+
       {/* My Orders */}
       <div style={{ marginBottom: 40 }}>
         <h2 style={{ fontWeight: 600, fontSize: 32, marginBottom: 0 }}>My Orders</h2>
@@ -57,7 +144,7 @@ const UserDashboardHome = () => {
                 <tr>
                   <td colSpan={5} style={{ textAlign: 'center', padding: 32 }}>
                     <a
-                      href="https://wa.me/234XXXXXXXXXX" // <-- replace with your WhatsApp number
+                      href="https://wa.me/234XXXXXXXXXX" // Replace with your WhatsApp number
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{ textDecoration: 'none', color: '#10b981', display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}
@@ -70,9 +157,16 @@ const UserDashboardHome = () => {
                 </tr>
               ) : (
                 orders.map((order, i) => (
-                  <tr key={i} style={{ background: '#fff', borderBottom: i !== orders.length - 1 ? '1.5px solid #f3f4f6' : 'none' }}>
+                  <tr key={order.id || i} style={{ background: '#fff', borderBottom: i !== orders.length - 1 ? '1.5px solid #f3f4f6' : 'none' }}>
                     <td style={{ padding: '20px 18px', display: 'flex', alignItems: 'center', gap: 14, fontWeight: 700, color: '#222' }}>
-                      <img src={order.logo || 'https://upload.wikimedia.org/wikipedia/commons/d/d2/Pizza_Hut_logo.svg'} alt={order.name || 'Order'} style={{ width: 38, height: 38, borderRadius: 8, objectFit: 'contain', background: '#fff', border: '1.5px solid #f3f4f6' }} />
+                      <img 
+                        src={order.logo || 'https://upload.wikimedia.org/wikipedia/commons/d/d2/Pizza_Hut_logo.svg'} 
+                        alt={order.name || 'Order'} 
+                        style={{ width: 38, height: 38, borderRadius: 8, objectFit: 'contain', background: '#fff', border: '1.5px solid #f3f4f6' }} 
+                        onError={(e) => {
+                          e.target.src = 'https://upload.wikimedia.org/wikipedia/commons/d/d2/Pizza_Hut_logo.svg';
+                        }}
+                      />
                       {order.name || order.restaurant || 'Order'}
                     </td>
                     <td style={{ padding: '20px 18px', color: '#222', fontWeight: 600 }}>{order.address || order.delivery_address || '-'}</td>
@@ -90,30 +184,27 @@ const UserDashboardHome = () => {
           </table>
         </div>
       </div>
+
       {/* My Bookings */}
       <div>
         <h2 style={{ fontWeight: 600, fontSize: 32, marginBottom: 0 }}>My Bookings</h2>
         <div style={{ color: '#888', fontSize: 16, marginBottom: 18 }}>See your upcoming and past bookings. View details, get directions, or modify plans through Bestie</div>
         
-          {bookings.length === 0 ? (
-            <div style={{ color: '#888', fontSize: 18, padding: 32 }}>No bookings found.</div>
-          ) : (
+        {bookings.length === 0 ? (
+          <div style={{ color: '#888', fontSize: 18, padding: 32 }}>No bookings found.</div>
+        ) : (
           <div style={{ position: 'relative', overflow: 'hidden' }}>
             {/* Bookings Carousel */}
             <div style={{ 
               display: 'flex', 
               gap: 24, 
               overflowX: 'auto', 
-              padding: '8px 0', 
-              scrollbarWidth: 'none', 
-              msOverflowStyle: 'none',
-              // Hide scrollbar for webkit browsers
-              ...(typeof window !== 'undefined' && 'webkitScrollbar' in document.createElement('div').style ? {
-                '::-webkit-scrollbar': { display: 'none' }
-              } : {})
+              padding: '8px 0',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none'
             }}>
               {bookings.map((booking, i) => (
-                <div key={i} style={{ 
+                <div key={booking.id || i} style={{ 
                   minWidth: 320, 
                   flex: '0 0 auto',
                   position: 'relative',
@@ -219,12 +310,12 @@ const UserDashboardHome = () => {
                   </div>
                 </div>
               ))}
-                </div>
-              </div>
-          )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-export default UserDashboardHome; 
+export default UserDashboardHome;

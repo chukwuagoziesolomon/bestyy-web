@@ -1,5 +1,6 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+
 import { ArrowLeft } from 'lucide-react';
 import { useResponsive } from './hooks/useResponsive';
 import './UserLogin.css';
@@ -39,11 +40,20 @@ const years = [
 
 const PaymentPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isMobile, isTablet } = useResponsive();
+
+  const userType = (location.state as any)?.userType || 'vendor';
+  const backToPlan = userType === 'courier' ? '/courier/plan-selection' : '/vendor/plan-selection';
+  const successRoute = userType === 'courier' ? '/success' : '/vendor/signup-success';
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate('/vendor/signup-success');
+    if (userType === 'courier') {
+      navigate(successRoute, { state: { userType: 'courier' } });
+    } else {
+      navigate(successRoute);
+    }
   };
 
   // Mobile/Tablet Layout
@@ -69,7 +79,7 @@ const PaymentPage = () => {
             size={24}
             color="#333"
             style={{ cursor: 'pointer' }}
-            onClick={() => navigate('/vendor/plan-selection')}
+            onClick={() => navigate(backToPlan)}
           />
           <h1 style={{
             fontSize: '20px',
@@ -279,7 +289,7 @@ const PaymentPage = () => {
   return (
     <div style={{ minHeight: '100vh', background: '#fafbfb', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2.5rem 0', fontFamily: 'Montserrat, Nunito Sans, Arial, sans-serif' }}>
       <div style={{ maxWidth: 420, width: '100%', background: '#fff', borderRadius: 18, boxShadow: '0 8px 40px rgba(16,24,40,0.08)', padding: '2.5rem 2.2rem 2.5rem 2.2rem', margin: '2.5rem 0', position: 'relative' }}>
-        <button onClick={() => navigate('/vendor/plan-selection')} style={{ background: 'none', border: 'none', position: 'absolute', left: 24, top: 24, cursor: 'pointer', padding: 0 }} aria-label="Back">
+        <button onClick={() => navigate(backToPlan)} style={{ background: 'none', border: 'none', position: 'absolute', left: 24, top: 24, cursor: 'pointer', padding: 0 }} aria-label="Back">
           {backArrow}
         </button>
         <div style={{ textAlign: 'center', fontWeight: 800, fontSize: '1.45rem', marginBottom: '2.2rem', letterSpacing: '-0.5px' }}>

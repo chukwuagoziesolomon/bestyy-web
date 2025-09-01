@@ -1,91 +1,92 @@
 import { toast, ToastOptions } from 'react-toastify';
 
+// Simple, clean toast configuration
 const defaultOptions: ToastOptions = {
   position: 'top-center',
-  autoClose: 6000, // 6 seconds - perfect timing for reading
-  hideProgressBar: true, // Remove the progress bar
+  autoClose: 4000,
+  hideProgressBar: true,
   closeOnClick: true,
-  pauseOnHover: true,
-  draggable: false, // Disable dragging for cleaner look
-  closeButton: false, // Remove default close button
-  className: 'custom-toast',
+  pauseOnHover: false,
+  draggable: false,
+  closeButton: false,
+  pauseOnFocusLoss: false,
 };
 
-export const showSuccess = (message: string, options?: ToastOptions) =>
-  toast.success(message, {
-    ...defaultOptions,
-    ...options,
-    className: 'custom-toast custom-toast-success',
-    icon: () => '✨'
-  });
+export const showSuccess = (message: string) =>
+  toast.success(message, defaultOptions);
 
-export const showError = (message: string, options?: ToastOptions) =>
-  toast.error(message, {
-    ...defaultOptions,
-    ...options,
-    className: 'custom-toast custom-toast-error',
-    icon: () => '⚠️'
-  });
+export const showError = (message: string) =>
+  toast.error(message, defaultOptions);
 
-export const showInfo = (message: string, options?: ToastOptions) =>
-  toast.info(message, {
-    ...defaultOptions,
-    ...options,
-    className: 'custom-toast custom-toast-info',
-    icon: () => '💡'
-  });
+export const showInfo = (message: string) =>
+  toast.info(message, defaultOptions);
 
-export const showWarning = (message: string, options?: ToastOptions) =>
-  toast.warn(message, {
-    ...defaultOptions,
-    ...options,
-    className: 'custom-toast custom-toast-warning',
-    icon: () => '🔔'
-  });
+export const showWarning = (message: string) =>
+  toast.warn(message, defaultOptions);
 
-// Network error handler
-export const showNetworkError = (customMessage?: string) => {
-  const defaultMessage = "Network connection error. Please check your internet connection and try again.";
-  toast.error(customMessage || defaultMessage, {
-    ...defaultOptions,
-    className: 'custom-toast custom-toast-error custom-toast-network',
-    icon: () => '📡',
-    autoClose: 8000, // Longer duration for network errors (8 seconds)
-  });
-};
+// Alias for mobile - same as regular showError
+export const showMobileError = showError;
 
-// Helper function to detect and show appropriate error messages
+// Simple API error handler
 export const showApiError = (error: any, fallbackMessage?: string) => {
-  // Check if it's a network error
-  if (!navigator.onLine) {
-    showNetworkError("You're offline. Please check your internet connection.");
-    return;
-  }
-
-  // Check for common network error patterns
-  if (error?.code === 'NETWORK_ERROR' ||
-      error?.message?.toLowerCase().includes('network') ||
-      error?.message?.toLowerCase().includes('fetch') ||
-      error?.name === 'NetworkError' ||
-      !error?.response) {
-    showNetworkError();
-    return;
-  }
-
-  // Check for timeout errors
-  if (error?.code === 'ECONNABORTED' ||
-      error?.message?.toLowerCase().includes('timeout')) {
-    showNetworkError("Request timed out. Please check your connection and try again.");
-    return;
-  }
-
-  // Show regular error message
   let message = fallbackMessage || 'An error occurred. Please try again.';
   if (error?.response?.data?.message) {
     message = error.response.data.message;
   } else if (error?.message) {
     message = error.message;
   }
-
   showError(message);
 };
+
+// Utility to dismiss all toasts
+export const dismissAllToasts = () => {
+  toast.dismiss();
+};
+
+// Debug function to test tokens - available in browser console
+if (typeof window !== 'undefined') {
+  (window as any).testTokens = async () => {
+    const API_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000';
+    const token = localStorage.getItem('token');
+    const vendorToken = localStorage.getItem('vendor_token');
+
+    console.log('=== TOKEN TEST RESULTS ===');
+    console.log('User token:', token ? 'Present' : 'Missing');
+    console.log('Vendor token:', vendorToken ? 'Present' : 'Missing');
+
+    if (token) {
+      try {
+        const response = await fetch(`${API_URL}/user/orders/user/`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Token ${token}`,
+          },
+        });
+        console.log('User token test - Status:', response.status);
+        const data = await response.json();
+        console.log('User token test - Response:', data);
+      } catch (err) {
+        console.error('User token test - Error:', err);
+      }
+    }
+
+    if (vendorToken) {
+      try {
+        const response = await fetch(`${API_URL}/orders/vendor/tracking/`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Token ${vendorToken}`,
+          },
+        });
+        console.log('Vendor token test - Status:', response.status);
+        const data = await response.json();
+        console.log('Vendor token test - Response:', data);
+      } catch (err) {
+        console.error('Vendor token test - Error:', err);
+      }
+    }
+    console.log('========================');
+  };
+}

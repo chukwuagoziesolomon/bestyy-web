@@ -4,13 +4,13 @@ import './Testimonials.css';
 const testimonials = [
   {
     name: 'Silver Snow',
-    review: 'Bestie made booking so easy! The AI chat is super smart and fast.',
+    review: 'Highly Recommend! Used  Bestyy Delivery for a last-minute delivery. They were quick to respond, affordable, and handled my packages with care. Will be my go-to delivery service from now on! 5 stars.',
     avatar: 'https://via.placeholder.com/64?text=SS',
     rating: 5,
   },
   {
     name: 'Silver Snow',
-    review: 'Splitting payments with friends was a breeze. Love it!',
+    review: 'Simple, fast, and reliable, this app makes delivery easy and even brings access to essentials in rural areas.Also stress free.',
     avatar: 'https://via.placeholder.com/64?text=SS',
     rating: 5,
   },

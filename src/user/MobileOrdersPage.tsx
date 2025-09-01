@@ -1,21 +1,130 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { ChevronDown, X, Check, Loader } from 'lucide-react';
 import HamburgerMenu from '../components/HamburgerMenu';
 import BottomNav from '../components/BottomNav';
 import { useResponsive } from '../hooks/useResponsive';
+import { fetchUserOrders, fetchVendorOrders } from '../api';
+import { showMobileError } from '../toast';
+
+interface Order {
+  id: number;
+  customer_name?: string;
+  vendor_name?: string;
+  restaurant?: string;
+  name?: string;
+  item_name?: string;
+  status?: string;
+  total_amount?: number;
+  price?: string;
+  created_at: string;
+  date?: string;
+  delivery_address?: string;
+  customer_address?: string;
+  // Add more possible fields from backend
+  order_id?: string;
+  items?: any[];
+  delivery_fee?: number;
+  subtotal?: number;
+  [key: string]: any; // Allow any additional fields from backend
+}
 
 const MobileOrdersPage = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const [showFilters, setShowFilters] = useState(false);
   const [activeFilter, setActiveFilter] = useState('All');
+  const [availableStatuses, setAvailableStatuses] = useState<string[]>([]);
   const [hoveredFilter, setHoveredFilter] = useState<string | null>(null);
   const [activeOrderId, setActiveOrderId] = useState<number | null>(null);
-  
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   // Use the responsive hook
-  const { isMobile, isTablet, isDesktop, redirectToDesktop } = useResponsive();
-  
+  const { isMobile, isTablet } = useResponsive();
+
+  const token = localStorage.getItem('token');
+  const vendorToken = localStorage.getItem('vendor_token');
+
+  console.log('=== TOKEN DEBUG INFO ===');
+  console.log('User token:', token ? `Present (${token.substring(0, 10)}...)` : 'Missing');
+  console.log('Vendor token:', vendorToken ? `Present (${vendorToken.substring(0, 10)}...)` : 'Missing');
+  console.log('User token length:', token?.length);
+  console.log('Vendor token length:', vendorToken?.length);
+  console.log('All localStorage keys:', Object.keys(localStorage));
+  console.log('========================');
+
+  // Fetch orders from API
+  useEffect(() => {
+    async function loadOrders() {
+      console.log('Mobile Orders - Token:', token ? 'Present' : 'Missing');
+      console.log('Mobile Orders - Token length:', token?.length);
+
+      if (!token && !vendorToken) {
+        console.log('Mobile Orders - No authentication token found, not loading orders');
+        setLoading(false);
+        return;
+      }
+
+      console.log('Mobile Orders - Starting to fetch orders');
+      setLoading(true);
+      setError(null);
+      try {
+        // Check if user is a vendor and use appropriate endpoint
+        let data;
+        if (vendorToken) {
+          console.log('Mobile Orders - Fetching vendor orders');
+          data = await fetchVendorOrders(vendorToken);
+        } else if (token) {
+          console.log('Mobile Orders - Fetching user orders');
+          data = await fetchUserOrders(token);
+        } else {
+          throw new Error('No authentication token found');
+        }
+        console.log('Mobile Orders - Raw API response:', data);
+
+        // Use same data processing as desktop orders page
+        const ordersArray = data.orders || data || [];
+
+        console.log('Mobile Orders - Processed orders array:', ordersArray);
+        console.log('Mobile Orders - Number of orders:', ordersArray.length);
+
+        if (ordersArray.length > 0) {
+          console.log('Mobile Orders - First order structure:', ordersArray[0]);
+        }
+
+        // Extract unique statuses from the orders for dynamic filtering
+        const statusMap: { [key: string]: boolean } = {};
+        ordersArray.forEach((order: Order) => {
+          if (order.status && order.status.trim() !== '') {
+            const formattedStatus = order.status.charAt(0).toUpperCase() + order.status.slice(1).toLowerCase();
+            statusMap[formattedStatus] = true;
+          }
+        });
+        const uniqueStatuses = Object.keys(statusMap);
+
+        console.log('Mobile Orders - Available statuses from backend:', uniqueStatuses);
+
+        setOrders(ordersArray);
+        setAvailableStatuses(uniqueStatuses);
+      } catch (err: any) {
+        console.error('=== MOBILE ORDERS ERROR DEBUG ===');
+        console.error('Error object:', err);
+        console.error('Error message:', err.message);
+        console.error('Error stack:', err.stack);
+        console.error('================================');
+
+        const errorMessage = err.message || 'Could not fetch orders';
+        setError(errorMessage);
+        // Use mobile-specific toast for better mobile experience
+        showMobileError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadOrders();
+  }, [token, vendorToken]);
+
   // TEMPORARILY DISABLED - Redirect to desktop if needed
   // useEffect(() => {
   //   if (isDesktop) {
@@ -23,8 +132,8 @@ const MobileOrdersPage = () => {
   //   }
   // }, [isDesktop, redirectToDesktop]);
   
-  // Show loading state while checking device type
-  if (isMobile === null) {
+  // Show loading state while checking device type or loading data
+  if (isMobile === null || loading) {
     return (
       <div style={{
         display: 'flex',
@@ -38,53 +147,55 @@ const MobileOrdersPage = () => {
     );
   }
 
-  // Sample order data matching the image
-  const orders = [
-    {
-      id: 1,
-      name: 'Fried Rice and Turkey, Sa...',
-      restaurant: 'Korede Spagetti',
-      date: '15, Jun 2025, 12:00',
-      price: 'N 5000',
-      status: 'Delivered'
-    },
-    {
-      id: 2,
-      name: 'Jollof Rice and Chicken',
-      restaurant: 'Kilimanjaro Restaurant',
-      date: '14, Jun 2025, 19:30',
-      price: 'N 4500',
-      status: 'Processing'
-    },
-    {
-      id: 3,
-      name: 'Pounded Yam and Egusi',
-      restaurant: 'Buka Hut',
-      date: '13, Jun 2025, 13:15',
-      price: 'N 3500',
-      status: 'Cancelled'
-    },
-    {
-      id: 4,
-      name: 'Amala and Ewedu',
-      restaurant: 'Mama Put',
-      date: '12, Jun 2025, 20:45',
-      price: 'N 2500',
-      status: 'Delivered'
-    }
-  ];
+  // Filter orders based on active filter - work directly with backend data
+  const filteredOrders = orders.filter(order => {
+    if (activeFilter === 'All') return true;
+    return order.status?.toLowerCase() === activeFilter.toLowerCase();
+  });
 
-  const getStatusStyles = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'delivered':
-        return { color: '#10B981', background: '#D1FAE5' };
-      case 'processing':
-        return { color: '#F59E0B', background: '#FEF3C7' };
-      case 'cancelled':
-        return { color: '#EF4444', background: '#FEE2E2' };
-      default:
-        return { color: '#6B7280', background: '#F3F4F6' };
+  // Helper function to format date from backend
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return 'Invalid date';
     }
+  };
+
+
+
+  // Dynamic status styles based on status type
+  const getStatusStyles = (status: string) => {
+    const normalizedStatus = status?.toLowerCase() || '';
+
+    // Success statuses (green)
+    if (normalizedStatus.includes('delivered') || normalizedStatus.includes('completed') || normalizedStatus.includes('success')) {
+      return { background: '#d1fae5', color: '#10b981' };
+    }
+
+    // Error/Cancelled statuses (red)
+    if (normalizedStatus.includes('cancelled') || normalizedStatus.includes('rejected') || normalizedStatus.includes('failed')) {
+      return { background: '#fee2e2', color: '#ef4444' };
+    }
+
+    // Warning/Pending statuses (yellow/orange)
+    if (normalizedStatus.includes('pending') || normalizedStatus.includes('processing') || normalizedStatus.includes('waiting')) {
+      return { background: '#fef3c7', color: '#d97706' };
+    }
+
+    // Info statuses (blue)
+    if (normalizedStatus.includes('confirmed') || normalizedStatus.includes('accepted') || normalizedStatus.includes('preparing')) {
+      return { background: '#dbeafe', color: '#2563eb' };
+    }
+
+    // Default (gray)
+    return { background: '#e5e7eb', color: '#4b5563' };
   };
 
   const handleViewDetails = (orderId: number) => {
@@ -262,7 +373,7 @@ const MobileOrdersPage = () => {
                   <X size={20} color="#6B7280" />
                 </button>
               </div>
-              {['All', 'Delivered', 'Processing', 'Cancelled'].map((filter) => (
+              {['All', ...availableStatuses].map((filter) => (
                 <div 
                   key={filter}
                   onClick={() => handleFilterSelect(filter)}
@@ -287,16 +398,50 @@ const MobileOrdersPage = () => {
           )}
         </div>
 
+        {/* Error State */}
+        {error && (
+          <div style={{
+            backgroundColor: '#FEE2E2',
+            border: '1px solid #FECACA',
+            borderRadius: '8px',
+            padding: '16px',
+            marginBottom: '16px'
+          }}>
+            <p style={{
+              color: '#DC2626',
+              margin: 0,
+              fontSize: '14px'
+            }}>
+              {error}
+            </p>
+          </div>
+        )}
+
         {/* Orders List */}
         <div style={{
           display: 'flex',
           flexDirection: 'column',
           gap: '16px'
         }}>
-          {orders.map((order) => {
-            const statusStyle = getStatusStyles(order.status);
-            return (
-              <div 
+          {filteredOrders.length === 0 ? (
+            <div style={{
+              textAlign: 'center',
+              padding: '40px 20px',
+              color: '#6B7280'
+            }}>
+              <p style={{ margin: 0, fontSize: '16px' }}>
+                {activeFilter === 'All' ? 'No orders found.' : `No ${activeFilter.toLowerCase()} orders found.`}
+              </p>
+            </div>
+          ) : (
+            filteredOrders.map((order) => {
+              const statusStyle = getStatusStyles(order.status || '');
+
+              // Log the order structure for debugging
+              console.log('Rendering order:', order);
+
+              return (
+              <div
                 key={order.id}
                 onClick={() => handleViewDetails(order.id)}
                 onMouseDown={() => setActiveOrderId(order.id)}
@@ -326,31 +471,55 @@ const MobileOrdersPage = () => {
                       fontWeight: '600',
                       color: '#111827'
                     }}>
-                      {order.name}
+                      Order #{order.id || order.order_id || 'Unknown'}
                     </h3>
-                    <p style={{
-                      margin: '0',
-                      fontSize: '14px',
-                      color: '#6B7280',
-                      marginBottom: '4px'
-                    }}>
-                      {order.restaurant}
-                    </p>
+                    {order.customer_name && (
+                      <p style={{
+                        margin: '0',
+                        fontSize: '14px',
+                        color: '#6B7280',
+                        marginBottom: '4px'
+                      }}>
+                        Customer: {order.customer_name}
+                      </p>
+                    )}
+                    {order.item_name && (
+                      <p style={{
+                        margin: '0',
+                        fontSize: '12px',
+                        color: '#9CA3AF',
+                        marginBottom: '4px'
+                      }}>
+                        Items: {order.item_name}
+                      </p>
+                    )}
+                    {order.delivery_address && (
+                      <p style={{
+                        margin: '0',
+                        fontSize: '12px',
+                        color: '#9CA3AF',
+                        marginBottom: '4px'
+                      }}>
+                        Address: {order.delivery_address}
+                      </p>
+                    )}
                     <p style={{
                       margin: '0',
                       fontSize: '12px',
                       color: '#9CA3AF'
                     }}>
-                      {order.date}
+                      {formatDate(order.created_at)}
                     </p>
                   </div>
-                  <span style={{
-                    fontSize: '16px',
-                    fontWeight: '700',
-                    color: '#111827'
-                  }}>
-                    {order.price}
-                  </span>
+                  {order.total_amount && (
+                    <span style={{
+                      fontSize: '16px',
+                      fontWeight: '700',
+                      color: '#111827'
+                    }}>
+                      ₦{order.total_amount.toLocaleString()}
+                    </span>
+                  )}
                 </div>
                 <div style={{
                   display: 'flex',
@@ -371,22 +540,31 @@ const MobileOrdersPage = () => {
                     alignItems: 'center',
                     gap: '4px'
                   }}>
-                    {order.status === 'Delivered' && (
-                      <Check size={12} strokeWidth={3} />
-                    )}
-                    {order.status === 'Processing' && (
-                      <span style={{
-                        display: 'inline-block',
-                        width: '12px',
-                        height: '12px',
-                        borderRadius: '50%',
-                        backgroundColor: statusStyle.color
-                      }}></span>
-                    )}
-                    {order.status === 'Cancelled' && (
-                      <X size={12} strokeWidth={3} />
-                    )}
-                    {order.status}
+                    {(() => {
+                      const normalizedStatus = order.status?.toLowerCase() || '';
+
+                      // Success statuses get check icon
+                      if (normalizedStatus.includes('delivered') || normalizedStatus.includes('completed') || normalizedStatus.includes('success')) {
+                        return <Check size={12} strokeWidth={3} />;
+                      }
+
+                      // Error/Cancelled statuses get X icon
+                      if (normalizedStatus.includes('cancelled') || normalizedStatus.includes('rejected') || normalizedStatus.includes('failed')) {
+                        return <X size={12} strokeWidth={3} />;
+                      }
+
+                      // All other statuses get a dot
+                      return (
+                        <span style={{
+                          display: 'inline-block',
+                          width: '12px',
+                          height: '12px',
+                          borderRadius: '50%',
+                          backgroundColor: statusStyle.color
+                        }}></span>
+                      );
+                    })()}
+                    {order.status || 'Unknown'}
                   </span>
                   <button
                     onClick={(e) => {
@@ -415,8 +593,9 @@ const MobileOrdersPage = () => {
                   </button>
                 </div>
               </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
 

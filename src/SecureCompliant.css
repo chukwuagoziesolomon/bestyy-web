@@ -1,6 +1,6 @@
 .secure-compliant {
-  background: #f9fafb;
   padding: 3rem 0 4rem 0;
+  overflow-x: hidden; /* Prevent horizontal scroll */
 }
 
 .secure-compliant__card {
@@ -15,6 +15,8 @@
   box-shadow: 0 4px 32px rgba(16,185,129,0.04);
   gap: 2.5rem;
   flex-direction: row-reverse; /* Reversed for this section */
+  width: 100%; /* Ensure full width usage */
+  box-sizing: border-box; /* Include padding in width calculation */
 }
 
 .secure-compliant__left {
@@ -98,19 +100,21 @@
   padding: 1.5rem;
   box-shadow: 0 2px 16px rgba(16,185,129,0.06);
   display: flex;
+  flex-direction: column;
   align-items: center;
+  text-align: center;
   gap: 1rem;
   font-size: 1.1rem;
   font-weight: 500;
   color: #1a1a1a;
   max-width: 300px;
+  margin: 0 auto;
 }
 
 .secure-compliant__emoji {
-  width: 36px;
-  height: 36px;
-  object-fit: contain;
-  flex-shrink: 0;
+  width: 80px;
+  height: auto;
+  margin-bottom: 0.5rem;
 }
 
 @media (max-width: 1100px) {
@@ -145,23 +149,69 @@
   }
 }
 
+/* Mobile styles - Fixed width and padding */
 @media (max-width: 600px) {
+  .secure-compliant {
+    padding: 2rem 1rem 3rem 1rem; /* Add horizontal padding to section */
+  }
+  
   .secure-compliant__card {
-    padding: 1.2rem 0.2rem;
+    width: 343px; /* Fixed width as requested */
+    max-width: calc(100vw - 2rem); /* Ensure it doesn't exceed viewport */
+    padding: 1.5rem 1rem; /* Adjusted padding */
     border-radius: 1.2rem;
+    margin: 0 auto 2rem auto; /* Center the card */
   }
   
   .secure-compliant__phone {
     width: 250px;
+    max-width: 100%; /* Ensure phone doesn't overflow */
   }
   
-  .secure-compliant__tip-card {
-    padding: 1rem;
-    font-size: 1rem;
-    max-width: 100%;
+  .secure-compliant__left {
+    padding: 0;
+    width: 100%;
   }
   
   .secure-compliant__left h2 {
     font-size: 1.4rem;
+    padding: 0 0.5rem; /* Add small padding */
+  }
+  
+  .secure-compliant__description {
+    padding: 0 0.5rem; /* Add padding to description */
+  }
+  
+  .secure-compliant__tip-card {
+    padding: 1.2rem 0.8rem;
+    max-width: 280px; /* Limit tip card width */
+    margin: 0 auto;
+    width: 100%;
+  }
+  
+  .secure-compliant__emoji {
+    width: 52px;
+    height: 52px;
+    object-fit: contain;
+  }
+  
+  .secure-compliant__tip-card span {
+    font-size: 1rem;
+    line-height: 1.4;
+    font-weight: 500;
+    color: #333;
+  }
+  
+  .secure-compliant__cta {
+    font-size: 1rem;
+    padding: 0.7rem 1.8rem;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 375px) {
+  .secure-compliant__card {
+    width: calc(100vw - 2rem); /* Use full available width minus margins */
+    max-width: 343px;
   }
 }

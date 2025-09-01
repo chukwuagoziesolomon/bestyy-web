@@ -1,6 +1,10 @@
-import React from 'react';
+import React, { ReactNode } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useResponsive } from '../hooks/useResponsive';
+
+interface CourierDashboardLayoutProps {
+  children?: ReactNode;
+}
 
 function sidebarLinkStyle(active: boolean): React.CSSProperties {
   return {
@@ -12,7 +16,7 @@ function sidebarLinkStyle(active: boolean): React.CSSProperties {
   };
 }
 
-const CourierDashboardLayout: React.FC = () => {
+const CourierDashboardLayout: React.FC<CourierDashboardLayoutProps> = ({ children }) => {
   const location = useLocation();
   const { isMobile, isTablet } = useResponsive();
 

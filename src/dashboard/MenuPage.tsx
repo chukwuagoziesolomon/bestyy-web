@@ -41,7 +41,7 @@ const MenuPage = () => {
   }, [token]);
 
   const handleEditClick = (id: number) => {
-    navigate(`/dashboard/menu/edit/${id}`);
+    navigate(`/vendor/dashboard/menu/edit/${id}`);
   };
 
   const handleDelete = async (id: number) => {

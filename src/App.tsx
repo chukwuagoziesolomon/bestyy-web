@@ -1,67 +1,112 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import './toast.css'; // Custom toast styling
+
+// Layout Components
 import Navbar from './Navbar';
+import Footer from './Footer';
+
+// Auth Components
+import UserLogin from './UserLogin';
+import CompleteProfileForm from './components/auth/CompleteProfileForm';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import VendorSignUp from './VendorSignUp';
+import CourierSignUp from './CourierSignUp';
+
+// Public Pages
 import HeroSection from './HeroSection';
 import HowItWorks from './HowItWorks';
 import Testimonials from './Testimonials';
 import FAQ from './FAQ';
-import Footer from './Footer';
 import RoleSelection from './RoleSelection';
-import UserLogin from './UserLogin';
-import SignUp from './SignUp';
-import VendorSignUp from './VendorSignUp';
-import './App.css';
-import VendorDashboardLayout from './dashboard/VendorDashboardLayout';
-import ResponsiveVendorDashboard from './dashboard/ResponsiveVendorDashboard';
-import ResponsiveOrders from './dashboard/ResponsiveOrders';
-import ResponsiveMenu from './dashboard/ResponsiveMenu';
-import ResponsiveStock from './dashboard/ResponsiveStock';
-import ResponsiveAddMenu from './dashboard/ResponsiveAddMenu';
-import ResponsiveAnalytics from './dashboard/ResponsiveAnalytics';
-import ResponsivePayout from './dashboard/ResponsivePayout';
-import CourierDashboard from './dashboard/CourierDashboard';
-import CourierDeliveryList from './dashboard/CourierDeliveryList';
-import CourierAnalytics from './dashboard/CourierAnalytics';
-import CourierPayout from './dashboard/CourierPayout';
-import CourierProfile from './dashboard/CourierProfile';
-import MenuPage from './dashboard/MenuPage';
-import StockPage from './dashboard/StockPage';
-import AnalyticsPage from './dashboard/AnalyticsPage';
-import PayoutsPage from './dashboard/PayoutsPage';
-import ProfilePage from './dashboard/ProfilePage';
-import EditMenuItemPage from './dashboard/EditMenuItemPage';
-import AddMenuItemPage from './dashboard/AddMenuItemPage';
+import TermsAndConditions from './TermsAndConditions';
 import PlanSelection from './PlanSelection';
 import PaymentPage from './PaymentPage';
 import SuccessPage from './SuccessPage';
 import VendorSuccessPage from './VendorSuccessPage';
-import UserDashboardLayout from './user/UserDashboardLayout';
+import Profile from './pages/Profile';
+import UserSignup from './pages/UserSignup';
+
+// Vendor Components
+import VendorDashboardLayout from './dashboard/VendorDashboardLayout';
+import ResponsiveVendorDashboard from './dashboard/ResponsiveVendorDashboard';
+import ResponsiveOrders from './dashboard/ResponsiveOrders';
+import MenuPage from './dashboard/MenuPage';
+import AddMenuItemPage from './dashboard/AddMenuItemPage';
+import ResponsiveEditMenu from './dashboard/ResponsiveEditMenu';
+import AnalyticsPage from './dashboard/AnalyticsPage';
+import PayoutsPage from './dashboard/PayoutsPage';
+import ProfilePage from './dashboard/ProfilePage';
+
+// Courier Components
+import CourierDashboardLayout from './dashboard/CourierDashboardLayout';
+import CourierDashboardHome from './dashboard/CourierDashboardHome';
+import DeliveryListPage from './dashboard/DeliveryListPage';
+import CourierAnalytics from './dashboard/CourierAnalytics';
+import CourierPayout from './dashboard/CourierPayout';
+import CourierProfile from './dashboard/CourierProfile';
+
+// User Components
+import UserDashboardLayout from './dashboard/UserDashboardLayout';
 import ResponsiveDashboardHome from './user/ResponsiveDashboardHome';
+import MobileOrdersPage from './user/MobileOrdersPage';
+import ResponsiveOrderDetails from './components/ResponsiveOrderDetails';
 import ResponsiveSavedAddresses from './user/ResponsiveSavedAddresses';
+import MobileAddAddressPage from './user/MobileAddAddressPage';
 import ResponsiveFavorites from './user/ResponsiveFavorites';
 import ResponsiveBookings from './user/ResponsiveBookings';
 import ResponsivePaymentMethods from './user/ResponsivePaymentMethods';
 import ResponsiveAddCard from './user/ResponsiveAddCard';
 import ResponsiveProfileSettings from './user/ResponsiveProfileSettings';
-import CourierSignUp from './CourierSignUp';
-import TermsAndConditions from './TermsAndConditions';
-import CourierDashboardHome from './dashboard/CourierDashboardHome';
-import DeliveryListPage from './dashboard/DeliveryListPage';
-import CourierDashboardLayout from './dashboard/CourierDashboardLayout';
-import MobileOrdersPage from './user/MobileOrdersPage';
-import MobileAddAddressPage from './user/MobileAddAddressPage';
-import ResponsiveOrderDetails from './components/ResponsiveOrderDetails';
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import './toast.css'; // Custom toast styling
 
-function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const token = localStorage.getItem('token');
-  if (!token) {
-    return <Navigate to="/login/user" replace />;
+// Role-based route components
+const VendorRoute: React.FC = () => {
+  return (
+    <ProtectedRoute roles={['vendor', 'admin']}>
+      <VendorDashboardLayout>
+        <Outlet />
+      </VendorDashboardLayout>
+    </ProtectedRoute>
+  );
+};
+
+const CourierRoute: React.FC = () => {
+  return (
+    <ProtectedRoute roles={['courier', 'admin']}>
+      <CourierDashboardLayout>
+        <Outlet />
+      </CourierDashboardLayout>
+    </ProtectedRoute>
+  );
+};
+
+const UserRoute: React.FC = () => {
+  return (
+    <ProtectedRoute roles={['user', 'admin']}>
+      <UserDashboardLayout>
+        <Outlet />
+      </UserDashboardLayout>
+    </ProtectedRoute>
+  );
+};
+
+// Public route component that redirects authenticated users
+const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
+  
+  if (user) {
+    // Redirect based on user role
+    const redirectPath = user.role === 'vendor' ? '/vendor/dashboard' : 
+                        user.role === 'courier' ? '/courier/deliveries' : 
+                        '/user/dashboard';
+    return <Navigate to={redirectPath} replace />;
   }
+  
   return <>{children}</>;
-}
+};
 
 function App() {
   const [darkMode, setDarkMode] = useState(false);
@@ -81,90 +126,145 @@ function App() {
     <BrowserRouter>
       <ToastContainer
         position="top-center"
-        autoClose={6000}
+        autoClose={4000}
         hideProgressBar={true}
         newestOnTop={true}
         closeOnClick={true}
         rtl={false}
         pauseOnFocusLoss={false}
         draggable={false}
-        pauseOnHover={true}
+        pauseOnHover={false}
         theme="light"
         limit={3}
         closeButton={false}
       />
-      <Routes>
-        <Route path="/" element={
-          <>
-            <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
-            <HeroSection />
-            <HowItWorks />
-            <Testimonials />
-            <FAQ />
-            <Footer />
-          </>
-        } />
+      <AuthProvider>
+        <div className="app-container">
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={
+              <PublicRoute>
+                <>
+                  <main className="main-content">
+                    <Outlet />
+                  </main>
+                  <Footer />
+                </>
         
-        <Route path="/role-selection" element={<RoleSelection />} />
-        <Route path="/signup/user" element={<SignUp />} />
-        <Route path="/signup/vendor" element={<VendorSignUp />} />
-        <Route path="/signup/courier" element={<CourierSignUp />} />
-        <Route path="/terms" element={<TermsAndConditions />} />
-        <Route path="/vendor/plan-selection" element={<PlanSelection />} />
-        <Route path="/vendor/payment" element={<PaymentPage />} />
-        <Route path="/vendor/success" element={<SuccessPage />} />
-        <Route path="/vendor/signup-success" element={<VendorSuccessPage />} />
-        <Route path="/login/user" element={<UserLogin />} />
+              </PublicRoute>
+            }>
+              <Route index element={
+                <>
+                  <HeroSection />
+                  <HowItWorks />
+                  <Testimonials />
+                  <FAQ />
+                </>
+              } />
+            <Route path="role-selection" element={<RoleSelection />} />
+            <Route path="complete-profile" element={<CompleteProfileForm />} />
+            <Route path="plans" element={<PlanSelection />} />
+            <Route path="terms" element={<TermsAndConditions />} />
+          </Route>
+          
+          {/* Signup routes without navbar and footer */}
+          <Route path="/signup/user" element={
+            <PublicRoute>
+              <main>
+                <UserSignup />
+              </main>
+            </PublicRoute>
+          } />
+          <Route path="/signup/vendor" element={
+            <PublicRoute>
+              <main>
+                <VendorSignUp />
+              </main>
+            </PublicRoute>
+          } />
+          <Route path="/signup/courier" element={
+            <PublicRoute>
+              <main>
+                <CourierSignUp />
+              </main>
+            </PublicRoute>
+          } />
+          
+          {/* Login route without navbar */}
+          <Route path="/login" element={
+            <PublicRoute>
+              <main>
+                <UserLogin />
+              </main>
+            </PublicRoute>
+          } />
+          
+          {/* Profile route */}
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          } />
 
-        <Route path="/vendor/dashboard" element={
-          <PrivateRoute>
-            <VendorDashboardLayout />
-          </PrivateRoute>
-        }>
-          <Route index element={<ResponsiveVendorDashboard />} />
-          <Route path="orders" element={<ResponsiveOrders />} />
-          <Route path="menu" element={<ResponsiveMenu />} />
-          <Route path="menu/edit/:id" element={<EditMenuItemPage />} />
-          <Route path="menu/add" element={<ResponsiveAddMenu />} />
-          <Route path="stock" element={<ResponsiveStock />} />
-          <Route path="analytics" element={<ResponsiveAnalytics />} />
-          <Route path="payout" element={<ResponsivePayout />} />
-          <Route path="profile" element={<ResponsiveProfileSettings />} />
-          <Route path="analytics" element={<AnalyticsPage />} />
-          <Route path="payouts" element={<PayoutsPage />} />
-          <Route path="profile" element={<ProfilePage />} />
-        </Route>
+          {/* Vendor routes */}
+          <Route path="/vendor" element={<VendorRoute />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<ResponsiveVendorDashboard />} />
+            <Route path="orders" element={<ResponsiveOrders />} />
+            <Route path="menu" element={<MenuPage />} />
+            <Route path="menu/add" element={<AddMenuItemPage />} />
+            <Route path="menu/edit/:id" element={<ResponsiveEditMenu />} />
+            <Route path="analytics" element={<AnalyticsPage />} />
+            <Route path="payouts" element={<PayoutsPage />} />
+            <Route path="profile" element={<ProfilePage />} />
+          </Route>
 
-        <Route path="/courier" element={
-          <PrivateRoute>
-            <CourierDashboardLayout />
-          </PrivateRoute>
-        }>
-          <Route index element={<Navigate to="/courier/dashboard" replace />} />
-          <Route path="dashboard" element={<CourierDashboard />} />
-          <Route path="delivery-list" element={<CourierDeliveryList />} />
-          <Route path="analytics" element={<CourierAnalytics />} />
-          <Route path="payouts" element={<CourierPayout />} />
-          <Route path="profile" element={<CourierProfile />} />
-        </Route>
+          {/* Courier routes */}
+          <Route path="/courier" element={<CourierRoute />}>
+            <Route index element={<Navigate to="deliveries" replace />} />
+            <Route path="dashboard" element={<CourierDashboardHome />} />
+            <Route path="deliveries" element={<DeliveryListPage />} />
+            <Route path="analytics" element={<CourierAnalytics />} />
+            <Route path="payouts" element={<CourierPayout />} />
+            <Route path="profile" element={<CourierProfile />} />
+          </Route>
 
-        <Route path="/user/dashboard" element={
-          <PrivateRoute>
-            <UserDashboardLayout />
-          </PrivateRoute>
-        }>
-          <Route index element={<ResponsiveDashboardHome />} />
-          <Route path="orders" element={<MobileOrdersPage />} />
-          <Route path="orders/:orderId" element={<ResponsiveOrderDetails />} />
-          <Route path="addresses" element={<ResponsiveSavedAddresses />} />
-          <Route path="addresses/add" element={<MobileAddAddressPage />} />
-          <Route path="favorite" element={<ResponsiveFavorites />} />
-          <Route path="bookings" element={<ResponsiveBookings />} />
-          <Route path="payment-methods" element={<ResponsivePaymentMethods />} />
-          <Route path="payment-methods/add" element={<ResponsiveAddCard />} />
-          <Route path="profile" element={<ResponsiveProfileSettings />} />
-        </Route>
-      </Routes>
+          {/* User routes */}
+          <Route path="/user" element={<UserRoute />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<ResponsiveDashboardHome />} />
+            <Route path="orders" element={<MobileOrdersPage />} />
+            <Route path="orders/:id" element={<ResponsiveOrderDetails />} />
+            <Route path="addresses" element={<ResponsiveSavedAddresses />} />
+            <Route path="addresses/add" element={<MobileAddAddressPage />} />
+            <Route path="favorites" element={<ResponsiveFavorites />} />
+            <Route path="bookings" element={<ResponsiveBookings />} />
+            <Route path="payments" element={<ResponsivePaymentMethods />} />
+            <Route path="payments/add" element={<ResponsiveAddCard />} />
+            <Route path="settings" element={<ResponsiveProfileSettings />} />
+          </Route>
+
+          {/* Other routes */}
+          <Route path="/success" element={<SuccessPage />} />
+          <Route path="/vendor/success" element={<VendorSuccessPage />} />
+          <Route path="/payment" element={
+            <ProtectedRoute>
+              <PaymentPage />
+            </ProtectedRoute>
+          } />
+
+          {/* 404 route */}
+          <Route path="*" element={
+            <div className="min-h-screen flex items-center justify-center">
+              <div className="text-center">
+                <h1 className="text-4xl font-bold mb-4">404</h1>
+                <p className="text-xl">Page not found</p>
+              </div>
+            </div>
+          } />
+        </Routes>
+      </div>
+    </AuthProvider>
     </BrowserRouter>
   );
 }

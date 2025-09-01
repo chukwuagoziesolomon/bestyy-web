@@ -150,7 +150,13 @@ const PlanSelection = () => {
             </div>
 
             <button
-              onClick={() => navigate('/vendor/signup-success')}
+              onClick={() => {
+                if (userType === 'courier') {
+                  navigate('/success', { state: { userType: 'courier' } });
+                } else {
+                  navigate('/vendor/signup-success');
+                }
+              }}
               style={{
                 width: '100%',
                 padding: '16px',
@@ -258,7 +264,13 @@ const PlanSelection = () => {
             </div>
 
             <button
-              onClick={() => navigate('/vendor/payment')}
+              onClick={() => {
+                if (userType === 'courier') {
+                  navigate('/courier/payment', { state: { userType: 'courier' } });
+                } else {
+                  navigate('/vendor/payment', { state: { userType: 'vendor' } });
+                }
+              }}
               style={{
                 width: '100%',
                 padding: '16px',
@@ -308,7 +320,13 @@ const PlanSelection = () => {
             <li><span className="plan-card__check">✔</span> Receive Payout Via Bestie</li>
             <li><span className="plan-card__check">✔</span> Basic Dashboard Access</li>
           </ul>
-          <button className="plan-card__cta plan-card__cta--free" onClick={() => navigate('/vendor/signup-success')}>Get Started For Free</button>
+          <button className="plan-card__cta plan-card__cta--free" onClick={() => {
+            if (userType === 'courier') {
+              navigate('/success', { state: { userType: 'courier' } });
+            } else {
+              navigate('/vendor/signup-success');
+            }
+          }}>Get Started For Free</button>
         </div>
         <div className="plan-card plan-card--pro">
           <div className="plan-card__title">Bestie Pro</div>
@@ -321,11 +339,17 @@ const PlanSelection = () => {
             <li><span className="plan-card__check">✔</span> Early Access to New Features</li>
             <li><span className="plan-card__check">✔</span> Premium Support line</li>
           </ul>
-          <button className="plan-card__cta plan-card__cta--pro" onClick={() => navigate('/vendor/payment')}>Get Started</button>
+          <button className="plan-card__cta plan-card__cta--pro" onClick={() => {
+            if (userType === 'courier') {
+              navigate('/courier/payment', { state: { userType: 'courier' } });
+            } else {
+              navigate('/vendor/payment', { state: { userType: 'vendor' } });
+            }
+          }}>Get Started</button>
         </div>
       </div>
     </div>
   );
 };
 
-export default PlanSelection; 
+export default PlanSelection;

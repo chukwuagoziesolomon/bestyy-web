@@ -1,6 +1,6 @@
 .transparent-splitting {
-  background: white;
   padding: 3rem 0 4rem 0;
+  overflow-x: hidden; /* Prevent horizontal scroll */
 }
 
 .transparent-splitting__card {
@@ -14,6 +14,8 @@
   margin: 0 auto 2.5rem auto;
   box-shadow: 0 4px 32px rgba(16,185,129,0.04);
   gap: 2.5rem;
+  width: 100%; /* Ensure full width usage */
+  box-sizing: border-box; /* Include padding in width calculation */
 }
 
 .transparent-splitting__left {
@@ -55,7 +57,6 @@
   font-weight: 700;
   font-size: 1.1rem;
   transition: filter 0.2s;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   border: none;
   cursor: pointer;
   text-transform: uppercase;
@@ -93,19 +94,18 @@
   padding: 1.5rem;
   box-shadow: 0 2px 16px rgba(16,185,129,0.06);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 1rem;
-  font-size: 1.1rem;
-  font-weight: 500;
-  color: #1a1a1a;
+  text-align: center;
+  gap: 0.75rem;
   max-width: 300px;
+  margin: 0 auto;
 }
 
 .transparent-splitting__emoji {
-  width: 36px;
-  height: 36px;
-  object-fit: contain;
-  flex-shrink: 0;
+  width: 80px;
+  height: auto;
+  margin-bottom: 0.5rem;
 }
 
 @media (max-width: 1100px) {
@@ -135,20 +135,69 @@
   }
 }
 
+/* Mobile styles - Fixed width and padding */
 @media (max-width: 600px) {
+  .transparent-splitting {
+    padding: 2rem 1rem 3rem 1rem; /* Add horizontal padding to section */
+  }
+  
   .transparent-splitting__card {
-    padding: 1.2rem 0.2rem;
+    width: 343px; /* Fixed width as requested */
+    max-width: calc(100vw - 2rem); /* Ensure it doesn't exceed viewport */
+    padding: 1.5rem 1rem; /* Adjusted padding */
     border-radius: 1.2rem;
+    margin: 0 auto 2rem auto; /* Center the card */
   }
   
   .transparent-splitting__phone {
     width: 250px;
+    max-width: 100%; /* Ensure phone doesn't overflow */
+  }
+  
+  .transparent-splitting__left {
+    padding: 0;
+    width: 100%;
+  }
+  
+  .transparent-splitting__left h2 {
+    padding: 0 0.5rem; /* Add small padding */
+  }
+  
+  .transparent-splitting__description {
+    padding: 0 0.5rem; /* Add padding to description */
   }
   
   .transparent-splitting__tip-card {
-    padding: 1rem;
+    padding: 1.2rem 0.8rem;
+    max-width: 280px; /* Limit tip card width */
+    margin: 0 auto;
+    width: 100%;
+  }
+  
+  .transparent-splitting__emoji {
+    width: 52px;
+    height: 52px;
+    object-fit: contain;
+  }
+  
+  .transparent-splitting__tip-card span {
     font-size: 1rem;
-    max-width: 100%;
+    line-height: 1.4;
+    font-weight: 500;
+    color: #333;
+  }
+  
+  .transparent-splitting__cta {
+    font-size: 1rem;
+    padding: 0.7rem 1.8rem;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 375px) {
+  .transparent-splitting__card {
+    width: calc(100vw - 2rem); /* Use full available width minus margins */
+    max-width: 343px;
   }
 }
 

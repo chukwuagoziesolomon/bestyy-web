@@ -5,9 +5,11 @@
   padding: 2rem 3rem 1.5rem 3rem;
   background: var(--card-bg);
   box-shadow: none;
-  position: static;
+  position: fixed;
   top: 0;
-  z-index: 100;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
 }
 
 .navbar__logo {

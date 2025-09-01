@@ -1,80 +1,251 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HelpCircle, Settings, X } from 'lucide-react';
-import { Home, List, BarChart3, CreditCard, Search, Filter, Calendar, Menu } from 'lucide-react';
+import { HelpCircle, Settings, X, Home, List, BarChart3, CreditCard, Search, Filter, Calendar, Menu, Loader2, RefreshCw } from 'lucide-react';
 import { showError } from '../toast';
+import axios from 'axios';
+import { format } from 'date-fns';
+
+// Types
+type DeliveryStatus = 'pending' | 'out_for_delivery' | 'delivered' | 'completed' | 'cancelled';
+
+interface Delivery {
+  id: number;
+  order_number: string;
+  customer_name: string;
+  pickup_address: string;
+  delivery_address: string;
+  total_price: string;
+  status: DeliveryStatus;
+  created_at: string;
+  delivered_at: string | null;
+  delivery_time_minutes: number | null;
+}
+
+interface DeliveriesResponse {
+  count: number;
+  total_earnings: number;
+  average_delivery_time_minutes: number;
+  deliveries: Delivery[];
+}
+
+interface DashboardStats {
+  total_deliveries: number;
+  total_earnings: string;
+  avg_delivery_time: string;
+  changes: {
+    deliveries: { value: string; type: string; period: string };
+    earnings: { value: string; type: string; period: string };
+    delivery_time: { value: string; type: string; period: string };
+  };
+}
+
+interface FilterParams {
+  status?: DeliveryStatus;
+  date?: string;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}
+
+// Status display mapping
+const statusDisplay: Record<DeliveryStatus, string> = {
+  pending: 'Pending',
+  out_for_delivery: 'Out for Delivery',
+  delivered: 'Delivered',
+  completed: 'Completed',
+  cancelled: 'Cancelled'
+};
+
+const statusColors: Record<DeliveryStatus, string> = {
+  pending: 'bg-yellow-100 text-yellow-800',
+  out_for_delivery: 'bg-blue-100 text-blue-800',
+  delivered: 'bg-green-100 text-green-800',
+  completed: 'bg-green-100 text-green-800',
+  cancelled: 'bg-red-100 text-red-800'
+};
+
+// Format currency
+const formatCurrency = (amount: number | string): string => {
+  const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+  return new Intl.NumberFormat('en-NG', {
+    style: 'currency',
+    currency: 'NGN',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(num);
+};
+
+// Format date
+const formatDate = (dateString: string): string => {
+  try {
+    return format(new Date(dateString), 'dd MMM yyyy HH:mm');
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return dateString;
+  }
+};
+
+// Sample delivery data for UI development
+const sampleDeliveries: Delivery[] = [
+  {
+    id: 1,
+    order_number: '00004',
+    customer_name: 'John Doe',
+    pickup_address: 'KFC, Oshodi',
+    delivery_address: '25, Allen Avenue',
+    total_price: '2500',
+    status: 'cancelled',
+    created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    delivered_at: null,
+    delivery_time_minutes: null
+  },
+  {
+    id: 2,
+    order_number: '00005',
+    customer_name: 'Jane Smith',
+    pickup_address: 'Chicken Republic, Gbagada',
+    delivery_address: '12, Oworonshoki',
+    total_price: '2200',
+    status: 'delivered',
+    created_at: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+    delivered_at: new Date().toISOString(),
+    delivery_time_minutes: 45
+  }
+];
 
 const MobileCourierDeliveryList: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
-
-
-  const token = localStorage.getItem('token');
-
-  useEffect(() => {
-    // Simulate loading delivery data
-    setTimeout(() => setLoading(false), 1000);
-  }, []);
-
-  // Sample delivery data
-  const deliveries = [
-    { 
-      id: '00001', 
-      pickup: 'Lagos Pizza,Yaba', 
-      dropoff: '12, yaba street', 
-      date: 'Just Now', 
-      amount: 2000, 
-      status: 'Accepted' 
-    },
-    { 
-      id: '00002', 
-      pickup: 'Mr Biggs, Victoria Island', 
-      dropoff: '45, Lekki Phase 1', 
-      date: '2 hours ago', 
-      amount: 3500, 
-      status: 'Delivered' 
-    },
-    { 
-      id: '00003', 
-      pickup: 'KFC, Ikeja', 
-      dropoff: '23, Allen Avenue', 
-      date: '4 hours ago', 
-      amount: 1800, 
-      status: 'Delivered' 
-    },
-    { 
-      id: '00004', 
-      pickup: 'Dominos, Surulere', 
-      dropoff: '67, Bode Thomas', 
-      date: '6 hours ago', 
-      amount: 2500, 
-      status: 'Cancelled' 
-    },
-    { 
-      id: '00005', 
-      pickup: 'Chicken Republic, Gbagada', 
-      dropoff: '12, Oworonshoki', 
-      date: '8 hours ago', 
-      amount: 2200, 
-      status: 'Delivered' 
+  const [showFilters, setShowFilters] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Data states
+  const [deliveries, setDeliveries] = useState<Delivery[]>([]);
+  const [filters, setFilters] = useState<FilterParams>({
+    limit: 10,
+    offset: 0,
+  });
+  
+  const [stats, setStats] = useState<{
+    total_deliveries: number;
+    total_earnings: number;
+    avg_delivery_time: number;
+    changes: {
+      deliveries: { value: string; type: string; period: string };
+      earnings: { value: string; type: string; period: string };
+      delivery_time: { value: string; type: string; period: string };
+    };
+  }>({
+    total_deliveries: 0,
+    total_earnings: 0,
+    avg_delivery_time: 0,
+    changes: {
+      deliveries: { value: '0', type: 'increase', period: 'month' },
+      earnings: { value: '0', type: 'increase', period: 'month' },
+      delivery_time: { value: '0', type: 'decrease', period: 'month' }
     }
-  ];
+  });
 
+  // Get status color function
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Accepted':
+      case 'pending':
         return { bg: '#fef3c7', color: '#f59e42' };
-      case 'Delivered':
+      case 'delivered':
+      case 'completed':
         return { bg: '#d1fae5', color: '#10b981' };
-      case 'Cancelled':
+      case 'cancelled':
         return { bg: '#fee2e2', color: '#ef4444' };
+      case 'out_for_delivery':
+        return { bg: '#dbeafe', color: '#3b82f6' };
       default:
         return { bg: '#f3f4f6', color: '#6b7280' };
     }
   };
 
+  // Fetch dashboard data
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      setLoading(true);
+      
+      // Use sample data for now
+      setStats({
+        total_deliveries: 2,
+        total_earnings: 4700,
+        avg_delivery_time: 45,
+        changes: {
+          deliveries: { value: '0', type: 'increase', period: 'month' },
+          earnings: { value: '0', type: 'increase', period: 'month' },
+          delivery_time: { value: '0', type: 'decrease', period: 'month' }
+        }
+      });
+      
+      setDeliveries(sampleDeliveries);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError('Failed to load data. Please try again.');
+      showError('Failed to load data');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [filters]);
 
+  // Handle pull to refresh
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
+  // Handle status filter change
+  const handleStatusChange = useCallback((status: DeliveryStatus | 'all') => {
+    setFilters(prev => ({
+      ...prev,
+      status: status === 'all' ? undefined : status,
+      offset: 0
+    }));
+    setShowFilters(false);
+  }, []);
+
+  // Handle date filter change
+  const handleDateChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setFilters(prev => ({
+      ...prev,
+      date: e.target.value || undefined,
+      offset: 0
+    }));
+  }, []);
+
+  // Handle search
+  const handleSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setFilters(prev => ({
+      ...prev,
+      search: e.target.value || undefined,
+      offset: 0
+    }));
+  }, []);
+
+  // Load data on component mount
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
+  if (loading && !refreshing) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        background: '#f8fafc'
+      }}>
+        <Loader2 className="w-8 h-8 text-green-600 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div style={{
@@ -84,197 +255,128 @@ const MobileCourierDeliveryList: React.FC = () => {
       paddingBottom: '80px'
     }}>
       {/* Header */}
-      <div style={{
-        background: '#fff',
-        padding: '20px 16px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-      }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '20px'
-        }}>
-          <h1 style={{
-            fontSize: '24px',
-            fontWeight: 700,
-            margin: 0,
-            color: '#1f2937'
-          }}>
-            Delivery List
-          </h1>
-          <div
-            onClick={() => setShowDropdown(!showDropdown)}
-            style={{
-              cursor: 'pointer',
-              padding: '8px',
-              borderRadius: '8px'
-            }}
+      <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="flex items-center space-x-2">
+          <button 
+            onClick={() => navigate(-1)}
+            className="p-2 rounded-full hover:bg-gray-100"
           >
-            <Menu size={24} color="#1f2937" />
-          </div>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+          <h1 className="text-lg font-semibold">My Deliveries</h1>
         </div>
+        
+        <div className="flex items-center space-x-3">
+          <button 
+            onClick={() => setShowFilters(!showFilters)}
+            className="p-2 rounded-full hover:bg-gray-100"
+          >
+            <Filter className="h-5 w-5 text-gray-600" />
+          </button>
+          <button 
+            onClick={handleRefresh}
+            className="p-2 rounded-full hover:bg-gray-100"
+            disabled={refreshing}
+          >
+            <RefreshCw className={`h-5 w-5 ${refreshing ? 'text-gray-400 animate-spin' : 'text-gray-600'}`} />
+          </button>
+        </div>
+      </div>
 
-        {/* Dropdown Menu */}
-        {showDropdown && (
-          <>
-            {/* Backdrop */}
-            <div
-              onClick={() => setShowDropdown(false)}
-              style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'rgba(0,0,0,0.5)',
-                zIndex: 40
-              }}
-            />
-
-            {/* Dropdown Content */}
-            <div style={{
-              position: 'fixed',
-              top: '80px',
-              right: '16px',
-              background: '#fff',
-              borderRadius: '12px',
-              boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
-              zIndex: 50,
-              minWidth: '200px',
-              overflow: 'hidden'
-            }}>
-              {/* Header */}
-              <div style={{
-                padding: '16px 20px',
-                borderBottom: '1px solid #f3f4f6',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between'
-              }}>
-                <span style={{
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  color: '#1f2937'
-                }}>
-                  Menu
-                </span>
-                <X
-                  size={20}
-                  color="#6b7280"
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => setShowDropdown(false)}
-                />
-              </div>
-
-              {/* Menu Items */}
-              <div style={{ padding: '8px 0' }}>
-                {[
-                  { icon: <HelpCircle size={20} />, label: 'Help/Support', onClick: () => navigate('/courier/support') },
-                  { icon: <Settings size={20} />, label: 'Profile', onClick: () => navigate('/courier/profile') }
-                ].map((item, index) => (
-                  <div
-                    key={index}
-                    onClick={() => {
-                      item.onClick();
-                      setShowDropdown(false);
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '12px 20px',
-                      cursor: 'pointer',
-                      background: 'transparent',
-                      color: '#374151',
-                      transition: 'all 0.2s ease',
-                      fontSize: '14px',
-                      fontWeight: 500
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#f9fafb';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent';
-                    }}
-                  >
-                    {item.icon}
-                    {item.label}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Filter and Date Buttons */}
-        <div style={{
-          display: 'flex',
-          gap: '12px',
-          alignItems: 'center'
-        }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '12px 16px',
-            background: '#f3f4f6',
-            borderRadius: '8px',
-            cursor: 'pointer'
-          }}>
-            <Filter size={16} color="#10b981" />
-            <span style={{
-              fontSize: '14px',
-              fontWeight: 500,
-              color: '#374151'
-            }}>
-              Filters
-            </span>
+      {/* Stats Cards */}
+      <div className="p-4 space-y-3">
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-white p-3 rounded-lg shadow-sm">
+            <p className="text-xs text-gray-500">Total</p>
+            <p className="font-bold text-lg">{stats.total_deliveries}</p>
           </div>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '12px 16px',
-            background: '#f3f4f6',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            flex: 1
-          }}>
-            <Calendar size={16} color="#10b981" />
-            <span style={{
-              fontSize: '14px',
-              fontWeight: 500,
-              color: '#374151'
-            }}>
-              Last 30 Days
-            </span>
-            <span style={{
-              marginLeft: 'auto',
-              fontSize: '14px',
-              color: '#9ca3af'
-            }}>
-              ▼
-            </span>
+          <div className="bg-white p-3 rounded-lg shadow-sm">
+            <p className="text-xs text-gray-500">Earnings</p>
+            <p className="font-bold text-lg">{formatCurrency(stats.total_earnings)}</p>
+          </div>
+          <div className="bg-white p-3 rounded-lg shadow-sm">
+            <p className="text-xs text-gray-500">Avg. Time</p>
+            <p className="font-bold text-lg">{stats.avg_delivery_time || '0'} min</p>
           </div>
         </div>
       </div>
 
-      {/* Content */}
-      <div style={{ padding: '24px 16px' }}>
+      {/* Filters */}
+      {showFilters && (
+        <div className="bg-white p-4 border-b border-gray-200">
+          <div className="mb-3">
+            <input
+              type="text"
+              placeholder="Search orders..."
+              className="w-full p-2 border border-gray-300 rounded-md text-sm"
+              onChange={handleSearch}
+            />
+          </div>
+          <div className="flex space-x-2 overflow-x-auto pb-2">
+            <button
+              onClick={() => handleStatusChange('all')}
+              className={`px-3 py-1 rounded-full text-sm whitespace-nowrap ${!filters.status ? 'bg-green-100 text-green-800' : 'bg-gray-100'}`}
+            >
+              All
+            </button>
+            {Object.entries(statusDisplay).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => handleStatusChange(key as DeliveryStatus)}
+                className={`px-3 py-1 rounded-full text-sm whitespace-nowrap ${filters.status === key ? 'bg-green-100 text-green-800' : 'bg-gray-100'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="mt-3">
+            <input
+              type="date"
+              className="w-full p-2 border border-gray-300 rounded-md text-sm"
+              onChange={handleDateChange}
+              value={filters.date || ''}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Error message */}
+      {error && (
+        <div className="mx-4 my-3 p-3 bg-red-50 text-red-700 rounded-md text-sm">
+          {error}
+        </div>
+      )}
+
+      {/* Deliveries List */}
+      <div className="pb-20">
         {loading ? (
           <div style={{ 
-            textAlign: 'center', 
-            padding: '40px', 
-            color: '#6b7280' 
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '200px'
           }}>
-            Loading deliveries...
+            <Loader2 className="w-8 h-8 text-green-600 animate-spin" />
+          </div>
+        ) : error ? (
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '20px',
+            color: '#ef4444',
+            backgroundColor: '#fee2e2',
+            borderRadius: '8px',
+            margin: '10px 0'
+          }}>
+            {error}
           </div>
         ) : (
           <div style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: '16px'
+            gap: '16px',
+            padding: '16px'
           }}>
             {deliveries.length === 0 ? (
               <div style={{
@@ -288,7 +390,7 @@ const MobileCourierDeliveryList: React.FC = () => {
                 No deliveries found
               </div>
             ) : (
-              deliveries.map((delivery, index) => (
+              deliveries.map((delivery) => (
                 <div key={delivery.id} style={{
                   background: '#fff',
                   borderRadius: '12px',
@@ -306,97 +408,98 @@ const MobileCourierDeliveryList: React.FC = () => {
                       fontWeight: 600,
                       color: '#1f2937'
                     }}>
-                      #{delivery.id}
+                      #{delivery.order_number}
                     </div>
                     <div style={{
                       padding: '4px 12px',
                       borderRadius: '16px',
                       fontSize: '12px',
                       fontWeight: 500,
-                      ...getStatusColor(delivery.status)
+                      backgroundColor: getStatusColor(delivery.status).bg,
+                      color: getStatusColor(delivery.status).color
                     }}>
-                      {delivery.status}
+                      {statusDisplay[delivery.status]}
                     </div>
                   </div>
                   <div style={{
                     display: 'grid',
                     gap: '12px'
                   }}>
-                        <div>
-                          <span style={{
-                            fontSize: '12px',
-                            color: '#6b7280',
-                            fontWeight: 500,
-                            display: 'block',
-                            marginBottom: '2px'
-                          }}>
-                            Pick Up
-                          </span>
-                          <span style={{
-                            fontSize: '14px',
-                            color: '#1f2937',
-                            fontWeight: 500
-                          }}>
-                            {delivery.pickup}
-                          </span>
-                        </div>
-                        
-                        <div>
-                          <span style={{
-                            fontSize: '12px',
-                            color: '#6b7280',
-                            fontWeight: 500,
-                            display: 'block',
-                            marginBottom: '2px'
-                          }}>
-                            Drop off
-                          </span>
-                          <span style={{
-                            fontSize: '14px',
-                            color: '#1f2937',
-                            fontWeight: 500
-                          }}>
-                            {delivery.dropoff}
-                          </span>
-                        </div>
-                        
-                        <div>
-                          <span style={{
-                            fontSize: '12px',
-                            color: '#6b7280',
-                            fontWeight: 500,
-                            display: 'block',
-                            marginBottom: '2px'
-                          }}>
-                            Date
-                          </span>
-                          <span style={{
-                            fontSize: '14px',
-                            color: '#1f2937',
-                            fontWeight: 500
-                          }}>
-                            {delivery.date}
-                          </span>
-                        </div>
-                        
-                        <div>
-                          <span style={{
-                            fontSize: '12px',
-                            color: '#6b7280',
-                            fontWeight: 500,
-                            display: 'block',
-                            marginBottom: '2px'
-                          }}>
-                            Amount
-                          </span>
-                          <span style={{
-                            fontSize: '14px',
-                            color: '#1f2937',
-                            fontWeight: 600
-                          }}>
-                            ₦ {delivery.amount.toLocaleString()}
-                          </span>
-                        </div>
+                    <div>
+                      <span style={{
+                        fontSize: '12px',
+                        color: '#6b7280',
+                        fontWeight: 500,
+                        display: 'block',
+                        marginBottom: '2px'
+                      }}>
+                        Pick Up
+                      </span>
+                      <span style={{
+                        fontSize: '14px',
+                        color: '#1f2937',
+                        fontWeight: 500
+                      }}>
+                        {delivery.pickup_address}
+                      </span>
+                    </div>
+                    
+                    <div>
+                      <span style={{
+                        fontSize: '12px',
+                        color: '#6b7280',
+                        fontWeight: 500,
+                        display: 'block',
+                        marginBottom: '2px'
+                      }}>
+                        Drop off
+                      </span>
+                      <span style={{
+                        fontSize: '14px',
+                        color: '#1f2937',
+                        fontWeight: 500
+                      }}>
+                        {delivery.delivery_address}
+                      </span>
+                    </div>
+                    
+                    <div>
+                      <span style={{
+                        fontSize: '12px',
+                        color: '#6b7280',
+                        fontWeight: 500,
+                        display: 'block',
+                        marginBottom: '2px'
+                      }}>
+                        Date
+                      </span>
+                      <span style={{
+                        fontSize: '14px',
+                        color: '#1f2937',
+                        fontWeight: 500
+                      }}>
+                        {formatDate(delivery.created_at)}
+                      </span>
+                    </div>
+                    
+                    <div>
+                      <span style={{
+                        fontSize: '12px',
+                        color: '#6b7280',
+                        fontWeight: 500,
+                        display: 'block',
+                        marginBottom: '2px'
+                      }}>
+                        Amount
+                      </span>
+                      <span style={{
+                        fontSize: '14px',
+                        color: '#1f2937',
+                        fontWeight: 600
+                      }}>
+                        {formatCurrency(delivery.total_price)}
+                      </span>
+                    </div>
                   </div>
                 </div>
               ))
@@ -411,37 +514,37 @@ const MobileCourierDeliveryList: React.FC = () => {
         bottom: 0,
         left: 0,
         right: 0,
-        background: '#fff',
+        backgroundColor: 'white',
         borderTop: '1px solid #e5e7eb',
+        padding: '12px 0',
         display: 'flex',
         justifyContent: 'space-around',
-        padding: '12px 0',
         zIndex: 50
       }}>
         {[
           { 
             icon: <Home size={20} />, 
-            label: 'Dashboard', 
+            label: 'Home', 
             active: false,
-            onClick: () => navigate('/courier/dashboard')
+            onClick: () => navigate('/dashboard')
           },
           { 
             icon: <List size={20} />, 
             label: 'Delivery List', 
             active: true,
-            onClick: () => navigate('/courier/delivery-list')
+            onClick: () => {}
           },
           { 
             icon: <BarChart3 size={20} />, 
             label: 'Analytics', 
             active: false,
-            onClick: () => navigate('/courier/analytics')
+            onClick: () => navigate('/dashboard/analytics')
           },
           { 
             icon: <CreditCard size={20} />, 
             label: 'Payout', 
             active: false,
-            onClick: () => navigate('/courier/payouts')
+            onClick: () => navigate('/dashboard/payout')
           }
         ].map((item, index) => (
           <div 
@@ -451,13 +554,14 @@ const MobileCourierDeliveryList: React.FC = () => {
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              gap: '4px',
               color: item.active ? '#10b981' : '#6b7280',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              fontSize: '12px',
+              gap: '4px'
             }}
           >
             {item.icon}
-            <span style={{ fontSize: '10px', fontWeight: 500 }}>{item.label}</span>
+            <span>{item.label}</span>
           </div>
         ))}
       </div>

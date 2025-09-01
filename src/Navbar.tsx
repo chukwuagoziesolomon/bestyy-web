@@ -12,8 +12,6 @@ const Navbar: React.FC<NavbarProps> = ({ darkMode, toggleDarkMode }) => (
       <img src="/logo.png" alt="Bestyy Logo" className="navbar__logo-img" />
     </div>
     <ul className="navbar__links">
-      <li><a href="#home">Home</a></li>
-      <li><a href="#features">Features</a></li>
       <li><a href="#how-it-works">How It Works</a></li>
     </ul>
     <a href="#get-started" className="navbar__cta">Get Started</a>

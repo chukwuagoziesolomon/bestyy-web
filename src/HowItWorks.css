@@ -1,6 +1,7 @@
 .how-it-works {
   background: var(--bg);
   padding: 3rem 0 4rem 0;
+  overflow-x: hidden; /* Prevent horizontal scroll */
 }
 
 .how-it-works__title {
@@ -31,6 +32,8 @@
   margin: 0 auto 2.5rem auto;
   box-shadow: 0 4px 32px rgba(16,185,129,0.04);
   gap: 2.5rem;
+  width: 100%; /* Ensure full width usage */
+  box-sizing: border-box; /* Include padding in width calculation */
 }
 
 .how-it-works__card--reverse {
@@ -43,11 +46,16 @@
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
+  min-height: 200px;
 }
 
 .how-it-works__left h2 {
   font-size: 1.6rem;
   font-weight: 800;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   margin-bottom: 1.2rem;
   letter-spacing: -0.5px;
   color: var(--text);
@@ -93,7 +101,6 @@
   width: 320px;
   max-width: 90vw;
   transform: rotate(-10deg);
-  box-shadow: 0 8px 32px rgba(16,185,129,0.10);
 }
 
 .how-it-works__right {
@@ -140,19 +147,67 @@
   }
 }
 
+/* Mobile styles - Fixed width and padding */
 @media (max-width: 600px) {
+  .how-it-works {
+    padding: 2rem 1rem 3rem 1rem; /* Add horizontal padding to section */
+  }
+  
   .how-it-works__title {
     font-size: 1.3rem;
+    padding: 0 1rem; /* Add padding to title */
   }
+  
   .how-it-works__card {
-    padding: 1.2rem 0.2rem;
+    width: 343px; /* Fixed width as requested */
+    max-width: calc(100vw - 2rem); /* Ensure it doesn't exceed viewport */
+    padding: 1.5rem 1rem; /* Adjusted padding */
     border-radius: 1.2rem;
+    margin: 0 auto 2rem auto; /* Center the card */
   }
+  
   .how-it-works__phone {
     width: 180px;
+    max-width: 100%; /* Ensure phone doesn't overflow */
   }
-  .how-it-works__tip-card {
-    padding: 1rem 0.5rem;
+  
+  .how-it-works__left {
+    min-height: 160px;
+    padding: 0;
+    width: 100%;
+  }
+  
+  .how-it-works__left h2 {
+    font-size: 1.3rem;
+    min-height: 60px;
+    text-align: center;
+    width: 100%;
+    padding: 0 0.5rem; /* Add small padding */
+  }
+  
+  .how-it-works__description {
     font-size: 1rem;
+    margin-bottom: 1rem;
+    padding: 0 0.5rem; /* Add padding to description */
   }
-} 
+  
+  .how-it-works__tip-card {
+    padding: 1rem 0.8rem;
+    font-size: 1rem;
+    width: 100%;
+    max-width: 280px; /* Limit tip card width */
+  }
+  
+  .how-it-works__cta {
+    font-size: 1rem;
+    padding: 0.7rem 1.8rem;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 375px) {
+  .how-it-works__card {
+    width: calc(100vw - 2rem); /* Use full available width minus margins */
+    max-width: 343px;
+  }
+}

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, List, Utensils, Table, Menu, Heart, Star, Plus, X, BarChart3, CreditCard, HelpCircle, Settings } from 'lucide-react';
-import { listMenuItems, API_URL } from '../api';
-import { showError } from '../toast';
+import { listMenuItems, deleteMenuItem, API_URL } from '../api';
+import { showError, showSuccess } from '../toast';
 
 interface MenuItem {
   id: number;
@@ -19,6 +19,7 @@ const MobileMenu: React.FC = () => {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const token = localStorage.getItem('token');
 
@@ -39,18 +40,22 @@ const MobileMenu: React.FC = () => {
     loadMenuItems();
   }, [token]);
 
-  // Sample menu item if no real data
-  const sampleMenuItem = {
-    id: 1,
-    dish_name: 'Jollof Rice',
-    price: '1500',
-    image: '/jollof-rice.jpg',
-    rating: 4,
-    reviews: 131,
-    description: 'Delicious Nigerian jollof rice with spices'
-  };
+  // Delete menu item function
+  const handleDelete = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this menu item?')) return;
+    if (!token) return showError('Not authenticated');
 
-  const displayItems = menuItems.length > 0 ? menuItems : [sampleMenuItem];
+    setDeletingId(id);
+    try {
+      await deleteMenuItem(token, String(id));
+      showSuccess('Menu item deleted successfully');
+      setMenuItems(items => items.filter(item => item.id !== id));
+    } catch (err: any) {
+      showError(err.message || 'Failed to delete menu item');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const renderStars = (rating: number) => {
     const stars = [];
@@ -173,8 +178,7 @@ const MobileMenu: React.FC = () => {
               {[
                 { icon: <BarChart3 size={20} />, label: 'Analytics', onClick: () => navigate('/vendor/dashboard/analytics') },
                 { icon: <CreditCard size={20} />, label: 'Payout', onClick: () => navigate('/vendor/dashboard/payout') },
-                { icon: <HelpCircle size={20} />, label: 'Help/Support', onClick: () => navigate('/vendor/dashboard/support') },
-                { icon: <Settings size={20} />, label: 'Profile Settings', onClick: () => navigate('/vendor/dashboard/settings') }
+                { icon: <Settings size={20} />, label: 'Profile Settings', onClick: () => navigate('/vendor/dashboard/profile') }
               ].map((item, index) => (
                 <div
                   key={index}
@@ -214,18 +218,91 @@ const MobileMenu: React.FC = () => {
         </>
       )}
 
+      {/* Add Menu Item Button - Only show when there are menu items */}
+      {!loading && menuItems.length > 0 && (
+        <div style={{
+          padding: '16px',
+          display: 'flex',
+          justifyContent: 'flex-end'
+        }}>
+          <button
+            onClick={() => navigate('/vendor/dashboard/menu/add')}
+            style={{
+              background: 'linear-gradient(90deg, #10b981 0%, #34e7e4 100%)',
+              color: '#fff',
+              fontWeight: 700,
+              fontSize: '16px',
+              border: 'none',
+              borderRadius: '12px',
+              padding: '12px 24px',
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            <Plus size={20} />
+            Add Item
+          </button>
+        </div>
+      )}
+
       {/* Menu Items */}
-      <div style={{ padding: '24px 16px' }}>
+      <div style={{ padding: '0 16px 24px' }}>
         {loading ? (
-          <div style={{ 
-            textAlign: 'center', 
-            padding: '40px', 
-            color: '#6b7280' 
+          <div style={{
+            textAlign: 'center',
+            padding: '40px',
+            color: '#6b7280'
           }}>
             Loading menu items...
           </div>
+        ) : menuItems.length === 0 ? (
+          <div style={{
+            textAlign: 'center',
+            color: '#888',
+            fontWeight: 600,
+            margin: '4rem 0',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '40vh'
+          }}>
+            <Utensils size={80} color="#e5e7eb" style={{ marginBottom: 16 }} />
+            <div style={{
+              fontSize: 18,
+              color: '#888',
+              fontWeight: 600,
+              maxWidth: 300,
+              lineHeight: 1.5,
+              marginBottom: 16
+            }}>
+              No menu items found. Add your first menu item to get started!
+            </div>
+            <button
+              onClick={() => navigate('/vendor/dashboard/menu/add')}
+              style={{
+                background: '#10b981',
+                color: '#fff',
+                fontWeight: 600,
+                fontSize: '14px',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '10px 20px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <Plus size={16} />
+              Add Your First Item
+            </button>
+          </div>
         ) : (
-          displayItems.map((item, index) => (
+          menuItems.map((item, index) => (
             <div key={index} style={{
               background: '#fff',
               borderRadius: '16px',
@@ -302,87 +379,89 @@ const MobileMenu: React.FC = () => {
                   color: '#10b981',
                   marginBottom: '12px'
                 }}>
-                  ₦ {parseFloat(item.price || '1500').toLocaleString()}
+                  ₦ {parseFloat(item.price || '0').toLocaleString()}
                 </div>
 
-                {/* Rating */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  marginBottom: '20px'
-                }}>
-                  <div style={{ display: 'flex', gap: '2px' }}>
-                    {renderStars(item.rating || 4)}
+                {/* Rating - Only show if rating exists */}
+                {(item.rating || item.reviews) && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    marginBottom: '20px'
+                  }}>
+                    <div style={{ display: 'flex', gap: '2px' }}>
+                      {renderStars(item.rating || 0)}
+                    </div>
+                    <span style={{
+                      fontSize: '14px',
+                      color: '#6b7280',
+                      fontWeight: 500
+                    }}>
+                      ({item.reviews || 0})
+                    </span>
                   </div>
-                  <span style={{
+                )}
+
+                {/* Description - Show if available */}
+                {item.description && (
+                  <div style={{
                     fontSize: '14px',
                     color: '#6b7280',
-                    fontWeight: 500
+                    lineHeight: 1.5,
+                    marginBottom: '16px'
                   }}>
-                    ({item.reviews || 131})
-                  </span>
-                </div>
+                    {item.description}
+                  </div>
+                )}
 
-                {/* Edit Item Button */}
-                <button style={{
-                  background: '#e5e7eb',
-                  color: '#374151',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '12px 24px',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  width: '100%'
+                {/* Action Buttons */}
+                <div style={{
+                  display: 'flex',
+                  gap: '12px',
+                  marginTop: '16px'
                 }}>
-                  Edit Item
-                </button>
+                  <button
+                    onClick={() => navigate(`/vendor/dashboard/menu/edit/${item.id}`)}
+                    style={{
+                      background: '#10b981',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '12px 20px',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      flex: 1
+                    }}
+                  >
+                    Edit Item
+                  </button>
+                  <button
+                    onClick={() => handleDelete(item.id)}
+                    disabled={deletingId === item.id}
+                    style={{
+                      background: deletingId === item.id ? '#9ca3af' : '#ef4444',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '12px 20px',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      cursor: deletingId === item.id ? 'not-allowed' : 'pointer',
+                      flex: 1
+                    }}
+                  >
+                    {deletingId === item.id ? 'Deleting...' : 'Delete'}
+                  </button>
+                </div>
               </div>
             </div>
           ))
         )}
       </div>
 
-      {/* Add New Menu Button */}
-      <div style={{
-        position: 'fixed',
-        bottom: '100px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 40
-      }}>
-        <button
-          onClick={() => navigate('/vendor/dashboard/menu/add')}
-          style={{
-            background: '#10b981',
-            color: 'white',
-            border: 'none',
-            borderRadius: '12px',
-            padding: '16px 24px',
-            fontSize: '16px',
-            fontWeight: 600,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
-            transition: 'transform 0.2s ease'
-          }}
-          onMouseDown={(e) => {
-            e.currentTarget.style.transform = 'scale(0.95)';
-          }}
-          onMouseUp={(e) => {
-            e.currentTarget.style.transform = 'scale(1)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'scale(1)';
-          }}
-        >
-          <Plus size={20} />
-          Add new Menu
-        </button>
-      </div>
+
 
       {/* Bottom Navigation */}
       <div style={{

@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import CourierTermsStep from './CourierTermsStep';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { registerCourier, loginUser } from './api';
+import { useAuth } from './context/AuthContext';
+import { showApiError, showError, showSuccess } from './toast';
 
 const CourierSignUp = () => {
+  const { login } = useAuth();
   const [step, setStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -14,14 +18,17 @@ const CourierSignUp = () => {
     confirmPassword: '',
     serviceAreas: '',
     deliveryRadius: '',
-    openingHours: '',
+    openingTime: '',
+    closingTime: '',
     hasBike: true,
     verificationPref: '',
     ninNumber: '',
     uploadId: null as File | null,
     uploadProfile: null as File | null,
+    vehicleType: '' as '' | 'bike' | 'car' | 'van' | 'other',
   });
   const [agreed, setAgreed] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -88,12 +95,23 @@ const CourierSignUp = () => {
         <input name="serviceAreas" type="text" placeholder="Lagos, abuja, akure" value={form.serviceAreas} onChange={handleChange} style={{ width: '100%', marginBottom: 18, padding: '14px 18px', borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 17, fontWeight: 600, background: '#fafbfc', outline: 'none' }} />
         <label style={{ fontWeight: 600, fontSize: 15, marginBottom: 6, display: 'block' }}>Delivery Radius</label>
         <input name="deliveryRadius" type="text" placeholder="5km, 10km" value={form.deliveryRadius} onChange={handleChange} style={{ width: '100%', marginBottom: 18, padding: '14px 18px', borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 17, fontWeight: 600, background: '#fafbfc', outline: 'none' }} />
-        <label style={{ fontWeight: 600, fontSize: 15, marginBottom: 6, display: 'block' }}>Opening and Closing Hours</label>
-        <select name="openingHours" value={form.openingHours} onChange={handleChange} style={{ width: '100%', marginBottom: 18, padding: '14px 18px', borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 17, fontWeight: 600, background: '#fafbfc', outline: 'none' }}>
+        <div style={{ display: 'flex', gap: 12, marginBottom: 18 }}>
+          <div style={{ flex: 1 }}>
+            <label style={{ fontWeight: 600, fontSize: 15, marginBottom: 6, display: 'block' }}>Opening Time</label>
+            <input name="openingTime" type="time" value={form.openingTime} onChange={handleChange} style={{ width: '100%', padding: '14px 18px', borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 17, fontWeight: 600, background: '#fafbfc', outline: 'none' }} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <label style={{ fontWeight: 600, fontSize: 15, marginBottom: 6, display: 'block' }}>Closing Time</label>
+            <input name="closingTime" type="time" value={form.closingTime} onChange={handleChange} style={{ width: '100%', padding: '14px 18px', borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 17, fontWeight: 600, background: '#fafbfc', outline: 'none' }} />
+          </div>
+        </div>
+        <label style={{ fontWeight: 600, fontSize: 15, marginBottom: 6, display: 'block' }}>Vehicle Type (optional)</label>
+        <select name="vehicleType" value={form.vehicleType} onChange={handleChange} style={{ width: '100%', marginBottom: 18, padding: '14px 18px', borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 17, fontWeight: 600, background: '#fafbfc', outline: 'none' }}>
           <option value="">Select...</option>
-          <option value="All days">All days</option>
-          <option value="Weekdays">Weekdays</option>
-          <option value="Weekends">Weekends</option>
+          <option value="bike">Bike</option>
+          <option value="car">Car</option>
+          <option value="van">Van</option>
+          <option value="other">Other</option>
         </select>
         <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 10 }}>Do you have a delivery bike?</div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 24, marginBottom: 32 }}>
@@ -127,9 +145,10 @@ const CourierSignUp = () => {
         <select name="verificationPref" value={form.verificationPref || ''} onChange={handleChange} style={{ width: '100%', marginBottom: 18, padding: '14px 18px', borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 17, fontWeight: 600, background: '#fafbfc', outline: 'none' }}>
           <option value="">Select...</option>
           <option value="NIN">NIN</option>
-          <option value="Driver's License">Driver's License</option>
-          <option value="Voter's Card">Voter's Card</option>
+          <option value="DL">Driver's License</option>
+          <option value="VC">Voter's Card</option>
         </select>
+
         <label style={{ fontWeight: 600, fontSize: 15, marginBottom: 6, display: 'block' }}>NIN Number</label>
         <input name="ninNumber" type="text" placeholder="1234567890" value={form.ninNumber || ''} onChange={handleChange} style={{ width: '100%', marginBottom: 18, padding: '14px 18px', borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 17, fontWeight: 600, background: '#fafbfc', outline: 'none' }} />
         <label style={{ fontWeight: 600, fontSize: 15, marginBottom: 6, display: 'block' }}>Upload ID</label>
@@ -169,17 +188,100 @@ const CourierSignUp = () => {
         </div>
         <div style={{ display: 'flex', gap: 24 }}>
           <button type="button" onClick={() => setStep(2)} style={{ flex: 1, background: '#fff', color: '#222', fontWeight: 600, fontSize: 18, border: '2px solid #e5e7eb', borderRadius: 12, padding: '18px 0', cursor: 'pointer' }}>Back</button>
-          <button type="submit" style={{ flex: 1, background: 'linear-gradient(90deg, #34e7e4 0%, #10b981 100%)', color: '#fff', fontWeight: 700, fontSize: 18, border: 'none', borderRadius: 12, padding: '18px 0', cursor: 'pointer' }}>Next</button>
+          <button type="submit" disabled={isLoading} style={{ flex: 1, background: 'linear-gradient(90deg, #34e7e4 0%, #10b981 100%)', color: '#fff', fontWeight: 700, fontSize: 18, border: 'none', borderRadius: 12, padding: '18px 0', cursor: 'pointer', opacity: isLoading ? 0.7 : 1 }}>{isLoading ? 'Processing...' : 'Next'}</button>
         </div>
       </form>
     </>
   );
 
+  const submitRegistration = async () => {
+    // Basic validation for required fields
+    const required = [
+      form.name,
+      form.phone,
+      form.email,
+      form.password,
+      form.confirmPassword,
+      form.serviceAreas,
+      form.deliveryRadius,
+      form.openingTime,
+      form.closingTime,
+      form.verificationPref,
+    ];
+    if (required.some(v => !String(v || '').trim())) {
+      showError('Please complete all required fields.');
+      return;
+    }
+    if (form.password !== form.confirmPassword) {
+      showError('Passwords do not match');
+      return;
+    }
+    if (!agreed) {
+      showError('You must agree to the Terms and Conditions');
+      return;
+    }
+
+    const [first_name, ...rest] = form.name.trim().split(' ');
+    const last_name = rest.join(' ');
+
+    const payload = {
+      email: form.email,
+      password: form.password,
+      first_name: first_name || '',
+      last_name: last_name || '',
+      phone: form.phone,
+      service_areas: form.serviceAreas,
+      delivery_radius: form.deliveryRadius,
+      opening_hours: form.openingTime, // HH:MM
+      closing_hours: form.closingTime, // HH:MM
+      verification_preference: form.verificationPref as 'NIN' | 'DL' | 'VC',
+      agreed_to_terms: true,
+      has_bike: !!form.hasBike,
+      nin_number: form.ninNumber || undefined,
+      vehicle_type: (form.vehicleType || undefined) as any,
+      id_upload: form.uploadId,
+      profile_photo: form.uploadProfile,
+    };
+
+    try {
+      setIsLoading(true);
+      const response = await registerCourier(payload as any);
+      if (response) {
+        try {
+          const loginResponse = await loginUser(form.email, form.password);
+          if (loginResponse && loginResponse.token) {
+            await login(form.email, form.password);
+            const userData = {
+              email: form.email,
+              fullName: form.name,
+              phone: form.phone,
+              serviceAreas: form.serviceAreas,
+              vehicleType: form.vehicleType
+            };
+            localStorage.setItem('pending_profile_data', JSON.stringify(userData));
+            showSuccess('Registration successful! Setting up your courier account...');
+            navigate('/courier/dashboard');
+            return;
+          }
+        } catch (loginError) {
+          console.error('Auto-login failed:', loginError);
+        }
+        showSuccess('Registration successful! Please log in to continue.');
+        navigate('/login');
+      }
+    } catch (err: any) {
+      showApiError(err, 'Failed to register courier');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     step === 4 ? (
       <CourierTermsStep
         onCancel={() => setStep(3)}
-        onAgree={() => navigate('/courier/dashboard', { state: { userType: 'courier' } })}
+        onAgree={submitRegistration}
+        isLoading={isLoading}
       />
     ) : (
       <div style={{ minHeight: '100vh', background: '#fafbfc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Nunito Sans, sans-serif' }}>
@@ -196,4 +298,4 @@ const CourierSignUp = () => {
   );
 };
 
-export default CourierSignUp; 
+export default CourierSignUp;

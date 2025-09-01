@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './UserLogin.css';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { signupVendor, createMenuItem } from './api';
+import { signupVendor, createMenuItem, loginUser } from './api';
+import { useAuth } from './context/AuthContext';
 import { showError, showSuccess, showInfo, showApiError } from './toast';
 
 const steps = [
@@ -47,6 +48,7 @@ type VendorFormData = {
 
 const VendorSignUp = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [searchParams] = useSearchParams();
   type FieldKey = keyof VendorFormData;
 
@@ -218,11 +220,83 @@ const VendorSignUp = () => {
           closing_hours: `${formData.closingHours}:00`, // Format to HH:mm:ss
           offers_delivery: formData.offersDelivery,
         };
+        // First, sign up the vendor
         const res = await signupVendor(payload);
-        // Save token if returned
-        if (res && res.token) {
-          localStorage.setItem('vendor_token', res.token);
+        
+        if (res) {
+          // Auto-login after successful registration
+          try {
+            const loginResponse = await loginUser(formData.email, formData.password);
+            
+            if (loginResponse && loginResponse.token) {
+              // Store the token and user data in auth context
+              await login(formData.email, formData.password);
+              
+              // Store vendor data for profile pre-population
+              const userData = {
+                email: formData.email,
+                fullName: formData.fullName,
+                phone: formData.phone,
+                businessName: formData.businessName,
+                businessCategory: formData.businessCategory,
+                businessAddress: formData.businessAddress,
+              };
+              localStorage.setItem('pending_profile_data', JSON.stringify(userData));
+              
+              // Redirect to vendor dashboard
+              showSuccess('Registration successful! Setting up your vendor account...');
+              navigate('/vendor/dashboard');
+              return;
+            }
+          } catch (loginError) {
+            console.error('Auto-login failed:', loginError);
+            // Continue with normal flow if auto-login fails
+          }
+          
+          // Fallback to normal flow if auto-login fails
+          localStorage.setItem('vendor_token', res.token || '');
+          const userData = {
+            email: formData.email,
+            fullName: formData.fullName,
+            phone: formData.phone,
+            businessName: formData.businessName,
+            businessCategory: formData.businessCategory,
+            businessAddress: formData.businessAddress,
+          };
+          localStorage.setItem('pending_profile_data', JSON.stringify(userData));
+          showSuccess('Registration successful! Please log in to continue.');
+          navigate('/login');
         }
+
+        // Create and store complete vendor profile from signup data
+        const vendorProfile = {
+          business_name: formData.businessName,
+          business_category: finalBusinessCategory,
+          business_address: formData.businessAddress,
+          delivery_radius: formData.deliveryRadius,
+          service_areas: formData.serviceAreas,
+          opening_hours: `${formData.openingHours}:00`,
+          closing_hours: `${formData.closingHours}:00`,
+          offers_delivery: formData.offersDelivery,
+          phone: formData.phone,
+          cac_number: formData.cacNumber,
+          business_description: formData.businessDescription,
+          logo: formData.logo,
+          user: {
+            username: formData.email.split('@')[0],
+            email: formData.email,
+            first_name: firstName,
+            last_name: lastName,
+            full_name: formData.fullName
+          },
+          // Add any additional fields from the response
+          ...res
+        };
+
+        // Store the complete profile data
+        localStorage.setItem('vendor_profile', JSON.stringify(vendorProfile));
+        console.log('Complete vendor profile stored:', vendorProfile);
+
         // Show success message for completing step 3 (Location & Delivery)
         showSuccess('Account setup completed successfully! Now add your menu items.');
         setStep(3); // Move to menu items step
@@ -301,8 +375,8 @@ const VendorSignUp = () => {
   return (
     <div className="user-login__bg">
       <div className="user-login__card">
-        <div className="logo-blackbox">
-          <img src="/plainlogo.png" alt="Logo" className="logo-img" />
+        <div className="user-login__logo">
+          <img src="/logo.png" alt="Bestyy Logo" />
         </div>
         <div style={{ width: '100%', marginBottom: '1.2rem' }}>
           <div style={{ fontWeight: 600, fontSize: '1.1rem', textAlign: 'center', marginBottom: '0.5rem' }}>
