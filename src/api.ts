@@ -366,6 +366,27 @@ export async function fetchUserOrders(token: string, params?: {
   return responseBody || response.json();
 }
 
+// Fetch order details for a specific order
+export async function fetchOrderDetails(token: string, orderId: string) {
+  const response = await fetch(`${API_URL}/api/user/orders/${orderId}/`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+  
+  if (!response.ok) {
+    let errorMsg = 'Failed to fetch order details';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
 // Fetch order tracking information
 export async function fetchOrderTracking(token: string, orderId: string) {
   const response = await fetch(`${API_URL}/api/user/orders/${orderId}/tracking/`, {
