@@ -216,7 +216,7 @@ const ProfilePage = () => {
     <div style={{ fontFamily: 'Nunito Sans, sans-serif', color: '#111', maxWidth: 900, margin: '0 auto', padding: 32 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
         <div>
-          <h2 style={{ fontWeight: 700, fontSize: 32, marginBottom: 8 }}>Profile Settings</h2>
+      <h2 style={{ fontWeight: 700, fontSize: 32, marginBottom: 8 }}>Profile Settings</h2>
           <div style={{ color: '#888', fontSize: 17, marginBottom: 8 }}>Manage your Bestie Account and preferences</div>
         </div>
         <div style={{
@@ -282,7 +282,7 @@ const ProfilePage = () => {
       ) : profile ? (
         <form onSubmit={handleSave}>
           {/* Profile Card */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 32 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 32 }}>
             <div style={{ position: 'relative', width: 80, height: 80 }}>
               {previewPicture ? (
                 <img src={previewPicture} alt="Profile Preview" style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover' }} />
@@ -330,50 +330,50 @@ const ProfilePage = () => {
               <div style={{ color: '#10b981', fontSize: 14, fontWeight: '600', textTransform: 'capitalize' }}>
                 {userRole === 'user' ? 'Customer' : userRole === 'vendor' ? 'Business Owner' : 'Delivery Partner'}
               </div>
-            </div>
+        </div>
             <button type="button" onClick={() => setEditMode(!editMode)} style={{ background: '#10b981', color: '#fff', fontWeight: 700, fontSize: 16, border: 'none', borderRadius: 8, padding: '10px 28px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
               <Edit2 size={18} /> Edit
             </button>
-          </div>
-              {/* Profile Form */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 32 }}>
-          <div>
+      </div>
+      {/* Profile Form */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 32 }}>
+        <div>
             <label style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: '8px' }}>
               <User size={16} color="#10b981" /> Full Name
             </label>
-            <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Full Name" style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6 }} disabled={!editMode} />
-          </div>
-          <div>
+              <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Full Name" style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6 }} disabled={!editMode} />
+        </div>
+        <div>
             <label style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: '8px' }}>
               <User size={16} color="#10b981" /> Nick Name
             </label>
-            <input type="text" value={nickName} onChange={e => setNickName(e.target.value)} placeholder="Nick Name" style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6 }} disabled={!editMode} />
-          </div>
-          <div>
+              <input type="text" value={nickName} onChange={e => setNickName(e.target.value)} placeholder="Nick Name" style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6 }} disabled={!editMode} />
+        </div>
+        <div>
             <label style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Clock size={16} color="#10b981" /> Language
             </label>
-            <select value={language} onChange={e => setLanguage(e.target.value)} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6 }} disabled={!editMode}>
-              <option value="en">English</option>
-              <option value="fr">French</option>
-              <option value="es">Spanish</option>
-            </select>
-          </div>
-          <div>
+              <select value={language} onChange={e => setLanguage(e.target.value)} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6 }} disabled={!editMode}>
+                <option value="en">English</option>
+                <option value="fr">French</option>
+                <option value="es">Spanish</option>
+          </select>
+        </div>
+        <div>
             <label style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Mail size={16} color="#10b981" /> Email
             </label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="example@gmail.com" style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6 }} disabled={!editMode} />
-          </div>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="example@gmail.com" style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6 }} disabled={!editMode} />
+            </div>
         </div>
 
           {/* Business Information Section - Only for Vendors and Couriers */}
           {(isVendor || isCourier) && (
-            <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 2px 12px #f3f4f6', border: '1.5px solid #f3f4f6', marginBottom: 32, padding: 32 }}>
-              <div style={{ fontWeight: 700, fontSize: 20, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 2px 12px #f3f4f6', border: '1.5px solid #f3f4f6', marginBottom: 32, padding: 32 }}>
+            <div style={{ fontWeight: 700, fontSize: 20, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10 }}>
                 <Building2 size={24} color="#10b981" />
                 {isCourier ? 'Courier Information' : 'Business Information'}
-              </div>
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
               <div>
                 <label style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -584,7 +584,7 @@ const ProfilePage = () => {
           <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 2px 12px #f3f4f6', border: '1.5px solid #f3f4f6', marginBottom: 32, padding: 32 }}>
             <div style={{ fontWeight: 700, fontSize: 20, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10 }}>
               <Bell size={24} color="#10b981" /> Notifications
-            </div>
+        </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
               <div>
           <div style={{ fontWeight: 700, fontSize: 16 }}>Email Notifications</div>
@@ -610,7 +610,7 @@ const ProfilePage = () => {
           <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 2px 12px #f3f4f6', border: '1.5px solid #f3f4f6', marginBottom: 32, padding: 32 }}>
             <div style={{ fontWeight: 700, fontSize: 20, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10 }}>
               <Shield size={24} color="#10b981" /> Privacy & Security
-            </div>
+        </div>
             <div style={{ marginBottom: 16, fontWeight: 600, fontSize: 16, background: '#f8fafc', borderRadius: 8, padding: '12px 18px' }}>Change Password</div>
             <div style={{ marginBottom: 16, fontWeight: 600, fontSize: 16, background: '#f8fafc', borderRadius: 8, padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 10 }}>
               Two-Factor Authentication <span style={{ background: '#facc15', color: '#fff', fontWeight: 700, fontSize: 13, borderRadius: 6, padding: '2px 10px', marginLeft: 8 }}>Recommended</span>

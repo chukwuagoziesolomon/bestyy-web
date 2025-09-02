@@ -54,10 +54,10 @@ const UserDashboardHome = () => {
         setLoading(false);
         return;
       }
-
+      
       try {
         setLoading(true);
-        setError(null);
+      setError(null);
         const response: OrdersResponse = await fetchUserOrders(token);
         setOrders(response.results || []);
       } catch (err) {
@@ -107,7 +107,7 @@ const UserDashboardHome = () => {
 
   if (loading) {
     return (
-      <div style={{ 
+      <div style={{
         fontFamily: 'Nunito Sans, sans-serif', 
         color: '#111',
         display: 'flex',
@@ -125,8 +125,8 @@ const UserDashboardHome = () => {
 
   if (error) {
     return (
-      <div style={{ 
-        fontFamily: 'Nunito Sans, sans-serif', 
+      <div style={{
+        fontFamily: 'Nunito Sans, sans-serif',
         color: '#111',
         display: 'flex',
         justifyContent: 'center',
@@ -143,20 +143,20 @@ const UserDashboardHome = () => {
         }}>
           <h3 style={{ color: '#dc2626', marginBottom: 8 }}>Error Loading Orders</h3>
           <p style={{ color: '#991b1b', marginBottom: 16 }}>{error}</p>
-          <button 
+        <button 
             onClick={() => window.location.reload()}
-            style={{
+          style={{
               background: '#dc2626',
-              color: 'white',
-              border: 'none',
+            color: 'white',
+            border: 'none',
               borderRadius: 8,
               padding: '12px 24px',
-              cursor: 'pointer',
+            cursor: 'pointer',
               fontWeight: 600
-            }}
-          >
-            Try Again
-          </button>
+          }}
+        >
+          Try Again
+        </button>
         </div>
       </div>
     );
@@ -239,7 +239,7 @@ const UserDashboardHome = () => {
                       </td>
                       <td style={{ padding: '20px 18px', color: '#222', fontWeight: 600, borderRight: '1px solid #e5e7eb' }}>
                         {formatDate(order.created_at)}
-                      </td>
+                    </td>
                       <td style={{ padding: '20px 18px', borderRight: '1px solid #e5e7eb' }}>
                         <span style={{ 
                           background: statusColors.background, 
@@ -251,8 +251,8 @@ const UserDashboardHome = () => {
                         }}>
                           {order.status_display}
                         </span>
-                      </td>
-                      <td style={{ padding: '20px 18px' }}>
+                    </td>
+                    <td style={{ padding: '20px 18px' }}>
                         <button style={{ 
                           background: '#f8fafc', 
                           color: '#222', 
@@ -265,8 +265,8 @@ const UserDashboardHome = () => {
                         }}>
                           View Details
                         </button>
-                      </td>
-                    </tr>
+                    </td>
+                  </tr>
                   );
                 })
               )}
