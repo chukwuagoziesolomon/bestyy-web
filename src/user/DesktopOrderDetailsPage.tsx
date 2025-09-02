@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, X, MessageCircle, MapPin, Clock, Package, CreditCard, User, Phone } from 'lucide-react';
+import { fetchOrderDetails } from '../api';
 interface OrderItem {
   id: number;
   dish_name: string;
