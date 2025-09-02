@@ -28,8 +28,8 @@ export const useResponsive = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Screen sizes
-  const isMobile = isClient ? windowSize.width < 768 : false;
+  // Screen sizes - default to mobile to prevent flash
+  const isMobile = isClient ? windowSize.width < 768 : true;
   const isTablet = isClient ? windowSize.width >= 768 && windowSize.width < 1024 : false;
   const isDesktop = isClient ? windowSize.width >= 1024 : false;
   const isMobileOrTablet = isMobile || isTablet;
@@ -43,13 +43,15 @@ export const useResponsive = () => {
 
   // Debug logging for screen size changes
   useEffect(() => {
-    console.log('useResponsive - Screen size changed:', {
-      width: windowSize.width,
-      isMobile,
-      isTablet,
-      isDesktop
-    });
-  }, [windowSize.width, isMobile, isTablet, isDesktop]);
+    if (isClient) {
+      console.log('useResponsive - Screen size changed:', {
+        width: windowSize.width,
+        isMobile,
+        isTablet,
+        isDesktop
+      });
+    }
+  }, [windowSize.width, isMobile, isTablet, isDesktop, isClient]);
 
   return {
     isMobile,

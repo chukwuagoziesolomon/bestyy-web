@@ -11,7 +11,6 @@ import Footer from './Footer';
 
 // Auth Components
 import UserLogin from './UserLogin';
-import CompleteProfileForm from './components/auth/CompleteProfileForm';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import VendorSignUp from './VendorSignUp';
 import CourierSignUp from './CourierSignUp';
@@ -33,7 +32,6 @@ import UserSignup from './pages/UserSignup';
 // Vendor Components
 import VendorDashboardLayout from './dashboard/VendorDashboardLayout';
 import ResponsiveVendorDashboard from './dashboard/ResponsiveVendorDashboard';
-import ResponsiveOrders from './dashboard/ResponsiveOrders';
 import MenuPage from './dashboard/MenuPage';
 import AddMenuItemPage from './dashboard/AddMenuItemPage';
 import ResponsiveEditMenu from './dashboard/ResponsiveEditMenu';
@@ -52,12 +50,13 @@ import CourierProfile from './dashboard/CourierProfile';
 // User Components
 import UserDashboardLayout from './dashboard/UserDashboardLayout';
 import ResponsiveDashboardHome from './user/ResponsiveDashboardHome';
+import ResponsiveOrders from './user/ResponsiveOrders';
 import MobileOrdersPage from './user/MobileOrdersPage';
 import ResponsiveOrderDetails from './components/ResponsiveOrderDetails';
 import ResponsiveSavedAddresses from './user/ResponsiveSavedAddresses';
 import MobileAddAddressPage from './user/MobileAddAddressPage';
 import ResponsiveFavorites from './user/ResponsiveFavorites';
-import ResponsiveBookings from './user/ResponsiveBookings';
+
 import ResponsivePaymentMethods from './user/ResponsivePaymentMethods';
 import ResponsiveAddCard from './user/ResponsiveAddCard';
 import ResponsiveProfileSettings from './user/ResponsiveProfileSettings';
@@ -66,9 +65,7 @@ import ResponsiveProfileSettings from './user/ResponsiveProfileSettings';
 const VendorRoute: React.FC = () => {
   return (
     <ProtectedRoute roles={['vendor', 'admin']}>
-      <VendorDashboardLayout>
-        <Outlet />
-      </VendorDashboardLayout>
+      <VendorDashboardLayout />
     </ProtectedRoute>
   );
 };
@@ -76,9 +73,7 @@ const VendorRoute: React.FC = () => {
 const CourierRoute: React.FC = () => {
   return (
     <ProtectedRoute roles={['courier', 'admin']}>
-      <CourierDashboardLayout>
-        <Outlet />
-      </CourierDashboardLayout>
+      <CourierDashboardLayout />
     </ProtectedRoute>
   );
 };
@@ -86,9 +81,7 @@ const CourierRoute: React.FC = () => {
 const UserRoute: React.FC = () => {
   return (
     <ProtectedRoute roles={['user', 'admin']}>
-      <UserDashboardLayout>
-        <Outlet />
-      </UserDashboardLayout>
+      <UserDashboardLayout />
     </ProtectedRoute>
   );
 };
@@ -162,7 +155,6 @@ function App() {
                 </>
               } />
             <Route path="role-selection" element={<RoleSelection />} />
-            <Route path="complete-profile" element={<CompleteProfileForm />} />
             <Route path="plans" element={<PlanSelection />} />
             <Route path="terms" element={<TermsAndConditions />} />
           </Route>
@@ -233,12 +225,13 @@ function App() {
           <Route path="/user" element={<UserRoute />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<ResponsiveDashboardHome />} />
-            <Route path="orders" element={<MobileOrdersPage />} />
+            <Route path="orders" element={<ResponsiveOrders />} />
             <Route path="orders/:id" element={<ResponsiveOrderDetails />} />
             <Route path="addresses" element={<ResponsiveSavedAddresses />} />
             <Route path="addresses/add" element={<MobileAddAddressPage />} />
+            <Route path="addresses/edit/:id" element={<MobileAddAddressPage />} />
             <Route path="favorites" element={<ResponsiveFavorites />} />
-            <Route path="bookings" element={<ResponsiveBookings />} />
+    
             <Route path="payments" element={<ResponsivePaymentMethods />} />
             <Route path="payments/add" element={<ResponsiveAddCard />} />
             <Route path="settings" element={<ResponsiveProfileSettings />} />

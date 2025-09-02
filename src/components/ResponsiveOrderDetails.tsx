@@ -2,6 +2,7 @@ import React from 'react';
 import { useParams } from 'react-router-dom';
 import { useResponsive } from '../hooks/useResponsive';
 import OrderDetailsPage from '../user/OrderDetailsPage';
+import DesktopOrderDetailsPage from '../user/DesktopOrderDetailsPage';
 
 const ResponsiveOrderDetails = () => {
   const { orderId } = useParams<{ orderId: string }>();
@@ -15,25 +16,9 @@ const ResponsiveOrderDetails = () => {
     return <OrderDetailsPage orderId={orderId} />;
   }
 
-  // For desktop, show a desktop-appropriate view or redirect
+  // For desktop, show the desktop order details page
   console.log('Desktop view - showing desktop order details');
-  return (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      height: '100vh',
-      backgroundColor: '#f8f9fa',
-      fontSize: '18px',
-      color: '#666'
-    }}>
-      <div style={{ textAlign: 'center' }}>
-        <h2>Order Details</h2>
-        <p>Desktop view for Order #{orderId}</p>
-        <p>This would show the desktop version of order details</p>
-      </div>
-    </div>
-  );
+  return <DesktopOrderDetailsPage orderId={orderId} />;
 };
 
 export default ResponsiveOrderDetails;

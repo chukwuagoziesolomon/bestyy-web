@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import './UserLogin.css';
-import { showSuccess, showError } from './toast';
+import { showError } from './toast';
 import { useNavigate } from 'react-router-dom';
-import { authService } from './api/auth';
-import RoleSelector from './RoleSelector';
+import { useAuth } from './context/AuthContext';
 
 interface UserLoginProps {
   isSignUp?: boolean;
@@ -11,80 +10,27 @@ interface UserLoginProps {
 
 const UserLogin: React.FC<UserLoginProps> = ({ isSignUp = false }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [showRoleSelector, setShowRoleSelector] = useState(false);
-  const [availableRoles, setAvailableRoles] = useState<string[]>([]);
-  const [userToken, setUserToken] = useState<string | null>(null);
-  const [userEmail, setUserEmail] = useState('');
   const navigate = useNavigate();
+  const { login } = useAuth();
 
-  const handleRoleSelect = (role: string) => {
-    // Normalize the role name
-    const normalizedRole = role.toLowerCase();
-    
-    // Store the role in localStorage
-    localStorage.setItem('userRole', normalizedRole);
-    
-    // Determine the dashboard route based on role
-    let dashboardRoute = '/user/dashboard'; // Default route
-    
-    if (normalizedRole === 'vendor') {
-      dashboardRoute = '/vendor/dashboard';
-    } else if (normalizedRole === 'courier' || normalizedRole === 'rider') {
-      dashboardRoute = '/courier/dashboard';
-    }
-    
-    // Force a full page reload to ensure all auth state is properly initialized
-    showSuccess(`Logging in as ${normalizedRole}`);
-    window.location.href = dashboardRoute;
-  };
+
 
   const handleLogin = async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      const response = await authService.login(email, password);
       
-      // Store tokens and user data
-      localStorage.setItem('access_token', response.access);
-      localStorage.setItem('refresh_token', response.refresh);
-      localStorage.setItem('user', JSON.stringify(response.user));
+      // Use the AuthContext login function which handles all the logic
+      await login(email, password);
       
-      setUserEmail(email);
+      // The AuthContext will handle the redirect based on profile completion
+      // and role-based routing
       
-      // Check if user has multiple roles
-      if (response.user.roles && response.user.roles.length > 1) {
-        setAvailableRoles(response.user.roles);
-        setUserToken(response.access);
-        setShowRoleSelector(true);
-      } else {
-        // If single role, proceed directly
-        const role = response.user.role || 'user';
-        localStorage.setItem('userRole', role);
-        handleRoleSelect(role);
-      }
     } catch (error: any) {
       showError(error.response?.data?.detail || 'Login failed. Please check your credentials.');
     } finally {
       setIsLoading(false);
     }
   };
-
-  if (showRoleSelector) {
-    return (
-      <div className="user-login__bg">
-        <div className="user-login__card" style={{ maxWidth: '800px' }}>
-          <div className="user-login__logo">
-            <img src="/logo.png" alt="Bestyy Logo" />
-          </div>
-          <h1 className="user-login__title">Welcome back, {userEmail}</h1>
-          <p className="user-login__subtitle">Select your role to continue</p>
-          <RoleSelector 
-            roles={availableRoles} 
-            onRoleSelect={handleRoleSelect} 
-          />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="user-login__bg">

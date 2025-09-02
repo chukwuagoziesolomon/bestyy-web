@@ -1,48 +1,57 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Home, Briefcase, Edit, Trash2, Plus } from 'lucide-react';
-import { fetchUserAddresses, createUserAddress, updateUserAddress, deleteUserAddress } from '../api';
-import { showError, showSuccess } from '../toast';
-import BottomNav from '../components/BottomNav';
-import HamburgerMenu from '../components/HamburgerMenu';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Home, Briefcase, Edit, Trash2, Plus, Star } from 'lucide-react';
+import MobileHeader from '../components/MobileHeader';
 import { useResponsive } from '../hooks/useResponsive';
+import { fetchUserAddresses, deleteUserAddress, setDefaultAddress } from '../api';
 
 interface Address {
   id: number;
   address_type: string;
-  street_address: string;
+  address: string;
   city: string;
   state: string;
-  postal_code: string;
+  zip_code: string;
   is_default: boolean;
 }
 
 const MobileSavedAddressesPage: React.FC = () => {
   const { isTablet } = useResponsive();
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
+  const location = useLocation();
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState<number | null>(null);
+  const [defaultLoading, setDefaultLoading] = useState<number | null>(null);
+  const token = localStorage.getItem('access_token');
 
+  // Fetch addresses from API
   useEffect(() => {
-    async function getAddresses() {
-      setLoading(true);
-      setError(null);
+    const loadAddresses = async () => {
+      if (!token) {
+        setError('No authentication token found');
+        setLoading(false);
+        return;
+      }
+
       try {
-        if (token) {
-          const data = await fetchUserAddresses(token);
-          setAddresses(data || []);
-        }
+        setLoading(true);
+        setError(null);
+        const data = await fetchUserAddresses(token);
+        console.log('Fetched addresses:', data);
+        const addressesArray = data.results || data || [];
+        setAddresses(addressesArray);
       } catch (err: any) {
-        setError(err.message || 'Could not fetch addresses');
-        showError(err.message || 'Could not fetch addresses');
+        console.error('Error fetching addresses:', err);
+        setError(err.message || 'Failed to fetch addresses');
       } finally {
         setLoading(false);
       }
-    }
-    getAddresses();
-  }, [token]);
+    };
+
+    loadAddresses();
+  }, [token, location.search]);
 
   const getAddressIcon = (type: string) => {
     switch (type.toLowerCase()) {
@@ -60,7 +69,42 @@ const MobileSavedAddressesPage: React.FC = () => {
   };
 
   const formatAddress = (address: Address) => {
-    return `${address.street_address}, ${address.city} ${address.state}, ${address.postal_code}`;
+    return `${address.address}, ${address.city} ${address.state}, ${address.zip_code}`;
+  };
+
+  const handleDeleteAddress = async (id: number) => {
+    if (!token) return;
+    
+    try {
+      setDeleteLoading(id);
+      await deleteUserAddress(token, id);
+      // Remove the deleted address from state
+      setAddresses(prev => prev.filter(addr => addr.id !== id));
+    } catch (err: any) {
+      console.error('Error deleting address:', err);
+      alert(err.message || 'Failed to delete address');
+    } finally {
+      setDeleteLoading(null);
+    }
+  };
+
+  const handleSetDefault = async (id: number) => {
+    if (!token) return;
+    
+    try {
+      setDefaultLoading(id);
+      await setDefaultAddress(token, id);
+      // Update the addresses state to reflect the new default
+      setAddresses(prev => prev.map(addr => ({
+        ...addr,
+        is_default: addr.id === id
+      })));
+    } catch (err: any) {
+      console.error('Error setting default address:', err);
+      alert(err.message || 'Failed to set default address');
+    } finally {
+      setDefaultLoading(null);
+    }
   };
 
   return (
@@ -73,34 +117,29 @@ const MobileSavedAddressesPage: React.FC = () => {
       position: 'relative',
       paddingBottom: '80px'
     }}>
+      <style>
+        {`
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+        `}
+      </style>
       {/* Header Section */}
-      <div style={{
-        backgroundColor: 'white',
-        padding: '16px 20px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        borderBottom: '1px solid #e9ecef',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100
-      }}>
-        <h1 style={{
-          fontSize: '24px',
-          fontWeight: '600',
-          margin: 0,
-          color: '#212529'
-        }}>
-          Saved Addresses
-        </h1>
-        <HamburgerMenu size={24} color="#6c757d" />
-      </div>
+                           <MobileHeader
+          title="Saved Addresses"
+          subtitle="Manage your saved delivery addresses"
+          variant="default"
+          profileImageSize="medium"
+          showProfileImage={true}
+        />
 
       {/* Description */}
       <div style={{
         backgroundColor: 'white',
         padding: '20px',
-        marginBottom: '16px'
+        marginBottom: '16px',
+        marginTop: '8px'
       }}>
         <p style={{
           fontSize: '14px',
@@ -220,32 +259,67 @@ const MobileSavedAddressesPage: React.FC = () => {
                       display: 'flex',
                       gap: '8px'
                     }}>
-                      <button style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: '36px',
-                        height: '36px',
-                        backgroundColor: '#f8f9fa',
-                        border: '1px solid #e9ecef',
-                        borderRadius: '8px',
-                        cursor: 'pointer'
-                      }}>
+                      {!address.is_default && (
+                        <button 
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '36px',
+                            height: '36px',
+                            backgroundColor: '#f8f9fa',
+                            border: '1px solid #e9ecef',
+                            borderRadius: '8px',
+                            cursor: 'pointer'
+                          }}
+                          onClick={() => handleSetDefault(address.id)}
+                          disabled={defaultLoading === address.id}
+                        >
+                          {defaultLoading === address.id ? (
+                            <div style={{ width: '16px', height: '16px', border: '2px solid #f59e0b', borderTop: '2px solid transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                          ) : (
+                            <Star size={16} color="#f59e0b" />
+                          )}
+                        </button>
+                      )}
+                      
+                      <button 
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '36px',
+                          height: '36px',
+                          backgroundColor: '#f8f9fa',
+                          border: '1px solid #e9ecef',
+                          borderRadius: '8px',
+                          cursor: 'pointer'
+                        }}
+                        onClick={() => navigate(`/user/addresses/edit/${address.id}`)}
+                      >
                         <Edit size={16} color="#6c757d" />
                       </button>
                       
-                      <button style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: '36px',
-                        height: '36px',
-                        backgroundColor: '#f8f9fa',
-                        border: '1px solid #e9ecef',
-                        borderRadius: '8px',
-                        cursor: 'pointer'
-                      }}>
-                        <Trash2 size={16} color="#dc3545" />
+                      <button 
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '36px',
+                          height: '36px',
+                          backgroundColor: '#f8f9fa',
+                          border: '1px solid #e9ecef',
+                          borderRadius: '8px',
+                          cursor: 'pointer'
+                        }}
+                        onClick={() => handleDeleteAddress(address.id)}
+                        disabled={deleteLoading === address.id}
+                      >
+                        {deleteLoading === address.id ? (
+                          <div style={{ width: '16px', height: '16px', border: '2px solid #dc3545', borderTop: '2px solid transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                        ) : (
+                          <Trash2 size={16} color="#dc3545" />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -265,7 +339,7 @@ const MobileSavedAddressesPage: React.FC = () => {
 
         {/* Add New Address Button */}
         <button
-          onClick={() => navigate('/user/dashboard/addresses/add')}
+          onClick={() => navigate('/user/addresses/add')}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -289,9 +363,9 @@ const MobileSavedAddressesPage: React.FC = () => {
         </button>
       </div>
 
-      <BottomNav />
-    </div>
-  );
-};
+             {/* Bottom Navigation is now handled by UserDashboardLayout */}
+     </div>
+   );
+ };
 
-export default MobileSavedAddressesPage;
+ export default MobileSavedAddressesPage;

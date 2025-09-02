@@ -56,11 +56,11 @@ if (typeof window !== 'undefined') {
 
     if (token) {
       try {
-        const response = await fetch(`${API_URL}/user/orders/user/`, {
+        const response = await fetch(`${API_URL}/api/user/orders/`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Token ${token}`,
+            'Authorization': `Bearer ${token}`,
           },
         });
         console.log('User token test - Status:', response.status);
@@ -73,11 +73,11 @@ if (typeof window !== 'undefined') {
 
     if (vendorToken) {
       try {
-        const response = await fetch(`${API_URL}/orders/vendor/tracking/`, {
+        const response = await fetch(`${API_URL}/api/orders/vendor/tracking/`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Token ${vendorToken}`,
+            'Authorization': `Bearer ${vendorToken}`,
           },
         });
         console.log('Vendor token test - Status:', response.status);

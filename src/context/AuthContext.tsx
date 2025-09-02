@@ -1,10 +1,10 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 // Create axios instance with base URL
 const api = axios.create({
-  baseURL: `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/api`,
+  baseURL: `${process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000'}`,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -38,10 +38,10 @@ api.interceptors.response.use(
         const refreshToken = localStorage.getItem('refresh_token');
         if (refreshToken) {
           const response = await axios.post(
-            `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/api/token/refresh/`,
+            `${process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000'}/api/auth/token/refresh/`,
             { refresh: refreshToken },
             {
-              baseURL: `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/api`
+              baseURL: `${process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000'}`
             }
           );
           
@@ -72,10 +72,7 @@ interface User {
   email: string;
   first_name: string;
   last_name: string;
-  profile_complete: boolean;
   role: string;
-  phone?: string;
-  address?: string;
 }
 
 interface AuthContextType {
@@ -84,7 +81,6 @@ interface AuthContextType {
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  completeProfile: (data: { phone: string; address: string }) => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
@@ -95,7 +91,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
 
   // Check if user is logged in on initial load
   useEffect(() => {
@@ -108,15 +103,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       try {
         // Get fresh user data from the backend using the configured axios instance
-        const { data } = await api.get('/user/me/');
+        const { data } = await api.get('/api/user/me/');
         
-        // Update user data in state and localStorage
-        const userData = {
+        // Handle nested user structure if it exists
+        const userData = data.user ? {
+          id: data.user.id,
+          email: data.user.email,
+          first_name: data.user.first_name || '',
+          last_name: data.user.last_name || '',
+          role: data.user.role || 'user',
+          ...data.user
+        } : {
           id: data.id,
           email: data.email,
           first_name: data.first_name || '',
           last_name: data.last_name || '',
-          profile_complete: data.profile_complete || false,
           role: data.role || 'user',
           ...data
         };
@@ -140,51 +141,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   }, []);
 
-  // Handle Google OAuth callback
-  useEffect(() => {
-    const code = searchParams.get('code');
-    const error = searchParams.get('error');
 
-    const handleGoogleCallback = async () => {
-      if (!code) return;
-      
-      try {
-        setLoading(true);
-        const { data } = await api.get(`/auth/google/callback?code=${code}`);
-        
-        localStorage.setItem('access_token', data.access);
-        localStorage.setItem('refresh_token', data.refresh);
-        api.defaults.headers.common['Authorization'] = `Bearer ${data.access}`;
-        setUser(data.user);
-        
-        if (data.user.profile_complete) {
-          navigate('/dashboard');
-        } else {
-          navigate('/complete-profile');
-        }
-      } catch (err) {
-        console.error('Google auth failed:', err);
-        setError('Failed to authenticate with Google');
-        navigate('/login', { state: { error: 'google_auth_failed' } });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (error) {
-      setError('Google authentication was cancelled');
-      navigate('/login', { state: { error: 'auth_cancelled' } });
-    } else if (code) {
-      handleGoogleCallback();
-    }
-  }, [searchParams, navigate]);
 
   const login = async (email: string, password: string) => {
     try {
       setLoading(true);
       setError(null);
       
-      const response = await api.post('/user/login/', { email, password });
+      const response = await api.post('/api/user/login/', { email, password });
       
       const { access, refresh, user } = response.data;
       
@@ -195,38 +159,39 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Set the default authorization header for subsequent requests
       api.defaults.headers.common['Authorization'] = `Bearer ${access}`;
       
-      // Ensure user object has required fields
-      const userData = {
+      // Handle nested user structure if it exists
+      const userData = user.user ? {
+        id: user.user.id,
+        email: user.user.email,
+        first_name: user.user.first_name || '',
+        last_name: user.user.last_name || '',
+        role: user.user.role || 'user',
+        ...user.user
+      } : {
         id: user.id,
         email: user.email,
         first_name: user.first_name || '',
         last_name: user.last_name || '',
-        profile_complete: user.profile_complete || false,
         role: user.role || 'user',
-        ...user // Spread any additional user properties
+        ...user
       };
       
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
       
-      // Redirect based on role and profile completion
-      if (userData.profile_complete) {
-        // Redirect based on user role
-        switch(userData.role.toLowerCase()) {
-          case 'vendor':
-            navigate('/vendor/dashboard');
-            break;
-          case 'courier':
-            navigate('/courier/dashboard');
-            break;
-          case 'admin':
-            navigate('/admin/dashboard');
-            break;
-          default: // Regular user
-            navigate('/user/dashboard');
-        }
-      } else {
-        navigate('/complete-profile');
+      // Redirect based on user role
+      switch(userData.role.toLowerCase()) {
+        case 'vendor':
+          navigate('/vendor/dashboard');
+          break;
+        case 'courier':
+          navigate('/courier/dashboard');
+          break;
+        case 'admin':
+          navigate('/admin/dashboard');
+          break;
+        default: // Regular user
+          navigate('/user/dashboard');
       }
     } catch (err) {
       setError('Invalid email or password');
@@ -238,7 +203,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = async () => {
     try {
-      await axios.post('/api/auth/logout/');
+      await api.post('/api/auth/logout/');
     } catch (err) {
       console.error('Logout error:', err);
     } finally {
@@ -249,26 +214,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const completeProfile = async (profileData: { phone: string; address: string }) => {
-    try {
-      setLoading(true);
-      const { data } = await api.post('/user/social/complete-profile/', profileData);
-      
-      setUser(prev => prev ? { ...prev, ...data, profile_complete: true } : null);
-      navigate('/dashboard');
-    } catch (err) {
-      setError('Failed to complete profile');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
+
 
   const refreshUser = async () => {
     try {
-      const { data } = await api.get('/user/me/');
-      setUser(data);
-      return data;
+      const { data } = await api.get('/api/user/me/');
+      
+      // Handle nested user structure if it exists
+      const userData = data.user ? {
+        id: data.user.id,
+        email: data.user.email,
+        first_name: data.user.first_name || '',
+        last_name: data.user.last_name || '',
+        role: data.user.role || 'user',
+        ...data.user
+      } : {
+        id: data.id,
+        email: data.email,
+        first_name: data.first_name || '',
+        last_name: data.last_name || '',
+        role: data.role || 'user',
+        ...data
+      };
+      
+      setUser(userData);
+      return userData;
     } catch (err) {
       console.error('Failed to refresh user data:', err);
       throw err;
@@ -282,7 +252,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       error,
       login,
       logout,
-      completeProfile,
       refreshUser,
     }}>
       {children}

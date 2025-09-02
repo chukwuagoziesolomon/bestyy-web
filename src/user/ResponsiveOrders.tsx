@@ -1,18 +1,18 @@
 import React from 'react';
 import { useResponsive } from '../hooks/useResponsive';
-import UserDashboardHome from './UserDashboardHome';
-import MobileDashboardHome from './MobileDashboardHome';
+import UserOrders from './UserOrders';
+import MobileOrdersPage from './MobileOrdersPage';
 
-const ResponsiveDashboardHome: React.FC = () => {
+const ResponsiveOrders: React.FC = () => {
   const { isMobile, isTablet } = useResponsive();
   
   // Use mobile component for mobile or tablet view
   if (isMobile || isTablet) {
-    return <MobileDashboardHome />;
+    return <MobileOrdersPage />;
   }
   
   // Use desktop component for desktop view
-  return <UserDashboardHome />;
+  return <UserOrders />;
 };
 
-export default ResponsiveDashboardHome;
+export default ResponsiveOrders;

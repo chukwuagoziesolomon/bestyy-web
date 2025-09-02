@@ -5,12 +5,10 @@ import '../../styles/loading-spinner.css';
 
 interface PrivateRouteProps {
   roles?: string[];
-  requireProfileComplete?: boolean;
 }
 
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ 
   roles = [],
-  requireProfileComplete = true,
 }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
@@ -28,10 +26,7 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Check if profile needs to be completed
-  if (requireProfileComplete && !user.profile_complete) {
-    return <Navigate to="/complete-profile" state={{ from: location }} replace />;
-  }
+
 
   // Check user roles if required
   if (roles.length > 0 && !roles.includes(user.role)) {

@@ -203,22 +203,20 @@ const VendorSignUp = () => {
           : formData.businessCategory) || '';
         const payload = {
           user: {
-            username: formData.email.split('@')[0],
             email: formData.email,
             password: formData.password,
-            confirm_password: formData.confirmPassword, // This field is required
             first_name: firstName,
             last_name: lastName,
+            phone: formData.phone,
           },
-          phone: formData.phone,
           business_name: formData.businessName,
-          business_category: finalBusinessCategory,
           business_address: formData.businessAddress,
-          delivery_radius: formData.deliveryRadius,
-          service_areas: formData.serviceAreas,
-          opening_hours: `${formData.openingHours}:00`, // Format to HH:mm:ss
-          closing_hours: `${formData.closingHours}:00`, // Format to HH:mm:ss
-          offers_delivery: formData.offersDelivery,
+          business_phone: formData.phone,
+          business_email: formData.email,
+          business_description: formData.businessDescription || 'Food delivery service',
+          business_category: finalBusinessCategory,
+          business_hours: `${formData.openingHours}:00-${formData.closingHours}:00`,
+          business_days: 'Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
         };
         // First, sign up the vendor
         const res = await signupVendor(payload);

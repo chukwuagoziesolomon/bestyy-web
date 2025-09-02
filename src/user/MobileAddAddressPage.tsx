@@ -1,31 +1,28 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ChevronDown, Check } from 'lucide-react';
-import { createUserAddress } from '../api';
-import { showError, showSuccess } from '../toast';
-import HamburgerMenu from '../components/HamburgerMenu';
+import MobileHeader from '../components/MobileHeader';
 import { useResponsive } from '../hooks/useResponsive';
 
 interface AddressFormData {
   address_type: string;
-  street_address: string;
+  address: string;
   city: string;
   state: string;
-  postal_code: string;
+  zip_code: string;
   is_default: boolean;
 }
 
 const MobileAddAddressPage: React.FC = () => {
   const { isTablet } = useResponsive();
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
 
   const [formData, setFormData] = useState<AddressFormData>({
-    address_type: 'Work',
-    street_address: '',
-    city: 'Alimosho',
-    state: 'Lagos',
-    postal_code: '',
+    address_type: 'home',
+    address: '',
+    city: '',
+    state: '',
+    zip_code: '',
     is_default: false
   });
 
@@ -41,31 +38,26 @@ const MobileAddAddressPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!token) {
-      showError('Authentication required');
-      return;
-    }
-
     // Validation
-    if (!formData.address_type || !formData.street_address || !formData.city || !formData.state || !formData.postal_code) {
-      showError('Please fill in all required fields');
+    if (!formData.address_type || !formData.address || !formData.city || !formData.state || !formData.zip_code) {
+      alert('Please fill in all required fields');
       return;
     }
 
     setLoading(true);
-    try {
-      await createUserAddress(token, formData);
-      showSuccess('Address added successfully!');
-      navigate('/user/dashboard/addresses');
-    } catch (err: any) {
-      showError(err.message || 'Failed to add address');
-    } finally {
+    
+    // Simulate API delay
+    setTimeout(() => {
+      // Simulate successful address creation
+      console.log('Address created:', formData);
+      alert('Address added successfully!');
+      navigate('/user/addresses');
       setLoading(false);
-    }
+    }, 1000);
   };
 
   const handleCancel = () => {
-    navigate('/user/dashboard/addresses');
+    navigate('/user/addresses');
   };
 
   return (
@@ -78,32 +70,20 @@ const MobileAddAddressPage: React.FC = () => {
       position: 'relative'
     }}>
       {/* Header */}
-      <div style={{
-        padding: '16px 20px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        borderBottom: '1px solid #f0f0f0'
-      }}>
-        <button
-          onClick={() => navigate(-1)}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
-          <ArrowLeft size={24} color="#333" />
-        </button>
-        <HamburgerMenu size={24} color="#333" />
-      </div>
+                           <MobileHeader
+          title="Add Address"
+          subtitle="Add new address and save for later"
+          showBackButton={true}
+          variant="default"
+          profileImageSize="medium"
+          showProfileImage={true}
+        />
 
       {/* Content */}
-      <div style={{ padding: '20px' }}>
+      <div style={{ 
+        padding: '20px',
+        marginTop: '8px'
+      }}>
         {/* Title */}
         <h1 style={{
           fontSize: '24px',
@@ -135,8 +115,8 @@ const MobileAddAddressPage: React.FC = () => {
             </label>
             <input
               type="text"
-              value={formData.street_address}
-              onChange={(e) => handleInputChange('street_address', e.target.value)}
+              value={formData.address}
+              onChange={(e) => handleInputChange('address', e.target.value)}
               placeholder="11, add street ave"
               style={{
                 width: '100%',
@@ -197,7 +177,7 @@ const MobileAddAddressPage: React.FC = () => {
             </div>
           </div>
 
-          {/* State Dropdown */}
+          {/* State Input */}
           <div style={{ marginBottom: '24px' }}>
             <label style={{
               display: 'block',
@@ -207,44 +187,26 @@ const MobileAddAddressPage: React.FC = () => {
             }}>
               State
             </label>
-            <div style={{ position: 'relative' }}>
-              <select
-                value={formData.state}
-                onChange={(e) => handleInputChange('state', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '16px',
-                  backgroundColor: '#f5f5f5',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  color: '#333',
-                  outline: 'none',
-                  appearance: 'none',
-                  boxSizing: 'border-box'
-                }}
-              >
-                <option value="Lagos">Lagos</option>
-                <option value="Abuja">Abuja</option>
-                <option value="Rivers">Rivers</option>
-                <option value="Kano">Kano</option>
-                <option value="Oyo">Oyo</option>
-              </select>
-              <ChevronDown
-                size={20}
-                color="#999"
-                style={{
-                  position: 'absolute',
-                  right: '16px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  pointerEvents: 'none'
-                }}
-              />
-            </div>
+            <input
+              type="text"
+              value={formData.state}
+              onChange={(e) => handleInputChange('state', e.target.value)}
+              placeholder="Enter your state"
+              style={{
+                width: '100%',
+                padding: '16px',
+                backgroundColor: '#f5f5f5',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '16px',
+                color: '#333',
+                outline: 'none',
+                boxSizing: 'border-box'
+              }}
+            />
           </div>
 
-          {/* City Dropdown */}
+          {/* City Input */}
           <div style={{ marginBottom: '24px' }}>
             <label style={{
               display: 'block',
@@ -254,41 +216,23 @@ const MobileAddAddressPage: React.FC = () => {
             }}>
               City
             </label>
-            <div style={{ position: 'relative' }}>
-              <select
-                value={formData.city}
-                onChange={(e) => handleInputChange('city', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '16px',
-                  backgroundColor: '#f5f5f5',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  color: '#333',
-                  outline: 'none',
-                  appearance: 'none',
-                  boxSizing: 'border-box'
-                }}
-              >
-                <option value="Alimosho">Alimosho</option>
-                <option value="Ikeja">Ikeja</option>
-                <option value="Victoria Island">Victoria Island</option>
-                <option value="Lekki">Lekki</option>
-                <option value="Surulere">Surulere</option>
-              </select>
-              <ChevronDown
-                size={20}
-                color="#999"
-                style={{
-                  position: 'absolute',
-                  right: '16px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  pointerEvents: 'none'
-                }}
-              />
-            </div>
+            <input
+              type="text"
+              value={formData.city}
+              onChange={(e) => handleInputChange('city', e.target.value)}
+              placeholder="Enter your city"
+              style={{
+                width: '100%',
+                padding: '16px',
+                backgroundColor: '#f5f5f5',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '16px',
+                color: '#333',
+                outline: 'none',
+                boxSizing: 'border-box'
+              }}
+            />
           </div>
 
           {/* ZIP Code */}
@@ -303,8 +247,8 @@ const MobileAddAddressPage: React.FC = () => {
             </label>
             <input
               type="text"
-              value={formData.postal_code}
-              onChange={(e) => handleInputChange('postal_code', e.target.value)}
+              value={formData.zip_code}
+              onChange={(e) => handleInputChange('zip_code', e.target.value)}
               placeholder="Enter ZIP Code"
               style={{
                 width: '100%',

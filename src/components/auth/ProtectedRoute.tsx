@@ -5,14 +5,12 @@ import '../../styles/common.css';
 
 interface ProtectedRouteProps {
   roles?: string[];
-  requireProfileComplete?: boolean;
   redirectTo?: string;
   children?: React.ReactNode;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   roles = [],
-  requireProfileComplete = true,
   redirectTo = '/login',
   children,
 }) => {
@@ -48,13 +46,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/unauthorized" state={{ from: location }} replace />;
   }
 
-  // Check if profile needs to be completed
-  if (requireProfileComplete && !user.profile_complete) {
-    // Don't redirect if already on the complete profile page to avoid loops
-    if (location.pathname !== '/complete-profile') {
-      return <Navigate to="/complete-profile" state={{ from: location }} replace />;
-    }
-  }
+
 
   // Use React.Fragment to avoid extra div in the DOM
   return <React.Fragment>{children || <Outlet />}</React.Fragment>;

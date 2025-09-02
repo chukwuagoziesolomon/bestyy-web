@@ -1,75 +1,118 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import BottomNav from '../components/BottomNav';
-import HamburgerMenu from '../components/HamburgerMenu';
-import { ChevronRight, Clock, Calendar, ChevronLeft } from 'lucide-react';
+import MobileHeader from '../components/MobileHeader';
+import { ChevronRight, Clock, Loader2 } from 'lucide-react';
 import { useResponsive } from '../hooks/useResponsive';
+import { fetchUserOrders } from '../api';
 
 // Types
+interface OrderItem {
+  id: number;
+  dish_name: string;
+  price: string;
+}
+
+interface Vendor {
+  id: number;
+  business_name: string;
+  business_address: string;
+}
+
 interface Order {
   id: number;
-  name: string;
-  restaurant: string;
-  date: string;
-  price: string;
+  order_name: string;
+  vendor: Vendor;
+  items: OrderItem[];
+  items_count: number;
+  total_price: string;
+  total_price_display: string;
+  delivery_address: string;
   status: string;
+  status_display: string;
+  created_at: string;
+  delivered_at?: string;
+  payment_confirmed: boolean;
+  user_receipt_confirmed: boolean;
 }
 
-interface Booking {
-  id: number;
-  hotel: string;
-  date: string;
-  status: string;
-  image: string;
+interface OrdersResponse {
+  count: number;
+  total_pages: number;
+  current_page: number;
+  results: Order[];
 }
 
-// Sample data
-const recentOrders: Order[] = [
-  {
-    id: 1,
-    name: 'Fried Rice and Turkey',
-    restaurant: 'Korede Spagetti',
-    date: '15, Jun 2025, 12:00',
-    price: '₦5,000',
-    status: 'Delivered'
-  },
-  {
-    id: 2,
-    name: 'Jollof Rice and Chicken',
-    restaurant: 'Tasty Bites',
-    date: '14, Jun 2025, 14:30',
-    price: '₦4,500',
-    status: 'In Transit'
+// Helper function to format date
+const formatDate = (dateString: string) => {
+  try {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch (error) {
+    return dateString;
   }
-];
+};
 
-const upcomingBookings: Booking[] = [
-  {
-    id: 1,
-    hotel: 'Luxury Hotel',
-    date: '20, Jun 2025',
-    status: 'Confirmed',
-    image: '/hotel-placeholder.jpg'
+// Helper function to get status styles
+const getStatusStyles = (status: string) => {
+  switch(status.toLowerCase()) {
+    case 'delivered':
+    case 'completed':
+      return { background: '#D1FAE5', color: '#065F46' };
+    case 'in transit':
+    case 'out_for_delivery':
+      return { background: '#DBEAFE', color: '#1E40AF' };
+    case 'pending':
+    case 'confirmed':
+      return { background: '#FEF3C7', color: '#D97706' };
+    case 'cancelled':
+      return { background: '#FEE2E2', color: '#DC2626' };
+    default:
+      return { background: '#F3F4F6', color: '#4B5563' };
   }
-];
+};
+
+
 
 const MobileDashboardHome: React.FC = () => {
   const navigate = useNavigate();
   const firstName = localStorage.getItem('first_name') || 'there';
   const { isTablet } = useResponsive();
-  const profileImage = localStorage.getItem('profile_image') || '/user1.png';
+  const token = localStorage.getItem('access_token');
   
-  const getStatusStyles = (status: string) => {
-    switch(status.toLowerCase()) {
-      case 'delivered':
-      case 'confirmed':
-        return { background: '#D1FAE5', color: '#065F46' };
-      case 'in transit':
-        return { background: '#DBEAFE', color: '#1E40AF' };
-      default:
-        return { background: '#F3F4F6', color: '#4B5563' };
-    }
-  };
+  // State for orders
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch orders on component mount
+  useEffect(() => {
+    const loadOrders = async () => {
+      if (!token) {
+        setError('No authentication token found');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        const response: OrdersResponse = await fetchUserOrders(token, { page_size: 2 });
+        setOrders(response.results || []);
+      } catch (err) {
+        console.error('Error fetching orders:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch orders');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadOrders();
+  }, [token]);
 
   return (
     <div style={{
@@ -81,59 +124,45 @@ const MobileDashboardHome: React.FC = () => {
       maxWidth: isTablet ? '768px' : '414px', // Tablet: 768px, Mobile: 414px
       margin: '0 auto'
     }}>
-      {/* Header */}
-      <div style={{
-        display: 'flex', 
-        alignItems: 'center', 
-        padding: '20px 16px 16px', 
-        background: '#fff', 
-        position: 'sticky', 
-        top: 0, 
-        zIndex: 50,
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-      }}>
-        <img 
-          src={profileImage} 
-          alt="Profile" 
-          style={{ 
-            width: 40, 
-            height: 40, 
-            borderRadius: '50%',
-            objectFit: 'cover'
-          }} 
+      <style>
+        {`
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+        `}
+      </style>
+              {/* Header */}
+        <MobileHeader 
+          title="Dashboard"
+          variant="elevated"
+          profileImageSize="large"
+          showProfileImage={true}
         />
-        <h1 style={{
-          fontSize: '20px',
-          fontWeight: 700,
-          margin: 0,
-          flex: 1,
-          textAlign: 'center'
-        }}>
-          Dashboard
-        </h1>
-        <HamburgerMenu size={24} color="#333" />
-      </div>
 
-      {/* Welcome Section */}
-      <div style={{ 
-        padding: '24px 16px 16px',
-        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-        color: 'white',
-        marginBottom: '24px'
-      }}>
+              {/* Welcome Section */}
+        <div style={{ 
+          padding: '24px 16px 20px',
+          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+          color: 'white',
+          marginBottom: '24px',
+          marginTop: '8px'
+        }}>
         <h2 style={{ 
           margin: '0 0 8px 0', 
-          fontSize: '24px',
-          fontWeight: 700
+          fontSize: '20px',
+          fontWeight: 600,
+          lineHeight: '1.3'
         }}>
           Welcome back, {firstName}!
         </h2>
         <p style={{ 
           margin: 0, 
-          fontSize: '14px',
-          opacity: 0.9
+          fontSize: '13px',
+          opacity: 0.9,
+          lineHeight: '1.4'
         }}>
-          Track your orders and bookings in one place
+          Track your orders and manage your account
         </p>
       </div>
 
@@ -146,7 +175,7 @@ const MobileDashboardHome: React.FC = () => {
         marginBottom: '16px'
       }}>
         <button 
-          onClick={() => navigate('/user/dashboard/orders')}
+          onClick={() => navigate('/user/orders')}
           style={{
             background: '#fff',
             border: 'none',
@@ -175,15 +204,17 @@ const MobileDashboardHome: React.FC = () => {
           </div>
           <h3 style={{ 
             margin: '0 0 4px 0', 
-            fontSize: '16px',
-            fontWeight: 600
+            fontSize: '15px',
+            fontWeight: 500,
+            color: '#1e293b'
           }}>
             My Orders
           </h3>
           <p style={{ 
             margin: 0, 
             fontSize: '12px',
-            color: '#6B7280'
+            color: '#64748b',
+            lineHeight: '1.3'
           }}>
             Track and manage
           </p>
@@ -216,15 +247,17 @@ const MobileDashboardHome: React.FC = () => {
           </div>
           <h3 style={{ 
             margin: '0 0 4px 0', 
-            fontSize: '16px',
-            fontWeight: 600
+            fontSize: '15px',
+            fontWeight: 500,
+            color: '#1e293b'
           }}>
             Contact Support
           </h3>
           <p style={{ 
             margin: 0, 
             fontSize: '12px',
-            color: '#6B7280'
+            color: '#64748b',
+            lineHeight: '1.3'
           }}>
             We're here to help
           </p>
@@ -248,13 +281,14 @@ const MobileDashboardHome: React.FC = () => {
         }}>
           <h3 style={{ 
             margin: 0, 
-            fontSize: '16px',
-            fontWeight: 600
+            fontSize: '15px',
+            fontWeight: 500,
+            color: '#1e293b'
           }}>
             Recent Orders
           </h3>
           <button 
-            onClick={() => navigate('/user/dashboard/orders')}
+            onClick={() => navigate('/user/orders')}
             style={{
               background: 'none',
               border: 'none',
@@ -271,18 +305,44 @@ const MobileDashboardHome: React.FC = () => {
           </button>
         </div>
         
-        {recentOrders.length === 0 ? (
+        {loading ? (
           <div style={{ 
             padding: '32px 16px', 
             textAlign: 'center',
-            color: '#6B7280',
-            fontSize: '14px'
+            color: '#64748b',
+            fontSize: '13px',
+            lineHeight: '1.4',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px'
+          }}>
+            <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+            Loading orders...
+          </div>
+        ) : error ? (
+          <div style={{ 
+            padding: '32px 16px', 
+            textAlign: 'center',
+            color: '#ef4444',
+            fontSize: '13px',
+            lineHeight: '1.4'
+          }}>
+            {error}
+          </div>
+        ) : orders.length === 0 ? (
+          <div style={{ 
+            padding: '32px 16px', 
+            textAlign: 'center',
+            color: '#64748b',
+            fontSize: '13px',
+            lineHeight: '1.4'
           }}>
             No recent orders
           </div>
         ) : (
           <div>
-            {recentOrders.map((order) => (
+            {orders.map((order) => (
               <div 
                 key={order.id}
                 style={{
@@ -291,7 +351,7 @@ const MobileDashboardHome: React.FC = () => {
                   cursor: 'pointer',
                   transition: 'background 0.2s'
                 }}
-                onClick={() => navigate(`/user/dashboard/orders/${order.id}`)}
+                onClick={() => navigate(`/user/orders/${order.id}`)}
               >
                 <div style={{ 
                   display: 'flex', 
@@ -300,14 +360,16 @@ const MobileDashboardHome: React.FC = () => {
                 }}>
                   <h4 style={{ 
                     margin: 0, 
-                    fontSize: '15px',
-                    fontWeight: 600,
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    color: '#1e293b',
                     maxWidth: '70%',
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
-                    textOverflow: 'ellipsis'
+                    textOverflow: 'ellipsis',
+                    lineHeight: '1.3'
                   }}>
-                    {order.name}
+                    {order.order_name}
                   </h4>
                   <span style={{ 
                     ...getStatusStyles(order.status),
@@ -316,16 +378,17 @@ const MobileDashboardHome: React.FC = () => {
                     fontSize: '12px',
                     fontWeight: 500
                   }}>
-                    {order.status}
+                    {order.status_display || order.status}
                   </span>
                 </div>
                 
                 <p style={{ 
                   margin: '4px 0', 
-                  color: '#6B7280',
-                  fontSize: '13px'
+                  color: '#64748b',
+                  fontSize: '12px',
+                  lineHeight: '1.3'
                 }}>
-                  {order.restaurant}
+                  {order.vendor.business_name}
                 </p>
                 
                 <div style={{ 
@@ -335,124 +398,22 @@ const MobileDashboardHome: React.FC = () => {
                   alignItems: 'center'
                 }}>
                   <span style={{ 
-                    color: '#374151',
-                    fontSize: '13px',
+                    color: '#64748b',
+                    fontSize: '12px',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '4px'
+                    gap: '4px',
+                    lineHeight: '1.3'
                   }}>
                     <Clock size={14} />
-                    {order.date}
+                    {formatDate(order.created_at)}
                   </span>
                   <span style={{ 
                     color: '#10B981',
-                    fontSize: '15px',
-                    fontWeight: 700
-                  }}>
-                    {order.price}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Upcoming Bookings */}
-      <div style={{ 
-        background: '#fff', 
-        borderRadius: '16px', 
-        margin: '0 16px 24px',
-        overflow: 'hidden',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.05)'
-      }}>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          padding: '16px 16px 12px',
-          borderBottom: '1px solid #F3F4F6'
-        }}>
-          <h3 style={{ 
-            margin: 0, 
-            fontSize: '16px',
-            fontWeight: 600
-          }}>
-            Upcoming Bookings
-          </h3>
-          <button 
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#10B981',
-              fontSize: '14px',
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            View all <ChevronRight size={16} />
-          </button>
-        </div>
-        
-        {upcomingBookings.length === 0 ? (
-          <div style={{ 
-            padding: '32px 16px', 
-            textAlign: 'center',
-            color: '#6B7280',
-            fontSize: '14px'
-          }}>
-            No upcoming bookings
-          </div>
-        ) : (
-          <div>
-            {upcomingBookings.map((booking) => (
-              <div 
-                key={booking.id}
-                style={{
-                  padding: '16px',
-                  borderBottom: '1px solid #F3F4F6',
-                  cursor: 'pointer',
-                  transition: 'background 0.2s'
-                }}
-              >
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between',
-                  marginBottom: '8px'
-                }}>
-                  <h4 style={{ 
-                    margin: 0, 
-                    fontSize: '15px',
+                    fontSize: '14px',
                     fontWeight: 600
                   }}>
-                    {booking.hotel}
-                  </h4>
-                  <span style={{ 
-                    ...getStatusStyles(booking.status),
-                    padding: '2px 8px',
-                    borderRadius: '12px',
-                    fontSize: '12px',
-                    fontWeight: 500
-                  }}>
-                    {booking.status}
-                  </span>
-                </div>
-                
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center',
-                  gap: '8px',
-                  marginTop: '8px'
-                }}>
-                  <Calendar size={16} color="#6B7280" />
-                  <span style={{ 
-                    color: '#6B7280',
-                    fontSize: '13px'
-                  }}>
-                    {booking.date}
+                    {order.total_price_display || order.total_price}
                   </span>
                 </div>
               </div>
@@ -461,8 +422,10 @@ const MobileDashboardHome: React.FC = () => {
         )}
       </div>
 
+
+
       {/* Bottom Navigation */}
-      <BottomNav />
+      {/* The BottomNav component was removed from imports, so it's removed from here */}
     </div>
   );
 };

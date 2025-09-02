@@ -4,9 +4,6 @@ declare namespace Auth {
     email: string;
     first_name: string;
     last_name: string;
-    phone?: string;
-    address?: string;
-    profile_complete: boolean;
     role: 'user' | 'vendor' | 'courier' | 'admin';
     date_joined?: string;
     last_login?: string;
@@ -30,10 +27,7 @@ declare namespace Auth {
     confirmPassword: string;
   }
 
-  interface CompleteProfileData {
-    phone: string;
-    address: string;
-  }
+
 
   interface AuthError {
     code?: string;

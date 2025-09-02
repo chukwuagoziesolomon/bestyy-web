@@ -10,53 +10,12 @@ export interface LoginResponse {
     email: string;
     first_name: string;
     last_name: string;
-    profile_complete: boolean;
     role: string;
     roles?: string[]; // For users with multiple roles
   };
 }
 
 export const authService = {
-  // Google OAuth URLs
-  getGoogleAuthUrl: (type: 'login' | 'signup' | 'connect' = 'login'): string => {
-    const baseUrl = `${API_URL}/api/user/social/google/`;
-    switch (type) {
-      case 'signup':
-        return `${baseUrl}signup/`;
-      case 'connect':
-        return `${baseUrl}connect/`;
-      case 'login':
-      default:
-        return baseUrl;
-    }
-  },
-
-  // Handle Google OAuth callback
-  handleGoogleCallback: async (code: string): Promise<LoginResponse> => {
-    const response = await axios.get(`${API_URL}/api/auth/google/callback/`, {
-      params: { code },
-      withCredentials: true
-    });
-    return response.data;
-  },
-
-  // Complete profile for social signup
-  completeProfile: async (data: {
-    phone: string;
-    address: string;
-  }, token: string) => {
-    const response = await axios.post(
-      `${API_URL}/api/user/social/complete-profile/`,
-      data,
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-    return response.data;
-  },
 
   // Get current user
   getCurrentUser: async (token: string) => {

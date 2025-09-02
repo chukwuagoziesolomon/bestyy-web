@@ -1,24 +1,23 @@
-import React, { useEffect, useState } from 'react';
-import { fetchUserOrders } from '../api';
-import { showError } from '../toast';
+import React from 'react';
 
 const UserBookings = () => {
-  const token = localStorage.getItem('token');
-  const [bookings, setBookings] = useState<any[]>([]);
-
-  useEffect(() => {
-    async function getBookings() {
-      try {
-        if (token) {
-          const data = await fetchUserOrders(token);
-          setBookings(data.bookings || []);
-        }
-      } catch (err: any) {
-        showError(err.message || 'Could not fetch bookings');
-      }
+  // Static sample data for demonstration
+  const bookings = [
+    {
+      id: 1,
+      name: 'Luxury Hotel Lagos',
+      date: '2024-02-15',
+      price: '₦25,000',
+      status: 'Confirmed'
+    },
+    {
+      id: 2,
+      name: 'Beach Resort',
+      date: '2024-03-20',
+      price: '₦35,000',
+      status: 'Pending'
     }
-    getBookings();
-  }, [token]);
+  ];
 
   return (
   <div style={{ fontFamily: 'Nunito Sans, sans-serif', color: '#111' }}>
@@ -49,10 +48,10 @@ const UserBookings = () => {
         <div key={i} style={{ background: '#fff', borderRadius: 16, boxShadow: '0 2px 12px #f3f4f6', padding: '32px 32px 24px 32px', minWidth: 320, border: '1.5px solid #f3f4f6', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18 }}>
             <div>
-                  <div style={{ fontWeight: 600, fontSize: 22, marginBottom: 8 }}>{booking.name || booking.hotel || 'Booking'}</div>
-                  <div style={{ color: '#888', fontSize: 16 }}>{booking.date || booking.created_at || '-'}</div>
+                  <div style={{ fontWeight: 600, fontSize: 22, marginBottom: 8 }}>{booking.name || 'Booking'}</div>
+                  <div style={{ color: '#888', fontSize: 16 }}>{booking.date || '-'}</div>
             </div>
-                <div style={{ fontWeight: 600, fontSize: 22 }}>{booking.price || booking.amount || '-'}</div>
+                <div style={{ fontWeight: 600, fontSize: 22 }}>{booking.price || '-'}</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 18 }}>
                 <span style={{ background: '#d1fae5', color: '#10b981', borderRadius: 8, padding: '8px 18px', fontWeight: 600, fontSize: 15 }}>{booking.status || 'Confirmed'}</span>

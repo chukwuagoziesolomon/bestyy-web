@@ -1,4 +1,4 @@
-export const API_URL = process.env.REACT_APP_API_URL || 'https://bestie-server.onrender.com';
+export const API_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000';
 
 // Courier dashboard endpoints
 export async function fetchCourierDashboardMetrics(token: string) {
@@ -6,7 +6,7 @@ export async function fetchCourierDashboardMetrics(token: string) {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Token ${token}`,
+      'Authorization': `Bearer ${token}`,
     },
   });
   if (!response.ok) throw new Error('Failed to fetch courier metrics');
@@ -21,7 +21,7 @@ export async function fetchCourierDeliveries(token: string, status?: string) {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Token ${token}`,
+      'Authorization': `Bearer ${token}`,
     },
   });
   if (!response.ok) throw new Error('Failed to fetch deliveries');
@@ -34,7 +34,7 @@ export async function fetchVendorTransactions(token: string) {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Token ${token}`,
+      'Authorization': `Bearer ${token}`,
     },
   });
   if (!response.ok) {
@@ -98,22 +98,20 @@ export async function registerUser(data: {
   first_name: string;
   last_name: string;
   email: string;
-  phone: string;
   password: string;
+  phone: string;
   confirm_password: string;
 }) {
-  const url = `${API_URL}/api/user/register/`;
-  const response = await fetch(url, {
+  const response = await fetch(`${API_URL}/api/user/register/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
-    credentials: 'include',
   });
   if (!response.ok) {
-    let errorMsg = 'User registration failed';
+    let errorMsg = 'Registration failed';
     try {
       const errorData = await response.json();
-      errorMsg = extractErrorMessage(errorData) || errorMsg;
+      errorMsg = errorData?.message || errorMsg;
     } catch {}
     throw new Error(errorMsg);
   }
@@ -191,11 +189,26 @@ export async function registerCourier(data: {
   return response.json();
 }
 
+// Helper function to extract error messages
+function extractErrorMessage(errorData: any): string | null {
+  if (typeof errorData === 'string') return errorData;
+  if (errorData?.message) return errorData.message;
+  if (errorData?.detail) return errorData.detail;
+  if (errorData?.error) return errorData.error;
+  if (typeof errorData === 'object') {
+    const firstKey = Object.keys(errorData)[0];
+    if (firstKey && Array.isArray(errorData[firstKey])) {
+      return errorData[firstKey][0];
+    }
+  }
+  return null;
+}
+
 export async function loginUser(email: string, password: string) {
   const payload = { email, password };
-  console.log('Login endpoint:', `${API_URL}/user/login/`);
+  console.log('Login endpoint:', `${API_URL}/api/user/login/`);
   console.log('Login payload:', payload);
-  const response = await fetch(`${API_URL}/user/login/`, {
+  const response = await fetch(`${API_URL}/api/user/login/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -206,31 +219,24 @@ export async function loginUser(email: string, password: string) {
     let errorMsg = 'Login failed';
     try {
       const errorData = await response.json();
-      errorMsg = extractErrorMessage(errorData) || errorMsg;
+      errorMsg = errorData?.message || errorMsg;
     } catch {}
     throw new Error(errorMsg);
   }
   return response.json();
 }
 
-export async function signupUser({
-  user,
-  phone
-}: {
-  user: {
-    username: string;
-    email: string;
-    password: string;
-    confirm_password: string;
-    first_name: string;
-    last_name: string;
-  };
+export async function signupUser(user: {
+  email: string;
+  password: string;
+  first_name: string;
+  last_name: string;
   phone: string;
 }) {
-  const payload = { user, phone };
-  console.log('Signup endpoint:', `${API_URL}/user/signup/user/`);
+  const payload = { user, phone: user.phone };
+  console.log('Signup endpoint:', `${API_URL}/api/user/signup/user/`);
   console.log('Signup payload:', payload);
-  const response = await fetch(`${API_URL}/user/signup/user/`, {
+  const response = await fetch(`${API_URL}/api/user/signup/user/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -238,10 +244,10 @@ export async function signupUser({
     body: JSON.stringify(payload),
   });
   if (!response.ok) {
-    let errorMsg = 'Sign up failed';
+    let errorMsg = 'Signup failed';
     try {
       const errorData = await response.json();
-      errorMsg = extractErrorMessage(errorData) || errorMsg;
+      errorMsg = errorData?.message || errorMsg;
     } catch {}
     throw new Error(errorMsg);
   }
@@ -250,29 +256,36 @@ export async function signupUser({
 
 export async function signupVendor(vendorData: {
   user: {
-    username: string;
     email: string;
     password: string;
-    confirm_password: string; // Re-adding this field
     first_name: string;
     last_name: string;
+    phone: string;
   };
-  phone: string;
   business_name: string;
-  business_category: string;
-  cac_number?: string;
-  logo?: string;
   business_address: string;
-  delivery_radius: string;
-  service_areas: string;
-  opening_hours: string; // Expects HH:mm:ss
-  closing_hours: string; // Expects HH:mm:ss
-  offers_delivery: boolean;
+  business_phone: string;
+  business_email: string;
+  business_description: string;
+  business_category: string;
+  business_hours: string;
+  business_days: string;
+  business_logo?: File;
+  business_banner?: File;
+  business_license?: File;
+  business_permit?: File;
+  business_insurance?: File;
+  business_tax_id?: File;
+  business_bank_account?: File;
+  business_bank_statement?: File;
+  business_utility_bill?: File;
+  business_lease_agreement?: File;
+  business_other_documents?: File[];
 }) {
   const payload = vendorData;
-  console.log('Vendor signup endpoint:', `${API_URL}/user/signup/vendor/`);
+  console.log('Vendor signup endpoint:', `${API_URL}/api/user/signup/vendor/`);
   console.log('Vendor signup payload:', payload);
-  const response = await fetch(`${API_URL}/user/signup/vendor/`, {
+  const response = await fetch(`${API_URL}/api/user/signup/vendor/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -280,30 +293,48 @@ export async function signupVendor(vendorData: {
     body: JSON.stringify(payload),
   });
   if (!response.ok) {
-    let errorMsg = 'Vendor sign up failed';
+    let errorMsg = 'Vendor signup failed';
     try {
       const errorData = await response.json();
-      errorMsg = extractErrorMessage(errorData) || errorMsg;
+      errorMsg = errorData?.message || errorMsg;
     } catch {}
     throw new Error(errorMsg);
   }
   return response.json();
 }
 
-export async function fetchUserOrders(token: string) {
-  const url = `${API_URL}/user/orders/user/`;
+export async function fetchUserOrders(token: string, params?: {
+  status?: string;
+  start_date?: string;
+  end_date?: string;
+  vendor_id?: number;
+  page?: number;
+  page_size?: number;
+}) {
+  const url = new URL(`${API_URL}/api/user/orders/`);
+  
+  // Add query parameters if provided
+  if (params) {
+    if (params.status) url.searchParams.append('status', params.status);
+    if (params.start_date) url.searchParams.append('start_date', params.start_date);
+    if (params.end_date) url.searchParams.append('end_date', params.end_date);
+    if (params.vendor_id) url.searchParams.append('vendor_id', params.vendor_id.toString());
+    if (params.page) url.searchParams.append('page', params.page.toString());
+    if (params.page_size) url.searchParams.append('page_size', params.page_size.toString());
+  }
+
   const headers = {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${token}`,
   };
 
   console.log('=== USER ORDERS API DEBUG ===');
-  console.log('URL:', url);
+  console.log('URL:', url.toString());
   console.log('Token (first 10 chars):', token.substring(0, 10) + '...');
   console.log('Headers:', headers);
   console.log('============================');
 
-  const response = await fetch(url, {
+  const response = await fetch(url.toString(), {
     method: 'GET',
     headers,
   });
@@ -335,12 +366,33 @@ export async function fetchUserOrders(token: string) {
   return responseBody || response.json();
 }
 
-export async function fetchUserAddresses(token: string) {
-  const response = await fetch(`${API_URL}/user/addresses/user/`, {
+// Fetch order tracking information
+export async function fetchOrderTracking(token: string, orderId: string) {
+  const response = await fetch(`${API_URL}/api/user/orders/${orderId}/tracking/`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Token ${token}`,
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+  
+  if (!response.ok) {
+    let errorMsg = 'Failed to fetch order tracking';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
+export async function fetchUserAddresses(token: string) {
+  const response = await fetch(`${API_URL}/api/user/addresses/`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
     },
   });
   if (!response.ok) {
@@ -354,12 +406,19 @@ export async function fetchUserAddresses(token: string) {
   return response.json();
 }
 
-export async function createUserAddress(token: string, address: any) {
-  const response = await fetch(`${API_URL}/user/addresses/user/create/`, {
+export async function createUserAddress(token: string, address: {
+  address_type: string;
+  address: string;
+  city: string;
+  state: string;
+  zip_code: string;
+  is_default?: boolean;
+}) {
+  const response = await fetch(`${API_URL}/api/user/addresses/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Token ${token}`,
+      'Authorization': `Bearer ${token}`,
     },
     body: JSON.stringify(address),
   });
@@ -374,12 +433,19 @@ export async function createUserAddress(token: string, address: any) {
   return response.json();
 }
 
-export async function updateUserAddress(token: string, id: number, address: any) {
-  const response = await fetch(`${API_URL}/user/addresses/user/${id}/update/`, {
+export async function updateUserAddress(token: string, id: number, address: {
+  address_type: string;
+  address: string;
+  city: string;
+  state: string;
+  zip_code: string;
+  is_default?: boolean;
+}) {
+  const response = await fetch(`${API_URL}/api/user/addresses/${id}/`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Token ${token}`,
+      'Authorization': `Bearer ${token}`,
     },
     body: JSON.stringify(address),
   });
@@ -395,11 +461,11 @@ export async function updateUserAddress(token: string, id: number, address: any)
 }
 
 export async function deleteUserAddress(token: string, id: number) {
-  const response = await fetch(`${API_URL}/user/addresses/user/${id}/delete/`, {
+  const response = await fetch(`${API_URL}/api/user/addresses/${id}/`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Token ${token}`,
+      'Authorization': `Bearer ${token}`,
     },
   });
   if (!response.ok) {
@@ -413,12 +479,31 @@ export async function deleteUserAddress(token: string, id: number) {
   return response.json();
 }
 
+export async function setDefaultAddress(token: string, id: number) {
+  const response = await fetch(`${API_URL}/api/user/addresses/${id}/set-default/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    let errorMsg = 'Failed to set default address';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
 export async function fetchUserFavorites(token: string) {
-  const response = await fetch(`${API_URL}/user/favorites/user/`, {
+  const response = await fetch(`${API_URL}/api/user/favorites/`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Token ${token}`,
+      'Authorization': `Bearer ${token}`,
     },
   });
   if (!response.ok) {
@@ -432,12 +517,115 @@ export async function fetchUserFavorites(token: string) {
   return response.json();
 }
 
-export async function fetchUserProfile(token: string) {
-  const response = await fetch(`${API_URL}/user/profile/`, {
+export async function fetchUserFoodFavorites(token: string) {
+  const response = await fetch(`${API_URL}/api/user/favorites/food/`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Token ${token}`,
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    let errorMsg = 'Failed to fetch food favorites';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
+export async function fetchUserVenueFavorites(token: string) {
+  const response = await fetch(`${API_URL}/api/user/favorites/venues/`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    let errorMsg = 'Failed to fetch venue favorites';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
+export async function addFoodFavorite(token: string, foodItemId: number) {
+  const response = await fetch(`${API_URL}/api/user/favorites/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      favorite_type: 'food',
+      food_item: foodItemId
+    }),
+  });
+  if (!response.ok) {
+    let errorMsg = 'Failed to add food favorite';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
+export async function addVenueFavorite(token: string, vendorId: number) {
+  const response = await fetch(`${API_URL}/api/user/favorites/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      favorite_type: 'venue',
+      vendor: vendorId
+    }),
+  });
+  if (!response.ok) {
+    let errorMsg = 'Failed to add venue favorite';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
+export async function removeFavorite(token: string, favoriteId: number) {
+  const response = await fetch(`${API_URL}/api/user/favorites/${favoriteId}/`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    let errorMsg = 'Failed to remove favorite';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
+export async function fetchUserProfile(token: string) {
+  const response = await fetch(`${API_URL}/api/user/profile/`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
     },
   });
   if (!response.ok) {
@@ -452,11 +640,11 @@ export async function fetchUserProfile(token: string) {
 }
 
 export async function updateUserProfile(token: string, profileData: any) {
-  const response = await fetch(`${API_URL}/user/profile/update/`, {
+  const response = await fetch(`${API_URL}/api/user/profile/update/`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Token ${token}`,
+      'Authorization': `Bearer ${token}`,
     },
     body: JSON.stringify(profileData),
   });
@@ -471,12 +659,13 @@ export async function updateUserProfile(token: string, profileData: any) {
   return response.json();
 }
 
+// Dashboard Analytics API
 export async function fetchDashboardAnalytics(token: string) {
-  const response = await fetch(`${API_URL}/analytics/dashboard/analytics/`, {
+  const response = await fetch(`${API_URL}/api/analytics/dashboard/analytics/`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Token ${token}`,
+      'Authorization': `Bearer ${token}`,
     },
   });
   if (!response.ok) {
@@ -492,118 +681,120 @@ export async function fetchDashboardAnalytics(token: string) {
 
 // Menu Item API for Vendor
 export async function listMenuItems(token: string) {
-  const response = await fetch(`${API_URL}/user/vendor/menu-items/`, {
+  const response = await fetch(`${API_URL}/api/user/vendor/menu-items/`, {
     method: 'GET',
     headers: {
-      'Authorization': `Token ${token}`,
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
     },
   });
-  if (!response.ok) throw new Error('Failed to fetch menu items');
+  if (!response.ok) {
+    let errorMsg = 'Failed to fetch menu items';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
   return response.json();
 }
 
-export async function createMenuItem(token: string, item: {
-  dish_name: string;
-  item_description: string;
-  price: string;
-  category: string;
-  quantity: number;
-  image?: File;
-  available_now: boolean;
-}) {
+export async function createMenuItem(token: string, item: any) {
   const formData = new FormData();
-  formData.append('dish_name', item.dish_name);
-  formData.append('item_description', item.item_description);
+  formData.append('name', item.name);
+  formData.append('description', item.description);
   formData.append('price', item.price);
   formData.append('category', item.category);
-  formData.append('quantity', item.quantity.toString());
-  if (item.image) {
-    formData.append('image', item.image);
-  }
   formData.append('available_now', item.available_now ? 'true' : 'false');
 
-  const response = await fetch(`${API_URL}/user/vendor/menu-items/create/`, {
+  const response = await fetch(`${API_URL}/api/user/vendor/menu-items/create/`, {
     method: 'POST',
     headers: {
-      'Authorization': `Token ${token}`,
+      'Authorization': `Bearer ${token}`,
     },
     body: formData,
   });
-  if (!response.ok) throw new Error('Failed to create menu item');
+  if (!response.ok) {
+    let errorMsg = 'Failed to create menu item';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
   return response.json();
 }
 
 export async function getMenuItem(token: string, id: string) {
-  const response = await fetch(`${API_URL}/user/vendor/menu-items/${id}/`, {
+  const response = await fetch(`${API_URL}/api/user/vendor/menu-items/${id}/`, {
     method: 'GET',
     headers: {
-      'Authorization': `Token ${token}`,
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
     },
   });
-  if (!response.ok) throw new Error('Failed to fetch menu item');
+  if (!response.ok) {
+    let errorMsg = 'Failed to fetch menu item';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
   return response.json();
 }
 
-export async function updateMenuItem(token: string, id: string, item: Partial<{
-  dish_name: string;
-  price: number; // Changed to number for type safety
-  category: string;
-  image?: File | string; // Allow File for uploads
-  available: boolean;
-}>) {
+export async function updateMenuItem(token: string, id: string, item: any) {
   const formData = new FormData();
-  
-  if (item.dish_name) formData.append('dish_name', item.dish_name);
-  if (item.price !== undefined) formData.append('price', item.price.toString());
-  if (item.category) formData.append('category', item.category);
-  if (item.image instanceof File) {
-    formData.append('image', item.image);
-  }
-  if (typeof item.available === 'boolean') {
-    formData.append('available', item.available ? 'true' : 'false');
-  }
+  formData.append('name', item.name);
+  formData.append('description', item.description);
+  formData.append('price', item.price);
+  formData.append('category', item.category);
+  formData.append('available_now', item.available_now ? 'true' : 'false');
 
-  const response = await fetch(`${API_URL}/user/vendor/menu-items/${id}/`, {
+  const response = await fetch(`${API_URL}/api/user/vendor/menu-items/${id}/`, {
     method: 'PATCH',
     headers: {
-      'Authorization': `Token ${token}`,
+      'Authorization': `Bearer ${token}`,
     },
     body: formData,
   });
-
   if (!response.ok) {
     let errorMsg = 'Failed to update menu item';
     try {
       const errorData = await response.json();
-      errorMsg = extractErrorMessage(errorData) || errorMsg;
-    } catch (e) {
-      // Ignore if response is not JSON
-    }
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
     throw new Error(errorMsg);
   }
   return response.json();
 }
 
 export async function deleteMenuItem(token: string, id: string) {
-  const response = await fetch(`${API_URL}/user/vendor/menu-items/${id}/`, {
+  const response = await fetch(`${API_URL}/api/user/vendor/menu-items/${id}/`, {
     method: 'DELETE',
     headers: {
-      'Authorization': `Token ${token}`,
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
     },
   });
-  if (!response.ok) throw new Error('Failed to delete menu item');
-  return true;
+  if (!response.ok) {
+    let errorMsg = 'Failed to delete menu item';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
 }
 
 // Fetch vendor orders for tracking
 export async function fetchVendorOrders(token: string) {
-  const url = `${API_URL}/orders/vendor/tracking/`;
+  const url = `${API_URL}/api/orders/vendor/tracking/`;
   const headers = {
     'Content-Type': 'application/json',
-    'Authorization': `Token ${token}`,
+    'Authorization': `Bearer ${token}`,
   };
 
   console.log('=== VENDOR ORDERS API DEBUG ===');
@@ -642,21 +833,4 @@ export async function fetchVendorOrders(token: string) {
     throw new Error(errorMsg);
   }
   return responseBody || response.json();
-}
-
-
-
-function extractErrorMessage(errorData: any): string | null {
-  if (!errorData) return null;
-  if (typeof errorData === 'string') return errorData;
-  if (Array.isArray(errorData)) return errorData.join(' ');
-  if (typeof errorData === 'object') {
-    // Recursively extract messages from nested objects
-    return Object.values(errorData)
-      .map((v) => (typeof v === 'string' ? v : extractErrorMessage(v)))
-      .join(' ');
-  }
-  return null;
-}
-
-// Add more API functions (order tracking, etc.) as needed 
+} 

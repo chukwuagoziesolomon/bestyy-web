@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit2, Camera, Save } from 'lucide-react';
-import HamburgerMenu from '../components/HamburgerMenu';
+import MobileHeader from '../components/MobileHeader';
 import { useResponsive } from '../hooks/useResponsive';
-import { fetchUserProfile, updateUserProfile } from '../api';
+
 import { showError, showSuccess } from '../toast';
 
 const MobileProfileSettingsPage: React.FC = () => {
   const { isTablet } = useResponsive();
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [profile, setProfile] = useState<any>(null);
@@ -22,56 +22,94 @@ const MobileProfileSettingsPage: React.FC = () => {
     nickName: '',
     language: 'English',
     email: '',
+    phone: '',
     emailNotifications: true,
     pushNotifications: true,
     profilePicture: null as string | null,
     previewPicture: null as string | null
   });
 
-  useEffect(() => {
-    // First, try to populate from localStorage vendor_profile
+  // Smart data population function
+  const populateFormFromLocalStorage = () => {
+    // 1. First priority: vendor_profile (most complete data)
     const savedVendor = localStorage.getItem('vendor_profile');
     if (savedVendor) {
       try {
         const vendor = JSON.parse(savedVendor);
+        console.log('Loading vendor profile data:', vendor);
+
         setFormData(prev => ({
           ...prev,
-          fullName: vendor.business_name || '',
+          fullName: vendor.business_name || vendor.user?.full_name || '',
           nickName: vendor.user?.first_name || '',
-          email: vendor.user?.email || '',
+          email: vendor.user?.email || vendor.email || '',
           profilePicture: vendor.logo || null
         }));
+
+        console.log('Profile fields populated from vendor_profile data');
+        return true; // Successfully populated
       } catch (e) {
-        // Ignore parse errors and proceed to fetch from backend
+        console.error('Error parsing vendor profile:', e);
       }
     }
 
-    async function getProfile() {
-      setLoading(true);
+    // 2. Second priority: user data (basic user info)
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
       try {
-        if (token) {
-          const data = await fetchUserProfile(token);
-          setProfile(data || null);
-          setFormData(prev => ({
-            ...prev,
-            fullName: data?.full_name || prev.fullName,
-            nickName: data?.nick_name || prev.nickName,
-            language: data?.language || 'English',
-            email: data?.email || prev.email,
-            emailNotifications: !!data?.email_notifications,
-            pushNotifications: !!data?.push_notifications,
-            profilePicture: data?.profile_picture || prev.profilePicture
-          }));
-        }
-      } catch (err: any) {
-        console.error('Could not fetch profile:', err);
-        // Don't show error toast on mobile, just use localStorage data
-      } finally {
-        setLoading(false);
+        const user = JSON.parse(savedUser);
+        console.log('Loading user data:', user);
+
+        setFormData(prev => ({
+          ...prev,
+          fullName: user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || '',
+          nickName: user.first_name || '',
+          email: user.email || ''
+        }));
+
+        console.log('Profile fields populated from user data');
+        return true; // Successfully populated
+      } catch (e) {
+        console.error('Error parsing user data:', e);
       }
     }
-    getProfile();
-  }, [token]);
+
+    // 3. Third priority: pending_profile_data (fallback)
+    const pendingData = localStorage.getItem('pending_profile_data');
+    if (pendingData) {
+      try {
+        const pending = JSON.parse(pendingData);
+        console.log('Loading pending profile data:', pending);
+
+        setFormData(prev => ({
+          ...prev,
+          fullName: pending.fullName || pending.businessName || '',
+          email: pending.email || '',
+          phone: pending.phone || ''
+        }));
+
+        console.log('Profile fields populated from pending_profile_data');
+        return true; // Successfully populated
+      } catch (e) {
+        console.error('Error parsing pending profile data:', e);
+      }
+    }
+
+    return false; // No local data found
+  };
+
+  useEffect(() => {
+    // Only populate from localStorage - no API calls
+    const hasLocalData = populateFormFromLocalStorage();
+    
+    if (hasLocalData) {
+      setLoading(false);
+      console.log('Profile loaded from localStorage successfully');
+    } else {
+      setLoading(false);
+      console.log('No local data found, showing empty form');
+    }
+  }, []);
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
@@ -96,34 +134,31 @@ const MobileProfileSettingsPage: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!token) {
-      showError('No authentication token found');
-      return;
-    }
-
     setSaving(true);
     try {
-      const profileData = {
-        full_name: formData.fullName,
-        nick_name: formData.nickName,
-        language: formData.language.toLowerCase(),
-        email: formData.email,
-        email_notifications: formData.emailNotifications,
-        push_notifications: formData.pushNotifications,
-        profile_picture: formData.previewPicture !== null ? formData.previewPicture : formData.profilePicture,
+      // Update the vendor_profile in localStorage with the new data
+      const currentVendorProfile = JSON.parse(localStorage.getItem('vendor_profile') || '{}');
+      const updatedVendorProfile = {
+        ...currentVendorProfile,
+        business_name: formData.fullName,
+        user: {
+          ...currentVendorProfile.user,
+          email: formData.email,
+          first_name: formData.nickName
+        }
       };
-      
-      await updateUserProfile(token, profileData);
-      setProfile((prev: any) => ({ ...prev, ...profileData }));
+      localStorage.setItem('vendor_profile', JSON.stringify(updatedVendorProfile));
+
+      // Update local state
       setFormData(prev => ({
         ...prev,
-        profilePicture: profileData.profile_picture,
+        profilePicture: formData.previewPicture || formData.profilePicture,
         previewPicture: null
       }));
       
       showSuccess('Profile updated successfully!');
     } catch (error: any) {
-      showError(error.message || 'Failed to update profile');
+      showError('Failed to update profile');
     } finally {
       setSaving(false);
     }
@@ -142,29 +177,14 @@ const MobileProfileSettingsPage: React.FC = () => {
       position: 'relative'
     }}>
       {/* Header */}
-      <div style={{
-        padding: '16px 20px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        borderBottom: '1px solid #f0f0f0'
-      }}>
-        <button
-          onClick={() => navigate(-1)}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
-          <ArrowLeft size={24} color="#333" />
-        </button>
-        <HamburgerMenu size={24} color="#333" />
-      </div>
+             <MobileHeader 
+         title="Profile Settings"
+         subtitle="Manage your account and preferences"
+         showBackButton={true}
+         variant="default"
+         profileImageSize="medium"
+         showProfileImage={true}
+       />
 
       {loading ? (
         <div style={{
@@ -176,7 +196,10 @@ const MobileProfileSettingsPage: React.FC = () => {
           Loading profile...
         </div>
       ) : (
-        <div style={{ padding: '20px' }}>
+        <div style={{ 
+          padding: '20px',
+          marginTop: '8px'
+        }}>
           {/* Profile Header */}
           <div style={{
             display: 'flex',
@@ -353,7 +376,7 @@ const MobileProfileSettingsPage: React.FC = () => {
             </div>
 
             {/* Email */}
-            <div style={{ marginBottom: '32px' }}>
+            <div style={{ marginBottom: '20px' }}>
               <label style={{
                 display: 'block',
                 fontSize: '14px',
@@ -368,6 +391,36 @@ const MobileProfileSettingsPage: React.FC = () => {
                 value={formData.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
                 placeholder="example@gmail.com"
+                style={{
+                  width: '100%',
+                  padding: '16px',
+                  backgroundColor: '#f5f5f5',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  color: '#333',
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+
+            {/* Phone */}
+            <div style={{ marginBottom: '32px' }}>
+              <label style={{
+                display: 'block',
+                fontSize: '14px',
+                color: '#333',
+                marginBottom: '8px',
+                fontWeight: '500'
+              }}>
+                Phone
+              </label>
+              <input
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => handleInputChange('phone', e.target.value)}
+                placeholder="Your phone number"
                 style={{
                   width: '100%',
                   padding: '16px',
@@ -497,6 +550,61 @@ const MobileProfileSettingsPage: React.FC = () => {
             </div>
           </div>
 
+          {/* Save Changes Button - Moved up for better visibility */}
+          <div style={{ 
+            background: '#f8fafc', 
+            border: '1px solid #e2e8f0', 
+            borderRadius: '12px', 
+            padding: '20px', 
+            marginBottom: '32px',
+            position: 'sticky',
+            bottom: '20px',
+            zIndex: 10
+          }}>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              style={{
+                width: '100%',
+                padding: '16px',
+                backgroundColor: saving ? '#9ca3af' : '#10b981',
+                border: 'none',
+                borderRadius: '8px',
+                color: 'white',
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: saving ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                if (!saving) {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(16, 185, 129, 0.4)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)';
+              }}
+            >
+              <Save size={20} />
+              {saving ? 'Saving Changes...' : 'Save Changes'}
+            </button>
+            <div style={{
+              fontSize: '12px',
+              color: '#64748b',
+              textAlign: 'center',
+              marginTop: '8px'
+            }}>
+              Save your profile changes to update your information
+            </div>
+          </div>
+
           {/* Privacy & Security Section */}
           <div style={{ marginBottom: '40px' }}>
             <h3 style={{
@@ -564,31 +672,6 @@ const MobileProfileSettingsPage: React.FC = () => {
               </div>
             </div>
           </div>
-
-          {/* Save Changes Button */}
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            style={{
-              width: '100%',
-              padding: '16px',
-              backgroundColor: saving ? '#9ca3af' : '#10b981',
-              border: 'none',
-              borderRadius: '8px',
-              color: 'white',
-              fontSize: '16px',
-              fontWeight: '600',
-              cursor: saving ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              marginBottom: '20px'
-            }}
-          >
-            <Save size={20} />
-            {saving ? 'Saving Changes...' : 'Save Changes'}
-          </button>
         </div>
       )}
     </div>

@@ -1,153 +1,88 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, X, Check, Loader } from 'lucide-react';
-import HamburgerMenu from '../components/HamburgerMenu';
-import BottomNav from '../components/BottomNav';
+import { ChevronDown, X, Check, Loader2, Clock } from 'lucide-react';
+import MobileHeader from '../components/MobileHeader';
 import { useResponsive } from '../hooks/useResponsive';
-import { fetchUserOrders, fetchVendorOrders } from '../api';
-import { showMobileError } from '../toast';
+import { fetchUserOrders } from '../api';
+
+// Types matching the desktop version
+interface OrderItem {
+  id: number;
+  dish_name: string;
+  price: string;
+}
+
+interface Vendor {
+  id: number;
+  business_name: string;
+  business_address: string;
+}
 
 interface Order {
   id: number;
-  customer_name?: string;
-  vendor_name?: string;
-  restaurant?: string;
-  name?: string;
-  item_name?: string;
-  status?: string;
-  total_amount?: number;
-  price?: string;
+  order_name: string;
+  vendor: Vendor;
+  items: OrderItem[];
+  items_count: number;
+  total_price: string;
+  total_price_display: string;
+  delivery_address: string;
+  status: string;
+  status_display: string;
   created_at: string;
-  date?: string;
-  delivery_address?: string;
-  customer_address?: string;
-  // Add more possible fields from backend
-  order_id?: string;
-  items?: any[];
-  delivery_fee?: number;
-  subtotal?: number;
-  [key: string]: any; // Allow any additional fields from backend
+  delivered_at?: string;
+  payment_confirmed: boolean;
+  user_receipt_confirmed: boolean;
+}
+
+interface OrdersResponse {
+  count: number;
+  total_pages: number;
+  current_page: number;
+  results: Order[];
 }
 
 const MobileOrdersPage = () => {
   const navigate = useNavigate();
   const [showFilters, setShowFilters] = useState(false);
   const [activeFilter, setActiveFilter] = useState('All');
-  const [availableStatuses, setAvailableStatuses] = useState<string[]>([]);
+  const [availableStatuses, setAvailableStatuses] = useState<string[]>(['Delivered', 'In Transit', 'Pending', 'Confirmed', 'Ready', 'Out for Delivery', 'Cancelled']);
   const [hoveredFilter, setHoveredFilter] = useState<string | null>(null);
   const [activeOrderId, setActiveOrderId] = useState<number | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const token = localStorage.getItem('access_token');
 
   // Use the responsive hook
   const { isMobile, isTablet } = useResponsive();
 
-  const token = localStorage.getItem('token');
-  const vendorToken = localStorage.getItem('vendor_token');
-
-  console.log('=== TOKEN DEBUG INFO ===');
-  console.log('User token:', token ? `Present (${token.substring(0, 10)}...)` : 'Missing');
-  console.log('Vendor token:', vendorToken ? `Present (${vendorToken.substring(0, 10)}...)` : 'Missing');
-  console.log('User token length:', token?.length);
-  console.log('Vendor token length:', vendorToken?.length);
-  console.log('All localStorage keys:', Object.keys(localStorage));
-  console.log('========================');
-
   // Fetch orders from API
   useEffect(() => {
-    async function loadOrders() {
-      console.log('Mobile Orders - Token:', token ? 'Present' : 'Missing');
-      console.log('Mobile Orders - Token length:', token?.length);
-
-      if (!token && !vendorToken) {
-        console.log('Mobile Orders - No authentication token found, not loading orders');
+    const loadOrders = async () => {
+      if (!token) {
+        setError('No authentication token found');
         setLoading(false);
         return;
       }
 
-      console.log('Mobile Orders - Starting to fetch orders');
-      setLoading(true);
-      setError(null);
       try {
-        // Check if user is a vendor and use appropriate endpoint
-        let data;
-        if (vendorToken) {
-          console.log('Mobile Orders - Fetching vendor orders');
-          data = await fetchVendorOrders(vendorToken);
-        } else if (token) {
-          console.log('Mobile Orders - Fetching user orders');
-          data = await fetchUserOrders(token);
-        } else {
-          throw new Error('No authentication token found');
-        }
-        console.log('Mobile Orders - Raw API response:', data);
-
-        // Use same data processing as desktop orders page
-        const ordersArray = data.orders || data || [];
-
-        console.log('Mobile Orders - Processed orders array:', ordersArray);
-        console.log('Mobile Orders - Number of orders:', ordersArray.length);
-
-        if (ordersArray.length > 0) {
-          console.log('Mobile Orders - First order structure:', ordersArray[0]);
-        }
-
-        // Extract unique statuses from the orders for dynamic filtering
-        const statusMap: { [key: string]: boolean } = {};
-        ordersArray.forEach((order: Order) => {
-          if (order.status && order.status.trim() !== '') {
-            const formattedStatus = order.status.charAt(0).toUpperCase() + order.status.slice(1).toLowerCase();
-            statusMap[formattedStatus] = true;
-          }
-        });
-        const uniqueStatuses = Object.keys(statusMap);
-
-        console.log('Mobile Orders - Available statuses from backend:', uniqueStatuses);
-
-        setOrders(ordersArray);
-        setAvailableStatuses(uniqueStatuses);
+        setLoading(true);
+        setError(null);
+        const response: OrdersResponse = await fetchUserOrders(token);
+        setOrders(response.results || []);
       } catch (err: any) {
-        console.error('=== MOBILE ORDERS ERROR DEBUG ===');
-        console.error('Error object:', err);
-        console.error('Error message:', err.message);
-        console.error('Error stack:', err.stack);
-        console.error('================================');
-
-        const errorMessage = err.message || 'Could not fetch orders';
-        setError(errorMessage);
-        // Use mobile-specific toast for better mobile experience
-        showMobileError(errorMessage);
+        console.error('Error fetching orders:', err);
+        setError(err.message || 'Failed to fetch orders');
       } finally {
         setLoading(false);
       }
-    }
+    };
+
     loadOrders();
-  }, [token, vendorToken]);
+  }, [token]);
 
-  // TEMPORARILY DISABLED - Redirect to desktop if needed
-  // useEffect(() => {
-  //   if (isDesktop) {
-  //     redirectToDesktop('/user/dashboard/orders');
-  //   }
-  // }, [isDesktop, redirectToDesktop]);
-  
-  // Show loading state while checking device type or loading data
-  if (isMobile === null || loading) {
-    return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        backgroundColor: '#f8f9fa'
-      }}>
-        <Loader className="animate-spin" size={32} color="#20B2AA" />
-      </div>
-    );
-  }
-
-  // Filter orders based on active filter - work directly with backend data
+  // Filter orders based on active filter
   const filteredOrders = orders.filter(order => {
     if (activeFilter === 'All') return true;
     return order.status?.toLowerCase() === activeFilter.toLowerCase();
@@ -163,14 +98,12 @@ const MobileOrdersPage = () => {
         hour: '2-digit',
         minute: '2-digit'
       });
-    } catch {
-      return 'Invalid date';
+    } catch (error) {
+      return dateString;
     }
   };
 
-
-
-  // Dynamic status styles based on status type
+  // Helper function to get status styles
   const getStatusStyles = (status: string) => {
     const normalizedStatus = status?.toLowerCase() || '';
 
@@ -201,7 +134,7 @@ const MobileOrdersPage = () => {
   const handleViewDetails = (orderId: number) => {
     // Use React Router's navigate for client-side navigation
     console.log('Navigating to order details for orderId:', orderId);
-    navigate(`/user/dashboard/orders/${orderId}`);
+    navigate(`/user/orders/${orderId}`);
   };
 
   const toggleFilters = () => {
@@ -227,51 +160,20 @@ const MobileOrdersPage = () => {
       maxWidth: isTablet ? '768px' : '414px', // Tablet: 768px, Mobile: 414px
       margin: '0 auto'
     }}>
-      {/* Header */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '20px',
-        backgroundColor: 'white',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        borderBottom: '1px solid #E5E7EB'
-      }}>
-        <div style={{
-          width: '40px',
-          height: '40px',
-          borderRadius: '50%',
-          backgroundColor: '#ddd',
-          backgroundImage: `url(${profileImage})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center'
-        }} />
-        <div 
-          onClick={() => {}}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '4px',
-            cursor: 'pointer',
-            padding: '4px'
-          }}
-        >
-          <HamburgerMenu size={24} color="#333" />
-        </div>
-      </div>
+              {/* Header */}
+        <MobileHeader 
+          title="My Orders"
+          subtitle="Track your food delivery orders"
+          variant="default"
+          profileImageSize="medium"
+          showProfileImage={true}
+        />
 
-      {/* Main Content */}
-      <div style={{ padding: '20px' }}>
-        <h1 style={{
-          fontSize: '24px',
-          fontWeight: '700',
-          margin: '0 0 8px 0',
-          color: '#111827'
+              {/* Main Content */}
+        <div style={{ 
+          padding: '20px',
+          marginTop: '8px'
         }}>
-          My Orders
-        </h1>
         
         <p style={{
           color: '#6B7280',
@@ -471,28 +373,24 @@ const MobileOrdersPage = () => {
                       fontWeight: '600',
                       color: '#111827'
                     }}>
-                      Order #{order.id || order.order_id || 'Unknown'}
+                      Order #{order.id}
                     </h3>
-                    {order.customer_name && (
-                      <p style={{
-                        margin: '0',
-                        fontSize: '14px',
-                        color: '#6B7280',
-                        marginBottom: '4px'
-                      }}>
-                        Customer: {order.customer_name}
-                      </p>
-                    )}
-                    {order.item_name && (
-                      <p style={{
-                        margin: '0',
-                        fontSize: '12px',
-                        color: '#9CA3AF',
-                        marginBottom: '4px'
-                      }}>
-                        Items: {order.item_name}
-                      </p>
-                    )}
+                    <p style={{
+                      margin: '0',
+                      fontSize: '14px',
+                      color: '#6B7280',
+                      marginBottom: '4px'
+                    }}>
+                      {order.order_name}
+                    </p>
+                    <p style={{
+                      margin: '0',
+                      fontSize: '12px',
+                      color: '#9CA3AF',
+                      marginBottom: '4px'
+                    }}>
+                      Vendor: {order.vendor.business_name}
+                    </p>
                     {order.delivery_address && (
                       <p style={{
                         margin: '0',
@@ -511,15 +409,13 @@ const MobileOrdersPage = () => {
                       {formatDate(order.created_at)}
                     </p>
                   </div>
-                  {order.total_amount && (
-                    <span style={{
-                      fontSize: '16px',
-                      fontWeight: '700',
-                      color: '#111827'
-                    }}>
-                      ₦{order.total_amount.toLocaleString()}
-                    </span>
-                  )}
+                  <span style={{
+                    fontSize: '16px',
+                    fontWeight: '700',
+                    color: '#111827'
+                  }}>
+                    {order.total_price_display || order.total_price}
+                  </span>
                 </div>
                 <div style={{
                   display: 'flex',
@@ -564,7 +460,7 @@ const MobileOrdersPage = () => {
                         }}></span>
                       );
                     })()}
-                    {order.status || 'Unknown'}
+                    {order.status_display || order.status || 'Unknown'}
                   </span>
                   <button
                     onClick={(e) => {
@@ -599,7 +495,7 @@ const MobileOrdersPage = () => {
         </div>
       </div>
 
-      <BottomNav />
+      {/* Bottom Navigation is now handled by UserDashboardLayout */}
     </div>
   );
 };

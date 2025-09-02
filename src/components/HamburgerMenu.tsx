@@ -25,38 +25,44 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
 
   const menuItems: MenuItem[] = [
     {
-      id: 'saved-addresses',
+      id: 'dashboard',
+      label: 'Dashboard',
+      icon: <MapPin size={20} color="#6b7280" />,
+      path: '/user/dashboard'
+    },
+    {
+      id: 'orders',
+      label: 'My Orders',
+      icon: <CreditCard size={20} color="#6b7280" />,
+      path: '/user/orders'
+    },
+    {
+      id: 'addresses',
       label: 'Saved Addresses',
       icon: <MapPin size={20} color="#6b7280" />,
-      path: '/user/dashboard/addresses'
+      path: '/user/addresses'
     },
     {
-      id: 'payment-methods',
-      label: 'Payment Methods',
-      icon: <CreditCard size={20} color="#6b7280" />,
-      path: '/user/dashboard/payment-methods'
-    },
-    {
-      id: 'invite-friend',
-      label: 'Invite Friend',
+      id: 'favorites',
+      label: 'Favorites',
       icon: <UserPlus size={20} color="#6b7280" />,
-      action: () => {
-        // Handle invite friend action
-        console.log('Invite friend clicked');
-        setIsOpen(false);
-      }
+      path: '/user/favorites'
     },
     {
       id: 'profile-settings',
       label: 'Profile Settings',
       icon: <Settings size={20} color="#6b7280" />,
-      path: '/user/dashboard/profile'
+      path: '/user/settings'
     },
     {
       id: 'help-support',
       label: 'Help & Support',
       icon: <HelpCircle size={20} color="#6b7280" />,
-      path: '/user/dashboard/help'
+      action: () => {
+        // Handle help & support action
+        console.log('Help & Support clicked');
+        setIsOpen(false);
+      }
     },
     {
       id: 'logout',
@@ -64,9 +70,10 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
       icon: <LogOut size={20} color="#ef4444" />,
       action: () => {
         // Handle logout action
-        localStorage.removeItem('token');
-        localStorage.removeItem('first_name');
-        navigate('/login/user');
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
+        navigate('/login');
         setIsOpen(false);
       }
     }

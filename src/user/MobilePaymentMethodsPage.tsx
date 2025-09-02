@@ -1,8 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Edit, Trash2, CreditCard } from 'lucide-react';
-import BottomNav from '../components/BottomNav';
-import HamburgerMenu from '../components/HamburgerMenu';
+import MobileHeader from '../components/MobileHeader';
 import { useResponsive } from '../hooks/useResponsive';
 
 const paymentMethods = [
@@ -69,30 +68,19 @@ const MobilePaymentMethodsPage: React.FC = () => {
       paddingBottom: '80px'
     }}>
       {/* Header */}
-      <div style={{
-        backgroundColor: 'white',
-        padding: '16px 20px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        borderBottom: '1px solid #e9ecef',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100
-      }}>
-        <h1 style={{
-          fontSize: '24px',
-          fontWeight: '600',
-          margin: 0,
-          color: '#212529'
-        }}>
-          Payment Methods
-        </h1>
-        <HamburgerMenu size={24} color="#6c757d" />
-      </div>
+             <MobileHeader 
+         title="Payment Methods"
+         subtitle="Manage your payment methods"
+         variant="default"
+         profileImageSize="medium"
+         showProfileImage={true}
+       />
 
       {/* Content */}
-      <div style={{ padding: '20px' }}>
+      <div style={{ 
+        padding: '20px',
+        marginTop: '8px'
+      }}>
         {/* Description */}
         <p style={{
           fontSize: '14px',
@@ -260,7 +248,7 @@ const MobilePaymentMethodsPage: React.FC = () => {
         </button>
       </div>
 
-      <BottomNav />
+      {/* BottomNav is removed as per the new_code */}
     </div>
   );
 };

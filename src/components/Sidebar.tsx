@@ -1,18 +1,18 @@
 import React from 'react';
-import { Home, Book, MapPin, CreditCard, Star, HelpCircle, User, MessageCircle } from 'lucide-react';
+import { Home, Book, MapPin, CreditCard, Star, HelpCircle, User, MessageCircle, HeadphonesIcon } from 'lucide-react';
 import { useLocation, Link } from 'react-router-dom';
 
 const navLinks = [
   { label: 'Overview', path: '/user/dashboard', icon: <Home size={20} /> },
-  { label: 'My Bookings', path: '/user/dashboard/bookings', icon: <Book size={20} /> },
-  { label: 'Saved Addresses', path: '/user/dashboard/addresses', icon: <MapPin size={20} /> },
-  { label: 'Payment Methods', path: '/user/dashboard/payments', icon: <CreditCard size={20} /> },
-  { label: 'Favorite', path: '/user/dashboard/favorite', icon: <Star size={20} /> },
+  { label: 'My Orders', path: '/user/orders', icon: <Book size={20} /> },
+  { label: 'Saved Addresses', path: '/user/addresses', icon: <MapPin size={20} /> },
+  { label: 'Payment Methods', path: '/user/payments', icon: <CreditCard size={20} /> },
+  { label: 'Favorites', path: '/user/favorites', icon: <Star size={20} /> },
 ];
 
 const bottomLinks = [
-  { label: 'Help/Support', path: '/user/dashboard/help', icon: <HelpCircle size={20} /> },
-  { label: 'Profile Settings', path: '/user/dashboard/profile', icon: <User size={20} /> },
+  { label: 'Profile Settings', path: '/user/settings', icon: <User size={20} /> },
+  { label: 'Help/Support', path: '/user/help', icon: <HeadphonesIcon size={20} /> },
 ];
 
 const Sidebar: React.FC = () => {
@@ -30,8 +30,25 @@ const Sidebar: React.FC = () => {
       position: 'relative',
     }}>
       {/* Logo */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 32px', marginBottom: 36 }}>
-        <img src="/logo.png" alt="Bestie Logo" style={{ width: 100, height: 38 }} />
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: 12, 
+        padding: '0 32px', 
+        marginBottom: 36,
+        borderBottom: '1px solid #f1f5f9',
+        paddingBottom: 24
+      }}>
+        <img 
+          src="/logo.png" 
+          alt="Bestie Logo" 
+          style={{ 
+            width: 100, 
+            height: 38,
+            objectFit: 'contain',
+            filter: 'drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1))'
+          }} 
+        />
       </div>
       {/* Nav Links */}
       <nav style={{ flex: 1 }}>

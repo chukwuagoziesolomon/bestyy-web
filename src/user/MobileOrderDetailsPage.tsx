@@ -1,17 +1,15 @@
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import MobileHeader from '../components/MobileHeader';
 import { ArrowLeft, X, MessageCircle } from 'lucide-react';
 
-const OrderDetailsPage: React.FC<{ orderId?: string }> = ({ orderId: propOrderId }) => {
+const MobileOrderDetailsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { orderId: paramOrderId } = useParams<{ orderId: string }>();
-  
-  // Use the orderId from props or from URL params
-  const currentOrderId = propOrderId || paramOrderId;
+  const { orderId } = useParams();
 
   // Sample order data - in real app this would come from API
   const orderData = {
-    id: currentOrderId || '1',
+    id: orderId || '1',
     vendor: {
       name: 'Mr Biggs',
       logo: '/mr-biggs-logo.png'
@@ -57,69 +55,37 @@ const OrderDetailsPage: React.FC<{ orderId?: string }> = ({ orderId: propOrderId
       margin: '0 auto'
     }}>
       {/* Header */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '16px 20px',
-        backgroundColor: '#ffffff',
-        borderBottom: '1px solid #e2e8f0'
-      }}>
-        <button
-          onClick={() => navigate(-1)}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: '8px',
-            transition: 'background-color 0.2s'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#f1f5f9';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'transparent';
-          }}
-        >
-          <ArrowLeft size={20} color="#64748b" />
-        </button>
-
-        <h1 style={{
-          fontSize: '20px',
-          fontWeight: '700',
-          color: '#1e293b',
-          margin: 0
-        }}>
-          Order Details
-        </h1>
-
-        <button
-          onClick={() => navigate(-1)}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: '8px',
-            transition: 'background-color 0.2s'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#f1f5f9';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'transparent';
-          }}
-        >
-          <X size={20} color="#64748b" />
-        </button>
-      </div>
+      <MobileHeader 
+        title="Order Details"
+        showBackButton={true}
+        variant="compact"
+        profileImageSize="medium"
+        showProfileImage={false}
+        rightAction={
+          <button
+            onClick={() => navigate(-1)}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '8px',
+              transition: 'background-color 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#f1f5f9';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
+            <X size={20} color="#64748b" />
+          </button>
+        }
+      />
 
       {/* Order Summary */}
       <div style={{
@@ -341,4 +307,4 @@ const OrderDetailsPage: React.FC<{ orderId?: string }> = ({ orderId: propOrderId
   );
 };
 
-export default OrderDetailsPage;
+export default MobileOrderDetailsPage;
