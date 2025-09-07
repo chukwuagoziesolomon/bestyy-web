@@ -110,6 +110,9 @@
     align-items: center;
     justify-content: space-between;
     padding: 1.2rem 1rem 1.2rem 1rem;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
   }
   .navbar__links,
   .navbar__cta {
@@ -123,6 +126,11 @@
     cursor: pointer;
     margin-left: auto;
     padding: 0.2rem 0.5rem;
+    flex-shrink: 0;
+  }
+  .navbar__toggle-dark {
+    flex-shrink: 0;
+    margin-left: 0.5rem;
   }
 }
 

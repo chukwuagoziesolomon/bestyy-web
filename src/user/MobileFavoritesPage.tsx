@@ -162,12 +162,12 @@ const MobileFavoritesPage: React.FC = () => {
             style={{
               padding: '8px 16px',
               borderRadius: '20px',
-              border: 'none',
+            border: 'none',
               background: selectedFilter === 'all' ? '#10b981' : '#f3f4f6',
               color: selectedFilter === 'all' ? 'white' : '#6c757d',
               fontSize: '14px',
               fontWeight: '500',
-              cursor: 'pointer'
+            cursor: 'pointer'
             }}
           >
             All ({favourites.length})
@@ -183,8 +183,8 @@ const MobileFavoritesPage: React.FC = () => {
               fontSize: '14px',
               fontWeight: '500',
               cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
+            display: 'flex',
+            alignItems: 'center',
               gap: '4px'
             }}
           >
@@ -196,12 +196,12 @@ const MobileFavoritesPage: React.FC = () => {
             style={{
               padding: '8px 16px',
               borderRadius: '20px',
-              border: 'none',
+            border: 'none',
               background: selectedFilter === 'venue' ? '#10b981' : '#f3f4f6',
               color: selectedFilter === 'venue' ? 'white' : '#6c757d',
               fontSize: '14px',
               fontWeight: '500',
-              cursor: 'pointer',
+            cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '4px'
@@ -249,12 +249,12 @@ const MobileFavoritesPage: React.FC = () => {
             {selectedFilter === 'all' ? 'No favourites found.' : `No ${selectedFilter} favourites found.`}
           </div>
         ) : (
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '16px',
-            overflow: 'hidden',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-          }}>
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '16px',
+          overflow: 'hidden',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+        }}>
             {filteredFavourites.map((favorite, index) => {
               const displayData = getFavoriteDisplayData(favorite);
               if (!displayData) return null;
@@ -262,11 +262,11 @@ const MobileFavoritesPage: React.FC = () => {
               return (
                           <div key={favorite.id}>
                 {/* Favorite Item */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '16px'
-                }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '16px'
+              }}>
                   {/* Type Icon */}
                   <div style={{
                     marginRight: '16px',
@@ -286,40 +286,40 @@ const MobileFavoritesPage: React.FC = () => {
                   </div>
 
                   {/* Item Details */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start',
-                      marginBottom: '4px'
-                    }}>
-                      <h3 style={{
-                        color: '#111827',
-                        fontWeight: '500',
-                        fontSize: '14px',
-                        margin: 0,
-                        paddingRight: '8px',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        {displayData.name}
-                      </h3>
-                      <span style={{
-                        color: '#111827',
-                        fontWeight: '700',
-                        fontSize: '14px',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        {displayData.type === 'food' ? displayData.price : ''}
-                      </span>
-                    </div>
-                    
-                    <p style={{
-                      color: '#6b7280',
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    marginBottom: '4px'
+                  }}>
+                    <h3 style={{
+                      color: '#111827',
+                      fontWeight: '500',
                       fontSize: '14px',
-                      margin: '0 0 8px 0'
+                      margin: 0,
+                      paddingRight: '8px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
                     }}>
+                        {displayData.name}
+                    </h3>
+                    <span style={{
+                      color: '#111827',
+                      fontWeight: '700',
+                      fontSize: '14px',
+                      whiteSpace: 'nowrap'
+                    }}>
+                        {displayData.type === 'food' ? displayData.price : ''}
+                    </span>
+                  </div>
+                  
+                  <p style={{
+                    color: '#6b7280',
+                    fontSize: '14px',
+                    margin: '0 0 8px 0'
+                  }}>
                       {displayData.description}
                     </p>
                     
@@ -332,56 +332,56 @@ const MobileFavoritesPage: React.FC = () => {
                         {displayData.address}
                       </p>
                     )}
-                    
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
+                  
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <span style={{
+                      color: '#9ca3af',
+                      fontSize: '12px'
                     }}>
-                      <span style={{
-                        color: '#9ca3af',
-                        fontSize: '12px'
-                      }}>
                         {formatDate(favorite.created_at)}
-                      </span>
-                      
+                    </span>
+                    
                       <button 
                         onClick={() => handleRemoveFavorite(favorite.id)}
                         style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
                           backgroundColor: '#fee2e2',
-                          padding: '4px 12px',
-                          borderRadius: '20px',
-                          border: 'none',
-                          cursor: 'pointer'
+                      padding: '4px 12px',
+                      borderRadius: '20px',
+                      border: 'none',
+                      cursor: 'pointer'
                         }}
                       >
                         <Trash2 size={12} color="#dc2626" />
-                        <span style={{
-                          fontSize: '12px',
+                      <span style={{
+                        fontSize: '12px',
                           color: '#dc2626',
-                          fontWeight: '500'
-                        }}>
+                        fontWeight: '500'
+                      }}>
                           Remove
-                        </span>
-                      </button>
-                    </div>
+                      </span>
+                    </button>
                   </div>
                 </div>
-
-                {/* Divider (except for last item) */}
-                {index < filteredFavourites.length - 1 && (
-                  <div style={{
-                    borderBottom: '1px solid #f3f4f6',
-                    marginLeft: '72px'
-                  }}></div>
-                )}
               </div>
+
+              {/* Divider (except for last item) */}
+                {index < filteredFavourites.length - 1 && (
+                <div style={{
+                  borderBottom: '1px solid #f3f4f6',
+                    marginLeft: '72px'
+                }}></div>
+              )}
+            </div>
             );
             })}
-          </div>
+        </div>
         )}
       </div>
     </div>

@@ -6,9 +6,11 @@ import { WHATSAPP_URL } from './config';
 const SuccessPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  // Determine user type from location state or default to vendor
-  const userType = location.state?.userType || 'vendor';
-  const dashboardRoute = userType === 'courier' ? '/courier/dashboard' : '/vendor/dashboard';
+  // Determine user type from location state or default to user
+  const userType = location.state?.userType || 'user';
+  const dashboardRoute = userType === 'courier' ? '/courier/dashboard' : 
+                        userType === 'vendor' ? '/vendor/dashboard' : 
+                        '/user/dashboard';
   return (
     <div className="success-bg">
       <div className="success-card">

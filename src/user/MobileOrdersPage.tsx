@@ -160,7 +160,7 @@ const MobileOrdersPage = () => {
       maxWidth: isTablet ? '768px' : '414px', // Tablet: 768px, Mobile: 414px
       margin: '0 auto'
     }}>
-              {/* Header */}
+      {/* Header */}
         <MobileHeader 
           title="My Orders"
           subtitle="Track your food delivery orders"
@@ -169,7 +169,7 @@ const MobileOrdersPage = () => {
           showProfileImage={true}
         />
 
-              {/* Main Content */}
+      {/* Main Content */}
         <div style={{ 
           padding: '20px',
           marginTop: '8px'
@@ -375,22 +375,22 @@ const MobileOrdersPage = () => {
                     }}>
                       Order #{order.id}
                     </h3>
-                    <p style={{
-                      margin: '0',
-                      fontSize: '14px',
-                      color: '#6B7280',
-                      marginBottom: '4px'
-                    }}>
+                      <p style={{
+                        margin: '0',
+                        fontSize: '14px',
+                        color: '#6B7280',
+                        marginBottom: '4px'
+                      }}>
                       {order.order_name}
-                    </p>
-                    <p style={{
-                      margin: '0',
-                      fontSize: '12px',
-                      color: '#9CA3AF',
-                      marginBottom: '4px'
-                    }}>
+                      </p>
+                      <p style={{
+                        margin: '0',
+                        fontSize: '12px',
+                        color: '#9CA3AF',
+                        marginBottom: '4px'
+                      }}>
                       Vendor: {order.vendor.business_name}
-                    </p>
+                      </p>
                     {order.delivery_address && (
                       <p style={{
                         margin: '0',
@@ -409,13 +409,13 @@ const MobileOrdersPage = () => {
                       {formatDate(order.created_at)}
                     </p>
                   </div>
-                  <span style={{
-                    fontSize: '16px',
-                    fontWeight: '700',
-                    color: '#111827'
-                  }}>
+                    <span style={{
+                      fontSize: '16px',
+                      fontWeight: '700',
+                      color: '#111827'
+                    }}>
                     {order.total_price_display || order.total_price}
-                  </span>
+                    </span>
                 </div>
                 <div style={{
                   display: 'flex',

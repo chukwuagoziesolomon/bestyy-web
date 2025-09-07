@@ -22,7 +22,7 @@ const MobileEditMenu: React.FC = () => {
   });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('access_token');
 
   const categories = [
     'Rice Dish',
@@ -60,7 +60,7 @@ const MobileEditMenu: React.FC = () => {
         }
       } catch (err: any) {
         showError(err.message || 'Failed to load menu item');
-        navigate('/vendor/dashboard/menu');
+        navigate('/vendor/menu');
       } finally {
         setLoading(false);
       }
@@ -108,7 +108,7 @@ const MobileEditMenu: React.FC = () => {
 
       await updateMenuItem(token, id, updateData);
       showSuccess('Menu item updated successfully!');
-      navigate('/vendor/dashboard/menu');
+      navigate('/vendor/menu');
     } catch (err: any) {
       showApiError(err, 'Failed to update menu item');
     } finally {
@@ -124,7 +124,7 @@ const MobileEditMenu: React.FC = () => {
     try {
       await deleteMenuItem(token, id);
       showSuccess('Menu item deleted successfully');
-      navigate('/vendor/dashboard/menu');
+      navigate('/vendor/menu');
     } catch (err: any) {
       showError(err.message || 'Failed to delete menu item');
     } finally {
@@ -164,7 +164,7 @@ const MobileEditMenu: React.FC = () => {
         boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
       }}>
         <div
-          onClick={() => navigate('/vendor/dashboard/menu')}
+          onClick={() => navigate('/vendor/menu')}
           style={{
             cursor: 'pointer',
             padding: '8px',

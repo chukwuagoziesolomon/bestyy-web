@@ -14,7 +14,7 @@ const Navbar: React.FC<NavbarProps> = ({ darkMode, toggleDarkMode }) => (
     <ul className="navbar__links">
       <li><a href="#how-it-works">How It Works</a></li>
     </ul>
-    <a href="#get-started" className="navbar__cta">Get Started</a>
+    <a href="/login" className="navbar__cta">Get Started</a>
     <button className="navbar__toggle-dark" onClick={toggleDarkMode} aria-label="Toggle dark mode">
       {darkMode ? (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2m0 18v2m11-11h-2M3 12H1m16.95 7.07l-1.41-1.41M6.34 6.34L4.93 4.93m12.02 0l-1.41 1.41M6.34 17.66l-1.41 1.41"/></svg>

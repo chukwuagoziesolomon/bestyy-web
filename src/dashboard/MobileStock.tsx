@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Home, List, Utensils, Table, Menu, X, BarChart3, CreditCard, HelpCircle, Settings } from 'lucide-react';
 import { listMenuItems, updateMenuItem, API_URL } from '../api';
 import { showError, showSuccess } from '../toast';
+import VendorHeader from '../components/VendorHeader';
+import VendorBottomNavigation from '../components/VendorBottomNavigation';
 
 interface MenuItem {
   id: number;
@@ -18,7 +20,6 @@ const MobileStock: React.FC = () => {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
-  const [showDropdown, setShowDropdown] = useState(false);
 
   const token = localStorage.getItem('token');
 
@@ -98,131 +99,8 @@ const MobileStock: React.FC = () => {
       minHeight: '100vh',
       paddingBottom: '80px'
     }}>
-      {/* Header */}
-      <div style={{
-        background: '#fff',
-        padding: '20px 16px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        position: 'relative',
-        zIndex: 10
-      }}>
-        <h1 style={{
-          fontSize: '24px',
-          fontWeight: 700,
-          margin: 0,
-          color: '#1f2937'
-        }}>
-          Menu Availability
-        </h1>
-        <div
-          onClick={() => setShowDropdown(!showDropdown)}
-          style={{
-            cursor: 'pointer',
-            padding: '8px',
-            borderRadius: '8px',
-            transition: 'background-color 0.2s ease'
-          }}
-        >
-          <Menu size={24} color="#6b7280" />
-        </div>
-      </div>
+      <VendorHeader title="Menu Availability" />
 
-      {/* Dropdown Menu */}
-      {showDropdown && (
-        <>
-          {/* Backdrop */}
-          <div
-            onClick={() => setShowDropdown(false)}
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'rgba(0,0,0,0.3)',
-              zIndex: 40
-            }}
-          />
-
-          {/* Dropdown Content */}
-          <div style={{
-            position: 'fixed',
-            top: '20px',
-            right: '20px',
-            background: '#fff',
-            borderRadius: '12px',
-            boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
-            zIndex: 50,
-            minWidth: '200px',
-            overflow: 'hidden'
-          }}>
-            {/* Close Button */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'flex-end',
-              padding: '12px 16px 8px 16px',
-              borderBottom: '1px solid #f3f4f6'
-            }}>
-              <div
-                onClick={() => setShowDropdown(false)}
-                style={{
-                  cursor: 'pointer',
-                  padding: '4px',
-                  borderRadius: '6px',
-                  transition: 'background-color 0.2s ease'
-                }}
-              >
-                <X size={20} color="#6b7280" />
-              </div>
-            </div>
-
-            {/* Menu Items */}
-            <div style={{ padding: '8px 0' }}>
-              {[
-                { icon: <BarChart3 size={20} />, label: 'Analytics', onClick: () => navigate('/vendor/dashboard/analytics') },
-                { icon: <CreditCard size={20} />, label: 'Payout', onClick: () => navigate('/vendor/dashboard/payout') },
-                { icon: <Settings size={20} />, label: 'Profile Settings', onClick: () => navigate('/vendor/dashboard/profile') }
-              ].map((item, index) => (
-                <div
-                  key={index}
-                  onClick={() => {
-                    item.onClick();
-                    setShowDropdown(false);
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    padding: '12px 20px',
-                    cursor: 'pointer',
-                    transition: 'background-color 0.2s ease',
-                    color: '#374151'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f9fafb';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
-                >
-                  <div style={{ color: '#6b7280' }}>
-                    {item.icon}
-                  </div>
-                  <span style={{
-                    fontSize: '16px',
-                    fontWeight: 500
-                  }}>
-                    {item.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
 
       {/* Menu Items List */}
       <div style={{ background: '#fff' }}>
@@ -405,61 +283,7 @@ const MobileStock: React.FC = () => {
       </div>
 
       {/* Bottom Navigation */}
-      <div style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        background: '#fff',
-        borderTop: '1px solid #e5e7eb',
-        display: 'flex',
-        justifyContent: 'space-around',
-        padding: '12px 0',
-        zIndex: 50
-      }}>
-        {[
-          { 
-            icon: <Home size={20} />, 
-            label: 'Overview', 
-            active: false,
-            onClick: () => navigate('/vendor/dashboard')
-          },
-          {
-            icon: <List size={20} />,
-            label: 'Order List',
-            active: false,
-            onClick: () => navigate('/vendor/dashboard/orders')
-          },
-          {
-            icon: <Utensils size={20} />,
-            label: 'Menu',
-            active: false,
-            onClick: () => navigate('/vendor/dashboard/menu')
-          },
-          {
-            icon: <Table size={20} />,
-            label: 'Menu Stock',
-            active: true,
-            onClick: () => {}
-          }
-        ].map((item, index) => (
-          <div 
-            key={index} 
-            onClick={item.onClick}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '4px',
-              color: item.active ? '#10b981' : '#6b7280',
-              cursor: 'pointer'
-            }}
-          >
-            {item.icon}
-            <span style={{ fontSize: '10px', fontWeight: 500 }}>{item.label}</span>
-          </div>
-        ))}
-      </div>
+      <VendorBottomNavigation currentPath="/vendor/stock" />
     </div>
   );
 };

@@ -1,24 +1,25 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '../toast';
-import { registerUser, loginUser } from '../api';
+import { registerUser } from '../api';
 import { useAuth } from '../context/AuthContext';
 import '../UserLogin.css';
 
 const UserSignup = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { signup } = useAuth();
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
     email: '',
     phone: '',
     password: '',
-    confirm_password: ''
+    confirm_password: '',
+    role: 'user' // Default role
   });
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -36,7 +37,7 @@ const UserSignup = () => {
 
     setIsLoading(true);
     try {
-      // Register the user
+      // Register the user first
       await registerUser({
         first_name: formData.first_name,
         last_name: formData.last_name,
@@ -46,9 +47,15 @@ const UserSignup = () => {
         confirm_password: formData.confirm_password
       });
 
-      // Show success message and redirect to login page
-      showSuccess('Registration successful! Please log in to continue.');
-      navigate('/login');
+      // Use the new signup function with role-based redirection
+      await signup(formData.email, formData.password, formData.role, {
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        phone: formData.phone,
+        role: formData.role
+      });
+
+      showSuccess('Registration successful! Welcome to your dashboard.');
     } catch (err: any) {
       showError(err?.message || 'Registration failed. Please try again.');
     } finally {
@@ -112,6 +119,33 @@ const UserSignup = () => {
               required
               placeholder="Enter your phone number"
             />
+          </div>
+
+          <div className="form-group">
+            <label>Account Type</label>
+            <select
+              name="role"
+              value={formData.role}
+              onChange={handleChange}
+              required
+              style={{
+                width: '100%',
+                padding: '12px',
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                fontSize: '16px',
+                backgroundColor: '#fff'
+              }}
+            >
+              <option value="user">Customer</option>
+              <option value="vendor">Vendor</option>
+              <option value="courier">Courier</option>
+            </select>
+            <small style={{ color: '#666', fontSize: '14px', marginTop: '4px', display: 'block' }}>
+              {formData.role === 'vendor' && 'Vendors can sell food and manage their business'}
+              {formData.role === 'courier' && 'Couriers can deliver orders and earn money'}
+              {formData.role === 'user' && 'Customers can order food and track deliveries'}
+            </small>
           </div>
           
           <div className="form-group">

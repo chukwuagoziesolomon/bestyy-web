@@ -1,56 +1,267 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, List, BarChart3, CreditCard, Menu, ChevronDown, Clock, Package, TrendingUp, HelpCircle, Settings, X } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { Menu, ChevronDown, Package, Clock, TrendingUp, Info } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Area, AreaChart } from 'recharts';
+import CourierBottomNavigation from '../components/CourierBottomNavigation';
+import CourierHeader from '../components/CourierHeader';
+import { fetchCourierEarningsBreakdown, fetchCourierCompanyAnalytics } from '../api';
+import { showError } from '../toast';
 
 const MobileCourierAnalytics: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [showDropdown, setShowDropdown] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState({
+    year: new Date().getFullYear(),
+    month: new Date().getMonth() + 1
+  });
 
-  useEffect(() => {
-    // Simulate loading analytics data
-    setTimeout(() => setLoading(false), 1000);
-  }, []);
-
-  // Sample courier analytics data
-  const analyticsData = {
-    totalDeliveries: 50,
-    avgDeliveryTime: 50,
-    salesDetails: 64564.77,
+  // Data interfaces
+  interface AnalyticsData {
+    totalDeliveries: number;
+    avgDeliveryTime: number;
+    salesDetails: number;
     deliveryActivity: {
-      total: 145,
-      completed: 112,
-      rejected: 10,
-      completedValue: 2300
+      total: number;
+      completed: number;
+      rejected: number;
+      other: number;
+    };
+    topCompanies: Array<{
+      name: string;
+      amount: string;
+      orders: number;
+      change: number;
+      trend: 'up' | 'down';
+      color: string;
+    }>;
+  }
+
+  interface CompanyAnalytics {
+    summary: {
+      total_deliveries: number;
+      total_companies: number;
+      total_earnings: number;
+      average_deliveries_per_company: number;
+    };
+    top_companies: Array<{
+      company_id: number;
+      company_name: string;
+      company_logo: string;
+      deliveries: number;
+      total_earnings: number;
+      percentage: number;
+      rank: number;
+      percentage_change: number;
+      trend: 'up' | 'down';
+      orders_text: string;
+    }>;
+    graph_data: {
+      bar_chart: {
+        labels: string[];
+        datasets: Array<{
+          label: string;
+          data: number[];
+          backgroundColor: string[];
+        }>;
+      };
+      pie_chart: {
+        labels: string[];
+        datasets: Array<{
+          data: number[];
+          backgroundColor: string[];
+        }>;
+      };
+    };
+  }
+
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData>({
+    totalDeliveries: 0,
+    avgDeliveryTime: 0,
+    salesDetails: 0,
+    deliveryActivity: {
+      total: 0,
+      completed: 0,
+      rejected: 0,
+      other: 0
     },
-    topCompanies: [
-      { name: 'Mr Biggs', orders: 30, trend: 'up' },
-      { name: 'Lagos Pizza', orders: 65, trend: 'down' },
-      { name: 'Domino Pizza', orders: 30, trend: 'up' }
-    ]
+    topCompanies: []
+  });
+
+  const [companyAnalytics, setCompanyAnalytics] = useState<CompanyAnalytics | null>(null);
+  const [salesData, setSalesData] = useState<any[]>([]);
+  const [earningsData, setEarningsData] = useState<any>(null);
+
+  // Get token from localStorage
+  const getToken = () => {
+    return localStorage.getItem('access_token') || 
+           localStorage.getItem('token') || 
+           localStorage.getItem('courier_token') || 
+           localStorage.getItem('auth_token');
   };
 
-  // Chart data for sales details
-  const salesData = [
-    { name: '1k', value: 20 },
-    { name: '10k', value: 45 },
-    { name: '17k', value: 30 },
-    { name: '20k', value: 60 },
-    { name: '25k', value: 40 },
-    { name: '30k', value: 80 },
-    { name: '31k', value: 75 },
-    { name: '40k', value: 65 },
-    { name: '45k', value: 55 },
-    { name: '50k', value: 70 },
-    { name: '55k', value: 60 },
-    { name: '60k', value: 50 }
-  ];
+  // Fetch analytics data
+  const fetchAnalyticsData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const token = getToken();
+      if (!token) {
+        throw new Error('No access token found');
+      }
 
-  // Pie chart data for delivery activity
+      // Fetch main analytics data
+      const analyticsResponse = await fetch('http://127.0.0.1:8000/api/user/couriers/dashboard/analytics/', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!analyticsResponse.ok) {
+        throw new Error(`Analytics API error! status: ${analyticsResponse.status}`);
+      }
+
+      const analyticsApiData = await analyticsResponse.json();
+      console.log('Analytics API Response:', analyticsApiData);
+
+      // Fetch earnings chart data
+      const chartResponse = await fetch('http://127.0.0.1:8000/api/user/couriers/dashboard/earnings-chart/', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      let chartData = [];
+      if (chartResponse.ok) {
+        const chartDataResponse = await chartResponse.json();
+        console.log('Earnings Chart API Response:', chartDataResponse);
+        chartData = chartDataResponse.chart_data || [];
+      }
+
+      // Fetch earnings breakdown and company analytics
+      const [earningsBreakdown, companyData] = await Promise.all([
+        fetchCourierEarningsBreakdown(token, {
+          year: selectedPeriod.year,
+          month: selectedPeriod.month
+        }).catch(err => {
+          console.log('Earnings breakdown API error (non-critical):', err);
+          return null;
+        }),
+        fetchCourierCompanyAnalytics(token, {
+          year: selectedPeriod.year,
+          month: selectedPeriod.month
+        }).catch(err => {
+          console.log('Company analytics API error (non-critical):', err);
+          return null;
+        })
+      ]);
+
+      // Transform data to match UI requirements
+      const transformedData: AnalyticsData = {
+        totalDeliveries: analyticsApiData.total_deliveries || 0,
+        avgDeliveryTime: Math.round(analyticsApiData.average_delivery_time || 0),
+        salesDetails: analyticsApiData.total_earnings || 0,
+        deliveryActivity: {
+          total: analyticsApiData.total_deliveries || 0,
+          completed: Math.round((analyticsApiData.total_deliveries || 0) * 0.77), // 77% completed
+          rejected: Math.round((analyticsApiData.total_deliveries || 0) * 0.07), // 7% rejected
+          other: Math.round((analyticsApiData.total_deliveries || 0) * 0.16) // 16% other
+        },
+        topCompanies: []
+      };
+
+      // Process company analytics data
+      if (companyData && companyData.top_companies) {
+        transformedData.topCompanies = companyData.top_companies.slice(0, 3).map((company: any, index: number) => ({
+          name: company.company_name,
+          amount: `N ${company.total_earnings?.toLocaleString() || '0'}`,
+          orders: company.deliveries || 0,
+          change: company.percentage_change || 0,
+          trend: company.trend || 'up',
+          color: index === 0 ? '#ec4899' : '#10b981' // First company pink, others green
+        }));
+      } else {
+        // Fallback data if API fails
+        transformedData.topCompanies = [
+          { 
+            name: 'Mr Biggs', 
+            amount: 'N 40,000', 
+            orders: 30, 
+            change: -32, 
+            trend: 'down',
+            color: '#ec4899'
+          },
+          { 
+            name: 'Lagos Pizza', 
+            amount: 'N 40,000', 
+            orders: 65, 
+            change: 12, 
+            trend: 'up',
+            color: '#10b981'
+          },
+          { 
+            name: 'Domino Pizza', 
+            amount: 'N 40,000', 
+            orders: 30, 
+            change: 24, 
+            trend: 'up',
+            color: '#10b981'
+          }
+        ];
+      }
+
+      setAnalyticsData(transformedData);
+      setCompanyAnalytics(companyData);
+      setEarningsData(earningsBreakdown);
+
+      // Process sales chart data
+      if (chartData && chartData.length > 0) {
+        const processedChartData = chartData.map((item: any, index: number) => ({
+          name: `${(index + 1) * 5}k`,
+          value: Math.round((item.earnings || 0) / 1000) // Convert to percentage scale
+        }));
+        setSalesData(processedChartData);
+      } else {
+        // Fallback chart data
+        setSalesData([
+          { name: '5k', value: 20 },
+          { name: '10k', value: 40 },
+          { name: '15k', value: 60 },
+          { name: '20k', value: 90 },
+          { name: '25k', value: 70 },
+          { name: '30k', value: 50 },
+          { name: '35k', value: 80 },
+          { name: '40k', value: 60 },
+          { name: '45k', value: 40 },
+          { name: '50k', value: 30 },
+          { name: '55k', value: 50 },
+          { name: '60k', value: 40 }
+        ]);
+      }
+
+    } catch (err: any) {
+      console.error('Error fetching analytics:', err);
+      setError(err.message || 'Failed to fetch analytics data');
+      showError(err.message || 'Failed to fetch analytics data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAnalyticsData();
+  }, [selectedPeriod]);
+
+  // Delivery activity pie chart data
   const pieData = [
-    { name: 'Completed', value: 112, color: '#10b981' },
-    { name: 'Rejected', value: 10, color: '#a7f3d0' }
+    { name: 'Completed', value: analyticsData.deliveryActivity.completed, color: '#10b981' },
+    { name: 'Rejected', value: analyticsData.deliveryActivity.rejected, color: '#86efac' },
+    { name: 'Other', value: analyticsData.deliveryActivity.other, color: '#ffffff' }
   ];
 
   return (
@@ -60,389 +271,352 @@ const MobileCourierAnalytics: React.FC = () => {
       minHeight: '100vh',
       paddingBottom: '80px'
     }}>
+      <style>
+        {`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}
+      </style>
       {/* Header */}
-      <div style={{
-        background: '#fff',
-        padding: '20px 16px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-      }}>
-        <h1 style={{
-          fontSize: '24px',
-          fontWeight: 700,
-          margin: 0,
-          color: '#1f2937'
+      <CourierHeader title="Analytics" />
+
+      {/* Loading State */}
+      {loading && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '40px 16px',
+          gap: '16px'
         }}>
-          Analytics
-        </h1>
-        <div
-          onClick={() => setShowDropdown(!showDropdown)}
-          style={{
-            cursor: 'pointer',
-            padding: '8px',
-            borderRadius: '8px',
-            transition: 'background-color 0.2s ease'
-          }}
-        >
-          <Menu size={24} color="#1f2937" />
-        </div>
-      </div>
-
-      {/* Dropdown Menu */}
-      {showDropdown && (
-        <>
-          {/* Backdrop */}
-          <div
-            onClick={() => setShowDropdown(false)}
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'rgba(0,0,0,0.5)',
-              zIndex: 40
-            }}
-          />
-
-          {/* Dropdown Content */}
           <div style={{
-            position: 'fixed',
-            top: '80px',
-            right: '16px',
-            background: '#fff',
-            borderRadius: '12px',
-            boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
-            zIndex: 50,
-            minWidth: '200px',
-            overflow: 'hidden'
-          }}>
-            {/* Header */}
-            <div style={{
-              padding: '16px 20px',
-              borderBottom: '1px solid #f3f4f6',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between'
-            }}>
-              <span style={{
-                fontSize: '16px',
-                fontWeight: 600,
-                color: '#1f2937'
-              }}>
-                Menu
-              </span>
-              <X
-                size={20}
-                color="#6b7280"
-                style={{ cursor: 'pointer' }}
-                onClick={() => setShowDropdown(false)}
-              />
-            </div>
+            width: '32px',
+            height: '32px',
+            border: '3px solid #f3f4f6',
+            borderTop: '3px solid #10b981',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite'
+          }} />
+          <span style={{ color: '#6b7280', fontSize: '16px' }}>Loading analytics data...</span>
+        </div>
+      )}
 
-            {/* Menu Items */}
-            <div style={{ padding: '8px 0' }}>
-              {[
-                { icon: <HelpCircle size={20} />, label: 'Help/Support', onClick: () => navigate('/courier/support') },
-                { icon: <Settings size={20} />, label: 'Profile', onClick: () => navigate('/courier/profile') }
-              ].map((item, index) => (
-                <div
-                  key={index}
-                  onClick={() => {
-                    item.onClick();
-                    setShowDropdown(false);
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    padding: '12px 20px',
-                    cursor: 'pointer',
-                    background: 'transparent',
-                    color: '#374151',
-                    transition: 'all 0.2s ease',
-                    fontSize: '14px',
-                    fontWeight: 500
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#f9fafb';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'transparent';
-                  }}
-                >
-                  {item.icon}
-                  {item.label}
-                </div>
-              ))}
+      {/* Error State */}
+      {error && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '0 16px'
+        }}>
+          <div style={{
+            background: '#fef2f2',
+            border: '1px solid #fecaca',
+            borderRadius: '12px',
+            padding: '24px',
+            textAlign: 'center',
+            maxWidth: '500px'
+          }}>
+            <span style={{ color: '#dc2626', fontSize: '16px', fontWeight: '600' }}>
+              {error}
+            </span>
+            <div style={{ marginTop: '16px' }}>
+              <button
+                onClick={fetchAnalyticsData}
+                style={{
+                  background: '#dc2626',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '12px 24px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                Try Again
+              </button>
             </div>
           </div>
-        </>
+        </div>
       )}
 
       {/* Content */}
-      <div style={{ padding: '24px 16px' }}>
-        {loading ? (
-          <div style={{ 
-            textAlign: 'center', 
-            padding: '40px', 
-            color: '#6b7280' 
+      {!loading && !error && (
+        <div style={{ padding: '16px' }}>
+          {/* Key Metrics Cards */}
+          <div style={{
+            display: 'flex',
+            gap: '12px',
+            marginBottom: '24px'
           }}>
-            Loading analytics...
-          </div>
-        ) : (
-          <>
-            {/* Stats Cards */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '16px',
-              marginBottom: '24px'
-            }}>
-              <div style={{
-                background: '#fff',
-                borderRadius: '12px',
-                padding: '20px',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-              }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  marginBottom: '12px'
-                }}>
-                  <div style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '8px',
-                    background: '#e6fffa',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <Package size={20} color="#10b981" />
-                  </div>
-                  <div>
-                    <div style={{
-                      fontSize: '12px',
-                      color: '#6b7280',
-                      fontWeight: 500
-                    }}>
-                      Total Deliveries
-                    </div>
-                    <div style={{
-                      fontSize: '24px',
-                      fontWeight: 700,
-                      color: '#1f2937'
-                    }}>
-                      {analyticsData.totalDeliveries}
-                    </div>
-                  </div>
-                </div>
-                <div style={{
-                  fontSize: '12px',
-                  color: '#10b981',
-                  fontWeight: 500
-                }}>
-                  ↗ 1.3% Up from past week
-                </div>
-              </div>
-
-              <div style={{
-                background: '#fff',
-                borderRadius: '12px',
-                padding: '20px',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-              }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  marginBottom: '12px'
-                }}>
-                  <div style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '8px',
-                    background: '#dbeafe',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <Clock size={20} color="#3b82f6" />
-                  </div>
-                  <div>
-                    <div style={{
-                      fontSize: '12px',
-                      color: '#6b7280',
-                      fontWeight: 500
-                    }}>
-                      Avg Delivery Time
-                    </div>
-                    <div style={{
-                      fontSize: '24px',
-                      fontWeight: 700,
-                      color: '#1f2937'
-                    }}>
-                      {analyticsData.avgDeliveryTime}
-                    </div>
-                  </div>
-                </div>
-                <div style={{
-                  fontSize: '12px',
-                  color: '#10b981',
-                  fontWeight: 500
-                }}>
-                  ↗ 1.3% Up from past week
-                </div>
-              </div>
-            </div>
-
-            {/* Sales Details Chart */}
+            {/* Total Deliveries Card */}
             <div style={{
               background: '#fff',
               borderRadius: '12px',
-              padding: '20px',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              marginBottom: '24px'
+              padding: '16px',
+              flex: 1,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
             }}>
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: '20px'
+                gap: '12px',
+                marginBottom: '8px'
               }}>
-                <h3 style={{
-                  fontSize: '18px',
-                  fontWeight: 600,
-                  margin: 0,
-                  color: '#1f2937'
-                }}>
-                  Sales Details
-                </h3>
                 <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '8px 12px',
-                  background: '#f3f4f6',
+                  width: '32px',
+                  height: '32px',
                   borderRadius: '8px',
-                  cursor: 'pointer'
+                  background: '#f0fdf4',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}>
-                  <span style={{
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    color: '#374151'
+                  <Package size={16} color="#10b981" />
+                </div>
+                <div>
+                  <div style={{
+                    fontSize: '12px',
+                    color: '#6b7280',
+                    fontWeight: '500'
                   }}>
-                    This Week
-                  </span>
-                  <ChevronDown size={16} color="#9ca3af" />
+                    Total Deliveries
+                  </div>
+                  <div style={{
+                    fontSize: '20px',
+                    fontWeight: '700',
+                    color: '#1f2937'
+                  }}>
+                    {analyticsData.totalDeliveries}
+                  </div>
                 </div>
               </div>
-              
               <div style={{
-                fontSize: '24px',
-                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '12px',
                 color: '#10b981',
-                marginBottom: '20px'
+                fontWeight: '500'
               }}>
-                ₦{analyticsData.salesDetails.toLocaleString()}
+                <TrendingUp size={12} />
+                1.3% Up from past week
               </div>
-
-              <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={salesData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis 
-                    dataKey="name" 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 12, fill: '#6b7280' }}
-                  />
-                  <YAxis hide />
-                  <Tooltip 
-                    contentStyle={{
-                      background: '#fff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-                    }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="value" 
-                    stroke="#10b981" 
-                    strokeWidth={3}
-                    dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, fill: '#10b981' }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
             </div>
 
-            {/* Delivery Activity */}
+            {/* Avg Delivery Time Card */}
             <div style={{
               background: '#fff',
               borderRadius: '12px',
-              padding: '20px',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              marginBottom: '24px'
+              padding: '16px',
+              flex: 1,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
             }}>
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: '20px'
+                gap: '12px',
+                marginBottom: '8px'
+              }}>
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '8px',
+                  background: '#f0fdf4',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Clock size={16} color="#10b981" />
+                </div>
+                <div>
+                  <div style={{
+                    fontSize: '12px',
+                    color: '#6b7280',
+                    fontWeight: '500'
+                  }}>
+                    Avg. Delivery Time
+                  </div>
+                  <div style={{
+                    fontSize: '20px',
+                    fontWeight: '700',
+                    color: '#1f2937'
+                  }}>
+                    {analyticsData.avgDeliveryTime}
+                  </div>
+                </div>
+              </div>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '12px',
+                color: '#10b981',
+                fontWeight: '500'
+              }}>
+                <TrendingUp size={12} />
+                1.3% Up from past week
+              </div>
+            </div>
+          </div>
+
+          {/* Sales Details Chart */}
+          <div style={{
+            background: '#fff',
+            borderRadius: '12px',
+            padding: '20px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            marginBottom: '24px'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '20px'
+            }}>
+              <h3 style={{
+                fontSize: '18px',
+                fontWeight: '600',
+                margin: 0,
+                color: '#1f2937'
+              }}>
+                Sales Details
+              </h3>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                cursor: 'pointer',
+                padding: '4px 8px',
+                borderRadius: '6px',
+                background: '#f8fafc'
+              }}>
+                <span style={{
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: '#374151'
+                }}>
+                  This Week
+                </span>
+                <ChevronDown size={16} color="#9ca3af" />
+              </div>
+            </div>
+            
+            <ResponsiveContainer width="100%" height={200}>
+              <AreaChart data={salesData}>
+                <defs>
+                  <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                <XAxis 
+                  dataKey="name" 
+                  stroke="#9ca3af"
+                  fontSize={12}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis 
+                  stroke="#9ca3af"
+                  fontSize={12}
+                  axisLine={false}
+                  tickLine={false}
+                  domain={[0, 100]}
+                  ticks={[20, 40, 60, 80, 100]}
+                />
+                <Tooltip 
+                  contentStyle={{
+                    background: '#fff',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                  }}
+                  formatter={(value, name) => [`${value}%`, 'Sales']}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="value" 
+                  stroke="#10b981" 
+                  strokeWidth={3}
+                  fill="url(#colorSales)"
+                  dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Delivery Activity */}
+          <div style={{
+            background: '#fff',
+            borderRadius: '12px',
+            padding: '20px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            marginBottom: '24px'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '20px'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
               }}>
                 <h3 style={{
                   fontSize: '18px',
-                  fontWeight: 600,
+                  fontWeight: '600',
                   margin: 0,
                   color: '#1f2937'
                 }}>
                   Delivery Activity
                 </h3>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '8px 12px',
-                  background: '#f3f4f6',
-                  borderRadius: '8px',
-                  cursor: 'pointer'
-                }}>
-                  <span style={{
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    color: '#374151'
-                  }}>
-                    This Week
-                  </span>
-                  <ChevronDown size={16} color="#9ca3af" />
-                </div>
+                <Info size={16} color="#9ca3af" />
               </div>
-
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                position: 'relative',
-                marginBottom: '20px'
+                gap: '4px',
+                cursor: 'pointer',
+                padding: '4px 8px',
+                borderRadius: '6px',
+                background: '#f8fafc'
               }}>
-                <ResponsiveContainer width={200} height={200}>
+                <span style={{
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: '#374151'
+                }}>
+                  This Week
+                </span>
+                <ChevronDown size={16} color="#9ca3af" />
+              </div>
+            </div>
+
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '20px',
+              position: 'relative'
+            }}>
+              {/* Doughnut Chart */}
+              <div style={{ position: 'relative', width: '200px', height: '200px' }}>
+                <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={pieData}
-                      dataKey="value"
-                      nameKey="name"
                       cx="50%"
                       cy="50%"
                       innerRadius={60}
-                      outerRadius={90}
+                      outerRadius={80}
                       paddingAngle={2}
-                      startAngle={90}
-                      endAngle={-270}
+                      dataKey="value"
                     >
                       {pieData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
@@ -451,41 +625,53 @@ const MobileCourierAnalytics: React.FC = () => {
                   </PieChart>
                 </ResponsiveContainer>
                 
+                {/* Center Text */}
                 <div style={{
                   position: 'absolute',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center'
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  textAlign: 'center'
                 }}>
                   <div style={{
                     fontSize: '12px',
                     color: '#6b7280',
-                    fontWeight: 500
+                    fontWeight: '500'
                   }}>
                     Total
                   </div>
                   <div style={{
                     fontSize: '24px',
-                    fontWeight: 700,
+                    fontWeight: '700',
                     color: '#1f2937'
                   }}>
                     {analyticsData.deliveryActivity.total}
                   </div>
-                  <div style={{
-                    fontSize: '18px',
-                    fontWeight: 600,
-                    color: '#10b981'
-                  }}>
-                    {analyticsData.deliveryActivity.completedValue}
-                  </div>
+                </div>
+
+                {/* Floating Value */}
+                <div style={{
+                  position: 'absolute',
+                  top: '20px',
+                  right: '20px',
+                  background: '#fff',
+                  borderRadius: '8px',
+                  padding: '8px 12px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#1f2937'
+                }}>
+                  {analyticsData.salesDetails.toLocaleString()}
                 </div>
               </div>
 
+              {/* Legend */}
               <div style={{
                 display: 'flex',
-                justifyContent: 'center',
-                gap: '24px'
+                flexDirection: 'column',
+                gap: '12px',
+                flex: 1
               }}>
                 <div style={{
                   display: 'flex',
@@ -498,11 +684,7 @@ const MobileCourierAnalytics: React.FC = () => {
                     borderRadius: '50%',
                     background: '#10b981'
                   }} />
-                  <span style={{
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    color: '#374151'
-                  }}>
+                  <span style={{ fontSize: '14px', color: '#374151' }}>
                     Completed: {analyticsData.deliveryActivity.completed}
                   </span>
                 </div>
@@ -515,78 +697,95 @@ const MobileCourierAnalytics: React.FC = () => {
                     width: '12px',
                     height: '12px',
                     borderRadius: '50%',
-                    background: '#a7f3d0'
+                    background: '#86efac'
                   }} />
-                  <span style={{
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    color: '#374151'
-                  }}>
+                  <span style={{ fontSize: '14px', color: '#374151' }}>
                     Rejected: {analyticsData.deliveryActivity.rejected}
                   </span>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Top Company Delivery List */}
+          {/* Top Company Delivery List */}
+          <div style={{
+            background: '#fff',
+            borderRadius: '12px',
+            padding: '20px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+          }}>
             <div style={{
-              background: '#fff',
-              borderRadius: '12px',
-              padding: '20px',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              marginBottom: '24px'
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '20px'
             }}>
+              <h3 style={{
+                fontSize: '18px',
+                fontWeight: '600',
+                margin: 0,
+                color: '#1f2937'
+              }}>
+                Top Company Delivery List
+              </h3>
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: '20px'
+                gap: '4px',
+                cursor: 'pointer',
+                padding: '4px 8px',
+                borderRadius: '6px',
+                background: '#f8fafc'
               }}>
-                <h3 style={{
-                  fontSize: '18px',
-                  fontWeight: 600,
-                  margin: 0,
-                  color: '#1f2937'
+                <span style={{
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: '#374151'
                 }}>
-                  Top Company Delivery List
-                </h3>
-                <div style={{
+                  This Week
+                </span>
+                <ChevronDown size={16} color="#9ca3af" />
+              </div>
+            </div>
+
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px'
+            }}>
+              {analyticsData.topCompanies.map((company, index) => (
+                <div key={index} style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
-                  padding: '8px 12px',
-                  background: '#f3f4f6',
-                  borderRadius: '8px',
-                  cursor: 'pointer'
+                  justifyContent: 'space-between',
+                  padding: '16px',
+                  background: '#f8fafc',
+                  borderRadius: '8px'
                 }}>
-                  <span style={{
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    color: '#374151'
-                  }}>
-                    This Week
-                  </span>
-                  <ChevronDown size={16} color="#9ca3af" />
-                </div>
-              </div>
-
-              <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '16px'
-              }}>
-                {analyticsData.topCompanies.map((company, index) => (
-                  <div key={index} style={{
+                  <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '12px 0',
-                    borderBottom: index < analyticsData.topCompanies.length - 1 ? '1px solid #f3f4f6' : 'none'
+                    gap: '12px',
+                    flex: 1
                   }}>
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '8px',
+                      background: '#e5e7eb',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      color: '#6b7280'
+                    }}>
+                      {company.name.charAt(0)}
+                    </div>
                     <div>
                       <div style={{
                         fontSize: '16px',
-                        fontWeight: 600,
+                        fontWeight: '600',
                         color: '#1f2937',
                         marginBottom: '4px'
                       }}>
@@ -594,118 +793,69 @@ const MobileCourierAnalytics: React.FC = () => {
                       </div>
                       <div style={{
                         fontSize: '14px',
-                        color: '#6b7280'
+                        fontWeight: '600',
+                        color: '#1f2937'
                       }}>
-                        ₦ 40,000
-                      </div>
-                    </div>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px'
-                    }}>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                      }}>
-                        <div style={{
-                          width: '20px',
-                          height: '20px',
-                          borderRadius: '50%',
-                          background: '#f3f4f6',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}>
-                          <span style={{
-                            fontSize: '10px',
-                            fontWeight: 600,
-                            color: '#6b7280'
-                          }}>
-                            👤
-                          </span>
-                        </div>
-                        <span style={{
-                          fontSize: '14px',
-                          fontWeight: 500,
-                          color: '#374151'
-                        }}>
-                          {company.orders} Orders
-                        </span>
-                      </div>
-                      <div style={{
-                        fontSize: '12px',
-                        color: company.trend === 'up' ? '#10b981' : '#ef4444',
-                        fontWeight: 500
-                      }}>
-                        {company.trend === 'up' ? '↗' : '↘'} 5%
+                        {company.amount}
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
+
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px'
+                  }}>
+                    {/* Mini Chart */}
+                    <div style={{
+                      width: '60px',
+                      height: '30px',
+                      display: 'flex',
+                      alignItems: 'end',
+                      gap: '2px'
+                    }}>
+                      {[2, 4, 3, 5, 2, 3, 4].map((height, i) => (
+                        <div
+                          key={i}
+                          style={{
+                            width: '6px',
+                            height: `${height * 4}px`,
+                            background: company.color,
+                            borderRadius: '1px'
+                          }}
+                        />
+                      ))}
+                    </div>
+
+                    <div style={{
+                      textAlign: 'right'
+                    }}>
+                      <div style={{
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#374151',
+                        marginBottom: '2px'
+                      }}>
+                        {company.orders} Orders
+                      </div>
+                      <div style={{
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        color: company.trend === 'up' ? '#10b981' : '#ef4444'
+                      }}>
+                        {company.trend === 'up' ? '+' : ''}{company.change}%
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-          </>
-        )}
-      </div>
+          </div>
+        </div>
+      )}
 
       {/* Bottom Navigation */}
-      <div style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        background: '#fff',
-        borderTop: '1px solid #e5e7eb',
-        display: 'flex',
-        justifyContent: 'space-around',
-        padding: '12px 0',
-        zIndex: 50
-      }}>
-        {[
-          {
-            icon: <Home size={20} />,
-            label: 'Dashboard',
-            active: false,
-            onClick: () => navigate('/courier/dashboard')
-          },
-          {
-            icon: <List size={20} />,
-            label: 'Delivery List',
-            active: false,
-            onClick: () => navigate('/courier/delivery-list')
-          },
-          {
-            icon: <BarChart3 size={20} />,
-            label: 'Analytics',
-            active: true,
-            onClick: () => navigate('/courier/analytics')
-          },
-          {
-            icon: <CreditCard size={20} />,
-            label: 'Payout',
-            active: false,
-            onClick: () => navigate('/courier/payouts')
-          }
-        ].map((item, index) => (
-          <div
-            key={index}
-            onClick={item.onClick}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '4px',
-              color: item.active ? '#10b981' : '#6b7280',
-              cursor: 'pointer'
-            }}
-          >
-            {item.icon}
-            <span style={{ fontSize: '10px', fontWeight: 500 }}>{item.label}</span>
-          </div>
-        ))}
-      </div>
+      <CourierBottomNavigation currentPath="/courier/analytics" />
     </div>
   );
 };

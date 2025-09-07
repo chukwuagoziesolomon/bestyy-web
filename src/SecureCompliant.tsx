@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import './SecureCompliant.css';
 
 const SecureCompliant = () => {
@@ -13,9 +14,9 @@ const SecureCompliant = () => {
           <p className="secure-compliant__description">
             At Bestie, we take your privacy and security seriously. Our platform is built with bank-level encryption and follows strict compliance standards to ensure your data is always protected.
           </p>
-          <button className="secure-compliant__cta">
+          <Link to="/login" className="secure-compliant__cta">
             Get Started
-          </button>
+          </Link>
         </div>
         
         <div className="secure-compliant__center">

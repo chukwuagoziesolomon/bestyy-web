@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import './UserLogin.css';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { signupVendor, createMenuItem, loginUser } from './api';
+import { signupVendor, createMenuItem } from './api';
 import { useAuth } from './context/AuthContext';
 import { showError, showSuccess, showInfo, showApiError } from './toast';
+import { useImageUpload } from './hooks/useImageUpload';
 
 const steps = [
   'Account',
@@ -48,9 +49,30 @@ type VendorFormData = {
 
 const VendorSignUp = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { signup } = useAuth();
   const [searchParams] = useSearchParams();
   type FieldKey = keyof VendorFormData;
+  
+  // Image upload hooks
+  const { uploadImage, isUploading: isUploadingLogo, error: logoUploadError } = useImageUpload({
+    onSuccess: (url) => {
+      handleInputChange('logo', url);
+      showSuccess('Logo uploaded successfully!');
+    },
+    onError: (error) => {
+      showError(`Logo upload failed: ${error}`);
+    }
+  });
+
+  const { uploadImage: uploadMenuItemImage, isUploading: isUploadingMenuItem } = useImageUpload({
+    onSuccess: (url, index) => {
+      handleMenuChange(index, 'image', url);
+      showSuccess('Menu item image uploaded successfully!');
+    },
+    onError: (error) => {
+      showError(`Menu item image upload failed: ${error}`);
+    }
+  });
 
   const [formData, setFormData] = useState<VendorFormData>(() => {
     const saved = localStorage.getItem('vendor_signup_data');
@@ -202,68 +224,44 @@ const VendorSignUp = () => {
           ? formData.otherBusinessCategory
           : formData.businessCategory) || '';
         const payload = {
-          user: {
             email: formData.email,
             password: formData.password,
             first_name: firstName,
             last_name: lastName,
-            phone: formData.phone,
-          },
+          phone: formData.phone,
           business_name: formData.businessName,
-          business_address: formData.businessAddress,
-          business_phone: formData.phone,
-          business_email: formData.email,
-          business_description: formData.businessDescription || 'Food delivery service',
           business_category: finalBusinessCategory,
-          business_hours: `${formData.openingHours}:00-${formData.closingHours}:00`,
-          business_days: 'Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
+          cac_number: formData.cacNumber,
+          business_description: formData.businessDescription || 'Food delivery service',
+          business_address: formData.businessAddress,
+          delivery_radius: formData.deliveryRadius,
+          service_areas: formData.serviceAreas,
+          opening_hours: `${formData.openingHours}:00`,
+          closing_hours: `${formData.closingHours}:00`,
+          offers_delivery: formData.offersDelivery
         };
         // First, sign up the vendor
         const res = await signupVendor(payload);
         
         if (res) {
-          // Auto-login after successful registration
-          try {
-            const loginResponse = await loginUser(formData.email, formData.password);
-            
-            if (loginResponse && loginResponse.token) {
-              // Store the token and user data in auth context
-              await login(formData.email, formData.password);
-              
-              // Store vendor data for profile pre-population
-              const userData = {
-                email: formData.email,
-                fullName: formData.fullName,
-                phone: formData.phone,
-                businessName: formData.businessName,
-                businessCategory: formData.businessCategory,
-                businessAddress: formData.businessAddress,
-              };
-              localStorage.setItem('pending_profile_data', JSON.stringify(userData));
-              
-              // Redirect to vendor dashboard
-              showSuccess('Registration successful! Setting up your vendor account...');
-              navigate('/vendor/dashboard');
-              return;
-            }
-          } catch (loginError) {
-            console.error('Auto-login failed:', loginError);
-            // Continue with normal flow if auto-login fails
-          }
-          
-          // Fallback to normal flow if auto-login fails
-          localStorage.setItem('vendor_token', res.token || '');
+          // Store vendor data for profile pre-population
           const userData = {
-            email: formData.email,
             fullName: formData.fullName,
             phone: formData.phone,
             businessName: formData.businessName,
             businessCategory: formData.businessCategory,
             businessAddress: formData.businessAddress,
           };
-          localStorage.setItem('pending_profile_data', JSON.stringify(userData));
-          showSuccess('Registration successful! Please log in to continue.');
-          navigate('/login');
+          
+          // Store user data for later authentication
+          localStorage.setItem('pending_vendor_data', JSON.stringify({
+            email: formData.email,
+            password: formData.password,
+            role: 'vendor',
+            ...userData
+          }));
+          
+          showSuccess('Registration successful! Setting up your vendor account...');
         }
 
         // Create and store complete vendor profile from signup data
@@ -327,7 +325,7 @@ const VendorSignUp = () => {
       const token = localStorage.getItem('vendor_token');
       if (!token) throw new Error('No vendor token found. Please log in again.');
 
-      await createMenuItem(token, {
+        await createMenuItem(token, {
         dish_name: currentItem.dishName,
         item_description: currentItem.item_description,
         price: parseFloat(currentItem.price).toFixed(2),
@@ -490,23 +488,36 @@ const VendorSignUp = () => {
                 id="logo-upload"
                 accept="image/*"
                 style={{ display: 'none' }}
-                onChange={(e) => {
+                onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (file) {
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                      handleInputChange('logo', reader.result as string);
-                    };
-                    reader.readAsDataURL(file);
+                    // Show loading state
+                    handleInputChange('logo', 'uploading...');
+                    
+                    // Upload to Cloudinary
+                    const imageUrl = await uploadImage(file, 'vendor-logo');
+                    
+                    if (!imageUrl) {
+                      // Reset to empty if upload failed
+                      handleInputChange('logo', '');
+                    }
                   }
                 }}
+                disabled={isUploadingLogo}
               />
               <label
                 htmlFor="logo-upload"
                 className="user-login__input"
-                style={{ cursor: 'pointer', flex: 1, border: '1px solid black' }}
+                style={{ 
+                  cursor: isUploadingLogo ? 'not-allowed' : 'pointer', 
+                  flex: 1, 
+                  border: '1px solid black',
+                  opacity: isUploadingLogo ? 0.6 : 1
+                }}
               >
-                {formData.logo ? 'Logo Selected!' : 'Choose a file...'}
+                {isUploadingLogo ? 'Uploading...' : 
+                 formData.logo && formData.logo !== 'uploading...' ? 'Logo Uploaded!' : 
+                 'Choose a file...'}
               </label>
             </div>
           </>
@@ -676,15 +687,37 @@ const VendorSignUp = () => {
                       id={`item-image-upload-${index}`}
                       accept="image/*"
                       style={{ display: 'none' }}
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          handleMenuChange(index, 'image', file); // Store as File
+                          // Show loading state
+                          handleMenuChange(index, 'image', 'uploading...');
+                          
+                          // Upload to Cloudinary
+                          const imageUrl = await uploadMenuItemImage(file, 'menu-item', index);
+                          
+                          if (!imageUrl) {
+                            // Reset to empty if upload failed
+                            handleMenuChange(index, 'image', '');
+                          }
                         }
                       }}
+                      disabled={isUploadingMenuItem}
                     />
-                    <label htmlFor={`item-image-upload-${index}`} className="user-login__input" style={{ cursor: 'pointer', lineHeight: 'normal', display: 'flex', alignItems: 'center' }}>
-                      {item.image ? 'Image Selected!' : 'Choose an image...'}
+                    <label 
+                      htmlFor={`item-image-upload-${index}`} 
+                      className="user-login__input" 
+                      style={{ 
+                        cursor: isUploadingMenuItem ? 'not-allowed' : 'pointer', 
+                        lineHeight: 'normal', 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        opacity: isUploadingMenuItem ? 0.6 : 1
+                      }}
+                    >
+                      {isUploadingMenuItem ? 'Uploading...' : 
+                       item.image && typeof item.image === 'string' && item.image !== 'uploading...' ? 'Image Uploaded!' : 
+                       'Choose an image...'}
                     </label>
               </div>
               <div className="form-group">
@@ -736,7 +769,7 @@ const VendorSignUp = () => {
                   disabled={isLoading || !formData.menuItems.some(item => item.dishName.trim() !== '')}
                 >
                   {isLoading ? 'Adding...' : 'Add'}
-                </button>
+                  </button>
               </div>
             </form>
           </>
@@ -750,7 +783,17 @@ const VendorSignUp = () => {
               <div className="user-login__subheading" style={{ marginBottom: 16 }}>
                 Thanks for signing up with Bestyy. We're reviewing your information and will notify you as soon as your account is approved.
               </div>
-              <button className="user-login__main-btn" style={{ margin: '0 0.5rem' }} onClick={() => navigate('/vendor/dashboard')}>Continue to Dashboard</button>
+              <button className="user-login__main-btn" style={{ margin: '0 0.5rem' }} onClick={() => {
+                // Complete the authentication process
+                const pendingData = JSON.parse(localStorage.getItem('pending_vendor_data') || '{}');
+                if (pendingData.email && pendingData.password) {
+                  // Use the signup function to complete authentication and redirect to success page
+                  signup(pendingData.email, pendingData.password, pendingData.role, pendingData);
+                  localStorage.removeItem('pending_vendor_data');
+                } else {
+                  navigate('/success', { state: { userType: 'vendor' } });
+                }
+              }}>Continue to Dashboard</button>
               <button className="user-login__main-btn" style={{ margin: '0 0.5rem', background: '#25D366' }}>Chat on WhatsApp</button>
               <button className="user-login__main-btn" style={{ margin: '0 0.5rem', background: '#f87171' }} onClick={() => {
                 // Clear all vendor-related localStorage and reset form/step

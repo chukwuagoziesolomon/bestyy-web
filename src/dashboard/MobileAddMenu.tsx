@@ -18,7 +18,7 @@ const MobileAddMenu: React.FC = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
 
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('access_token');
 
   const categories = [
     'Rice Dish',
@@ -68,7 +68,7 @@ const MobileAddMenu: React.FC = () => {
       });
       
       showSuccess('Menu item added successfully!');
-      navigate('/vendor/dashboard/menu');
+      navigate('/vendor/menu');
     } catch (err: any) {
       showApiError(err, 'Failed to add menu item');
     } finally {
@@ -93,7 +93,7 @@ const MobileAddMenu: React.FC = () => {
         boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
       }}>
         <div
-          onClick={() => navigate('/vendor/dashboard/menu')}
+          onClick={() => navigate('/vendor/menu')}
           style={{
             cursor: 'pointer',
             padding: '8px',

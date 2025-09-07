@@ -13,9 +13,22 @@ export async function fetchCourierDashboardMetrics(token: string) {
   return await response.json();
 }
 
-export async function fetchCourierDeliveries(token: string, status?: string) {
-  const url = new URL(`${API_URL}/api/user/courier/deliveries/`);
-  if (status) url.searchParams.append('status', status);
+
+
+// Fetch courier deliveries
+export async function fetchCourierDeliveries(token: string, params?: {
+  status?: string;
+  page?: number;
+  page_size?: number;
+}) {
+  const url = new URL(`${API_URL}/api/user/couriers/deliveries/`);
+  
+  // Add query parameters if provided
+  if (params) {
+    if (params.status) url.searchParams.append('status', params.status);
+    if (params.page) url.searchParams.append('page', params.page.toString());
+    if (params.page_size) url.searchParams.append('page_size', params.page_size.toString());
+  }
   
   const response = await fetch(url.toString(), {
     method: 'GET',
@@ -24,8 +37,124 @@ export async function fetchCourierDeliveries(token: string, status?: string) {
       'Authorization': `Bearer ${token}`,
     },
   });
-  if (!response.ok) throw new Error('Failed to fetch deliveries');
-  return await response.json();
+
+  if (!response.ok) {
+    let errorMsg = 'Failed to fetch deliveries';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+
+  return response.json();
+}
+
+// Fetch courier payout history
+export async function fetchCourierPayoutHistory(token: string, params?: {
+  period?: string;
+  start_date?: string;
+  end_date?: string;
+  status?: string;
+  page?: number;
+  page_size?: number;
+}) {
+  const url = new URL(`${API_URL}/api/user/couriers/payouts/`);
+  
+  // Add query parameters if provided
+  if (params) {
+    if (params.period) url.searchParams.append('period', params.period);
+    if (params.start_date) url.searchParams.append('start_date', params.start_date);
+    if (params.end_date) url.searchParams.append('end_date', params.end_date);
+    if (params.status) url.searchParams.append('status', params.status);
+    if (params.page) url.searchParams.append('page', params.page.toString());
+    if (params.page_size) url.searchParams.append('page_size', params.page_size.toString());
+  }
+
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    let errorMsg = 'Failed to fetch payout history';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+
+  return response.json();
+}
+
+// Fetch courier earnings breakdown
+export async function fetchCourierEarningsBreakdown(token: string, params?: {
+  year?: number;
+  month?: number;
+}) {
+  const url = new URL(`${API_URL}/api/user/couriers/earnings/`);
+  
+  // Add query parameters if provided
+  if (params) {
+    if (params.year) url.searchParams.append('year', params.year.toString());
+    if (params.month) url.searchParams.append('month', params.month.toString());
+  }
+
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    let errorMsg = 'Failed to fetch earnings breakdown';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+
+  return response.json();
+}
+
+// Fetch courier company analytics
+export async function fetchCourierCompanyAnalytics(token: string, params?: {
+  year?: number;
+  month?: number;
+}) {
+  const url = new URL(`${API_URL}/api/user/couriers/companies/analytics/`);
+  
+  // Add query parameters if provided
+  if (params) {
+    if (params.year) url.searchParams.append('year', params.year.toString());
+    if (params.month) url.searchParams.append('month', params.month.toString());
+  }
+
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    let errorMsg = 'Failed to fetch company analytics';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+
+  return response.json();
 }
 
 // Fetch vendor transactions and total amount for payouts
@@ -186,7 +315,10 @@ export async function registerCourier(data: {
     } catch {}
     throw new Error(errorMsg);
   }
-  return response.json();
+  
+  const result = await response.json();
+  console.log('Courier registration response:', result);
+  return result;
 }
 
 // Helper function to extract error messages
@@ -227,10 +359,10 @@ export async function loginUser(email: string, password: string) {
 }
 
 export async function signupUser(user: {
-  email: string;
-  password: string;
-  first_name: string;
-  last_name: string;
+    email: string;
+    password: string;
+    first_name: string;
+    last_name: string;
   phone: string;
 }) {
   const payload = { user, phone: user.phone };
@@ -255,43 +387,51 @@ export async function signupUser(user: {
 }
 
 export async function signupVendor(vendorData: {
-  user: {
     email: string;
     password: string;
     first_name: string;
     last_name: string;
-    phone: string;
-  };
+  phone: string;
   business_name: string;
-  business_address: string;
-  business_phone: string;
-  business_email: string;
-  business_description: string;
   business_category: string;
-  business_hours: string;
-  business_days: string;
-  business_logo?: File;
-  business_banner?: File;
-  business_license?: File;
-  business_permit?: File;
-  business_insurance?: File;
-  business_tax_id?: File;
-  business_bank_account?: File;
-  business_bank_statement?: File;
-  business_utility_bill?: File;
-  business_lease_agreement?: File;
-  business_other_documents?: File[];
+  cac_number: string;
+  business_description: string;
+  business_address: string;
+  delivery_radius: string;
+  service_areas: string;
+  opening_hours: string;
+  closing_hours: string;
+  offers_delivery: boolean;
 }) {
-  const payload = vendorData;
-  console.log('Vendor signup endpoint:', `${API_URL}/api/user/signup/vendor/`);
+  const payload = {
+    email: vendorData.email,
+    password: vendorData.password,
+    first_name: vendorData.first_name,
+    last_name: vendorData.last_name,
+    phone: vendorData.phone,
+    business_name: vendorData.business_name,
+    business_category: vendorData.business_category,
+    cac_number: vendorData.cac_number,
+    business_description: vendorData.business_description,
+    business_address: vendorData.business_address,
+    delivery_radius: vendorData.delivery_radius,
+    service_areas: vendorData.service_areas,
+    opening_hours: vendorData.opening_hours,
+    closing_hours: vendorData.closing_hours,
+    offers_delivery: vendorData.offers_delivery
+  };
+  
+  console.log('Vendor signup endpoint:', `${API_URL}/api/user/vendors/register/`);
   console.log('Vendor signup payload:', payload);
-  const response = await fetch(`${API_URL}/api/user/signup/vendor/`, {
+  
+  const response = await fetch(`${API_URL}/api/user/vendors/register/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(payload),
   });
+  
   if (!response.ok) {
     let errorMsg = 'Vendor signup failed';
     try {
@@ -300,7 +440,10 @@ export async function signupVendor(vendorData: {
     } catch {}
     throw new Error(errorMsg);
   }
-  return response.json();
+  
+  const result = await response.json();
+  console.log('Vendor registration response:', result);
+  return result;
 }
 
 export async function fetchUserOrders(token: string, params?: {
@@ -702,7 +845,7 @@ export async function fetchDashboardAnalytics(token: string) {
 
 // Menu Item API for Vendor
 export async function listMenuItems(token: string) {
-  const response = await fetch(`${API_URL}/api/user/vendor/menu-items/`, {
+  const response = await fetch(`${API_URL}/api/user/vendors/menu/`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -720,34 +863,9 @@ export async function listMenuItems(token: string) {
   return response.json();
 }
 
-export async function createMenuItem(token: string, item: any) {
-  const formData = new FormData();
-  formData.append('name', item.name);
-  formData.append('description', item.description);
-  formData.append('price', item.price);
-  formData.append('category', item.category);
-  formData.append('available_now', item.available_now ? 'true' : 'false');
-
-  const response = await fetch(`${API_URL}/api/user/vendor/menu-items/create/`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
-    body: formData,
-  });
-  if (!response.ok) {
-    let errorMsg = 'Failed to create menu item';
-    try {
-      const errorData = await response.json();
-      errorMsg = errorData?.message || errorMsg;
-    } catch {}
-    throw new Error(errorMsg);
-  }
-  return response.json();
-}
 
 export async function getMenuItem(token: string, id: string) {
-  const response = await fetch(`${API_URL}/api/user/vendor/menu-items/${id}/`, {
+  const response = await fetch(`${API_URL}/api/user/vendors/menu/${id}/`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -767,13 +885,18 @@ export async function getMenuItem(token: string, id: string) {
 
 export async function updateMenuItem(token: string, id: string, item: any) {
   const formData = new FormData();
-  formData.append('name', item.name);
-  formData.append('description', item.description);
+  formData.append('dish_name', item.dish_name);
+  formData.append('item_description', item.item_description);
   formData.append('price', item.price);
   formData.append('category', item.category);
   formData.append('available_now', item.available_now ? 'true' : 'false');
+  
+  // Handle image upload - append the file if it's a new File upload
+  if (item.image && item.image instanceof File) {
+    formData.append('image', item.image);
+  }
 
-  const response = await fetch(`${API_URL}/api/user/vendor/menu-items/${id}/`, {
+  const response = await fetch(`${API_URL}/api/user/vendors/menu/${id}/`, {
     method: 'PATCH',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -792,7 +915,7 @@ export async function updateMenuItem(token: string, id: string, item: any) {
 }
 
 export async function deleteMenuItem(token: string, id: string) {
-  const response = await fetch(`${API_URL}/api/user/vendor/menu-items/${id}/`, {
+  const response = await fetch(`${API_URL}/api/user/vendors/menu/${id}/`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
@@ -854,4 +977,408 @@ export async function fetchVendorOrders(token: string) {
     throw new Error(errorMsg);
   }
   return responseBody || response.json();
-} 
+}// Fetch vendor payout history
+export async function fetchVendorPayoutHistory(token: string, params?: {
+  period?: string;
+  start_date?: string;
+  end_date?: string;
+  status?: string;
+  page?: number;
+  page_size?: number;
+}) {
+  const url = new URL(`${API_URL}/api/user/vendors/payouts/`);
+  
+  // Add query parameters if provided
+  if (params) {
+    if (params.period) url.searchParams.append('period', params.period);
+    if (params.start_date) url.searchParams.append('start_date', params.start_date);
+    if (params.end_date) url.searchParams.append('end_date', params.end_date);
+    if (params.status) url.searchParams.append('status', params.status);
+    if (params.page) url.searchParams.append('page', params.page.toString());
+    if (params.page_size) url.searchParams.append('page_size', params.page_size.toString());
+  }
+
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    let errorMsg = 'Failed to fetch vendor payout history';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+
+  return response.json();
+}
+
+// Fetch vendor earnings breakdown
+export async function fetchVendorEarningsBreakdown(token: string, params?: {
+  year?: number;
+  month?: number;
+}) {
+  const url = new URL(`${API_URL}/api/user/vendors/earnings/`);
+  
+  // Add query parameters if provided
+  if (params) {
+    if (params.year) url.searchParams.append('year', params.year.toString());
+    if (params.month) url.searchParams.append('month', params.month.toString());
+  }
+
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    let errorMsg = 'Failed to fetch vendor earnings breakdown';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+
+  return response.json();
+}
+
+// Fetch vendor dashboard analytics
+export async function fetchVendorAnalytics(token: string, params?: {
+  month?: number;
+  year?: number;
+}) {
+  const url = new URL(`${API_URL}/api/user/dashboard/analytics/`);
+  
+  // Add query parameters if provided
+  if (params) {
+    if (params.month) url.searchParams.append('month', params.month.toString());
+    if (params.year) url.searchParams.append('year', params.year.toString());
+  }
+
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    let errorMsg = 'Failed to fetch vendor analytics';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+
+  return response.json();
+}
+
+// Fetch vendor sales chart data
+export async function fetchVendorSalesChart(token: string, params?: {
+  month?: number;
+  year?: number;
+  period?: 'daily' | 'weekly' | 'monthly';
+}) {
+  const url = new URL(`${API_URL}/api/user/vendors/sales-chart/`);
+  
+  // Add query parameters if provided
+  if (params) {
+    if (params.month) url.searchParams.append('month', params.month.toString());
+    if (params.year) url.searchParams.append('year', params.year.toString());
+    if (params.period) url.searchParams.append('period', params.period);
+  }
+
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    let errorMsg = 'Failed to fetch vendor sales chart';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+
+  return response.json();
+}
+
+// Fetch vendor orders list
+export async function fetchVendorOrdersList(token: string, params?: {
+  search?: string;
+  status?: string;
+  start_date?: string;
+  end_date?: string;
+  page?: number;
+  page_size?: number;
+  sort_by?: 'created_at' | 'total_price' | 'status';
+  sort_order?: 'asc' | 'desc';
+}) {
+  const url = new URL(`${API_URL}/api/user/vendors/orders/`);
+  
+  // Add query parameters if provided
+  if (params) {
+    if (params.search) url.searchParams.append('search', params.search);
+    if (params.status) url.searchParams.append('status', params.status);
+    if (params.start_date) url.searchParams.append('start_date', params.start_date);
+    if (params.end_date) url.searchParams.append('end_date', params.end_date);
+    if (params.page) url.searchParams.append('page', params.page.toString());
+    if (params.page_size) url.searchParams.append('page_size', params.page_size.toString());
+    if (params.sort_by) url.searchParams.append('sort_by', params.sort_by);
+    if (params.sort_order) url.searchParams.append('sort_order', params.sort_order);
+  }
+
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    let errorMsg = 'Failed to fetch vendor orders';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+
+  return response.json();
+}
+
+// Create menu item
+export async function createMenuItem(token: string, menuData: {
+  dish_name: string;
+  item_description: string;
+  price: string;
+  category: string;
+  image?: File;
+  available_now?: boolean;
+  quantity?: number;
+}) {
+  const formData = new FormData();
+  
+  // Add text fields
+  formData.append('dish_name', menuData.dish_name);
+  formData.append('item_description', menuData.item_description);
+  formData.append('price', menuData.price);
+  formData.append('category', menuData.category);
+  
+  // Add optional fields
+  if (menuData.available_now !== undefined) {
+    formData.append('available_now', menuData.available_now.toString());
+  }
+  if (menuData.quantity !== undefined) {
+    formData.append('quantity', menuData.quantity.toString());
+  }
+  
+  // Add image file if provided
+  if (menuData.image) {
+    formData.append('image', menuData.image);
+  }
+
+  const response = await fetch(`${API_URL}/api/user/vendors/menu/`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    },
+    body: formData
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Failed to create menu item: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// Fetch vendor menu items
+export async function fetchVendorMenuItems(token: string, params?: {
+  category?: string;
+  available_only?: boolean;
+  search?: string;
+  page?: number;
+  page_size?: number;
+}) {
+  const url = new URL(`${API_URL}/api/user/vendors/menu/`);
+  
+  // Add query parameters if provided
+  if (params) {
+    if (params.category) url.searchParams.append('category', params.category);
+    if (params.available_only !== undefined) url.searchParams.append('available_only', params.available_only.toString());
+    if (params.search) url.searchParams.append('search', params.search);
+    if (params.page) url.searchParams.append('page', params.page.toString());
+    if (params.page_size) url.searchParams.append('page_size', params.page_size.toString());
+  }
+
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Failed to fetch menu items: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// Stock Management API Functions
+
+// Fetch stock items with filtering
+export async function fetchVendorStockItems(
+  token: string, 
+  params: {
+    page?: number;
+    page_size?: number;
+    availability?: boolean;
+    stock_status?: 'in_stock' | 'out_of_stock' | 'low_stock';
+    category?: string;
+    search?: string;
+  } = {}
+) {
+  const queryParams = new URLSearchParams();
+  
+  if (params.page) queryParams.append('page', params.page.toString());
+  if (params.page_size) queryParams.append('page_size', params.page_size.toString());
+  if (params.availability !== undefined) queryParams.append('availability', params.availability.toString());
+  if (params.stock_status) queryParams.append('stock_status', params.stock_status);
+  if (params.category) queryParams.append('category', params.category);
+  if (params.search) queryParams.append('search', params.search);
+
+  const url = `${API_URL}/api/user/vendors/stock/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  
+  const response = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Failed to fetch stock items: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// Quick toggle availability
+export async function toggleStockItemAvailability(token: string, itemId: number) {
+  const response = await fetch(`${API_URL}/api/user/vendors/stock/${itemId}/toggle/`, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Failed to toggle item availability: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// Get stock summary
+export async function fetchStockSummary(token: string) {
+  const response = await fetch(`${API_URL}/api/user/vendors/stock/summary/`, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Failed to fetch stock summary: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// Fetch vendor top dishes
+export async function fetchVendorTopDishes(token: string, params?: {
+  period?: 'week' | 'month' | 'year';
+  limit?: number;
+}) {
+  const url = new URL(`${API_URL}/api/user/vendors/dashboard/top-dishes/`);
+  
+  // Add query parameters if provided
+  if (params) {
+    if (params.period) url.searchParams.append('period', params.period);
+    if (params.limit) url.searchParams.append('limit', params.limit.toString());
+  }
+  
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    let errorMsg = 'Failed to fetch top dishes';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+
+  return response.json();
+}
+
+// Fetch vendor order activity
+export async function fetchVendorOrderActivity(token: string, params?: {
+  period?: 'week' | 'month' | 'year';
+}) {
+  const url = new URL(`${API_URL}/api/user/vendors/dashboard/order-activity/`);
+  
+  // Add query parameters if provided
+  if (params) {
+    if (params.period) url.searchParams.append('period', params.period);
+  }
+  
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    let errorMsg = 'Failed to fetch order activity';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+
+  return response.json();
+}

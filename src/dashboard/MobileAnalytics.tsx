@@ -4,6 +4,7 @@ import { Home, List, Utensils, Table, Menu, X, BarChart3, CreditCard, Settings, 
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from 'recharts';
 import { fetchDashboardAnalytics } from '../api';
 import { showError } from '../toast';
+import VendorBottomNavigation from '../components/VendorBottomNavigation';
 
 const MobileAnalytics: React.FC = () => {
   const navigate = useNavigate();
@@ -227,8 +228,8 @@ const MobileAnalytics: React.FC = () => {
             <div style={{ padding: '8px 0' }}>
               {[
                 { icon: <BarChart3 size={20} />, label: 'Analytics', onClick: () => {}, active: true },
-                { icon: <CreditCard size={20} />, label: 'Payout', onClick: () => navigate('/vendor/dashboard/payout') },
-                { icon: <Settings size={20} />, label: 'Profile Settings', onClick: () => navigate('/vendor/dashboard/profile') }
+                { icon: <CreditCard size={20} />, label: 'Payout', onClick: () => navigate('/vendor/payouts') },
+                { icon: <Settings size={20} />, label: 'Profile Settings', onClick: () => navigate('/vendor/profile') }
               ].map((item, index) => (
                 <div 
                   key={index}
@@ -508,61 +509,7 @@ const MobileAnalytics: React.FC = () => {
       </div>
 
       {/* Bottom Navigation */}
-      <div style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        background: '#fff',
-        borderTop: '1px solid #e5e7eb',
-        display: 'flex',
-        justifyContent: 'space-around',
-        padding: '12px 0',
-        zIndex: 50
-      }}>
-        {[
-          {
-            icon: <Home size={20} />,
-            label: 'Overview',
-            active: false,
-            onClick: () => navigate('/vendor/dashboard')
-          },
-          {
-            icon: <List size={20} />,
-            label: 'Order List',
-            active: false,
-            onClick: () => navigate('/vendor/dashboard/orders')
-          },
-          {
-            icon: <Utensils size={20} />,
-            label: 'Menu',
-            active: false,
-            onClick: () => navigate('/vendor/dashboard/menu')
-          },
-          {
-            icon: <Table size={20} />,
-            label: 'Menu Stock',
-            active: false,
-            onClick: () => navigate('/vendor/dashboard/stock')
-          }
-        ].map((item, index) => (
-          <div
-            key={index}
-            onClick={item.onClick}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '4px',
-              color: item.active ? '#10b981' : '#6b7280',
-              cursor: 'pointer'
-            }}
-          >
-            {item.icon}
-            <span style={{ fontSize: '10px', fontWeight: 500 }}>{item.label}</span>
-          </div>
-        ))}
-      </div>
+      <VendorBottomNavigation currentPath="/vendor/analytics" />
     </div>
   );
 };

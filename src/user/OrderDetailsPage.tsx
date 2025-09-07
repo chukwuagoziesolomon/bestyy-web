@@ -74,7 +74,7 @@ const OrderDetailsPage: React.FC<{ orderId?: string }> = ({ orderId: propOrderId
   
   // Use the orderId from props or from URL params
   const currentOrderId = propOrderId || paramOrderId;
-  
+
   const [orderData, setOrderData] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -147,13 +147,13 @@ const OrderDetailsPage: React.FC<{ orderId?: string }> = ({ orderId: propOrderId
       <div style={{
         fontFamily: 'Nunito Sans, sans-serif',
         color: '#1e293b',
-        minHeight: '100vh',
+      minHeight: '100vh',
         background: '#ffffff',
         maxWidth: '414px',
-        margin: '0 auto',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+      margin: '0 auto',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
         flexDirection: 'column',
         gap: '16px'
       }}>
@@ -162,7 +162,7 @@ const OrderDetailsPage: React.FC<{ orderId?: string }> = ({ orderId: propOrderId
           height: '40px',
           border: '4px solid #f3f4f6',
           borderTop: '4px solid #10b981',
-          borderRadius: '50%',
+      borderRadius: '50%',
           animation: 'spin 1s linear infinite'
         }}></div>
         <div style={{ color: '#64748b', fontSize: '16px' }}>Loading order details...</div>
@@ -186,9 +186,9 @@ const OrderDetailsPage: React.FC<{ orderId?: string }> = ({ orderId: propOrderId
         background: '#ffffff',
         maxWidth: '414px',
         margin: '0 auto',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
         flexDirection: 'column',
         gap: '16px',
         padding: '20px'
@@ -201,11 +201,11 @@ const OrderDetailsPage: React.FC<{ orderId?: string }> = ({ orderId: propOrderId
           style={{
             background: '#10b981',
             color: 'white',
-            border: 'none',
+      border: 'none',
             borderRadius: '8px',
             padding: '12px 24px',
-            fontSize: '16px',
-            fontWeight: '600',
+      fontSize: '16px',
+      fontWeight: '600',
             cursor: 'pointer'
           }}
         >
@@ -225,9 +225,9 @@ const OrderDetailsPage: React.FC<{ orderId?: string }> = ({ orderId: propOrderId
         background: '#ffffff',
         maxWidth: '414px',
         margin: '0 auto',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
         flexDirection: 'column',
         gap: '16px',
         padding: '20px'
@@ -239,9 +239,9 @@ const OrderDetailsPage: React.FC<{ orderId?: string }> = ({ orderId: propOrderId
           onClick={() => navigate(-1)}
           style={{
             background: '#10b981',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
+      color: 'white',
+      border: 'none',
+      borderRadius: '8px',
             padding: '12px 24px',
             fontSize: '16px',
             fontWeight: '600',
@@ -463,8 +463,8 @@ const OrderDetailsPage: React.FC<{ orderId?: string }> = ({ orderId: propOrderId
               }}>
                 {item.price}
               </span>
-            </div>
-          ))}
+          </div>
+        ))}
         </div>
       </div>
 
@@ -542,7 +542,7 @@ const OrderDetailsPage: React.FC<{ orderId?: string }> = ({ orderId: propOrderId
         >
           <MessageCircle size={20} />
           Reorder on WhatsApp
-        </button>
+      </button>
       </div>
     </div>
   );

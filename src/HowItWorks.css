@@ -111,21 +111,23 @@
 }
 
 .how-it-works__tip-card {
-  background: var(--card-bg);
+  background: white;
   border-radius: 1.5rem;
-  padding: 2rem 1.5rem;
+  padding: 1.5rem;
   box-shadow: 0 2px 16px rgba(16,185,129,0.06);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
-  font-size: 1.1rem;
-  font-weight: 500;
-  color: var(--text);
+  text-align: center;
+  gap: 0.75rem;
+  max-width: 300px;
+  margin: 0 auto;
 }
 
 .how-it-works__tip-emoji {
-  font-size: 2.2rem;
+  width: 80px;
+  height: auto;
+  margin-bottom: 0.5rem;
 }
 
 @media (max-width: 1100px) {
@@ -192,10 +194,23 @@
   }
   
   .how-it-works__tip-card {
-    padding: 1rem 0.8rem;
-    font-size: 1rem;
-    width: 100%;
+    padding: 1.2rem 0.8rem;
     max-width: 280px; /* Limit tip card width */
+    margin: 0 auto;
+    width: 100%;
+  }
+  
+  .how-it-works__tip-card span {
+    font-size: 1rem;
+    line-height: 1.4;
+    font-weight: 500;
+    color: #333;
+  }
+  
+  .how-it-works__tip-emoji {
+    width: 52px;
+    height: 52px;
+    object-fit: contain;
   }
   
   .how-it-works__cta {

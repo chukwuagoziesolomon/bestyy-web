@@ -25,7 +25,7 @@ const HowItWorksStep: React.FC<HowItWorksStepProps> = ({
     <div className="how-it-works__left">
       <h2>{title}</h2>
       <p>{description}</p>
-      <Link to="/signup" className="how-it-works__cta">{buttonText}</Link>
+      <Link to="/login" className="how-it-works__cta">{buttonText}</Link>
     </div>
     <div className="how-it-works__center">
       <img src={phoneImage} alt="Phone Chat Demo" className="how-it-works__phone" />

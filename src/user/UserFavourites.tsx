@@ -176,9 +176,9 @@ const UserFavourites = () => {
     </div>
 
     {/* Favourites Table/List */}
-    {loading ? (
+      {loading ? (
       <div style={{ color: '#888', fontSize: 18, padding: 32, textAlign: 'center' }}>Loading favorites...</div>
-    ) : error ? (
+      ) : error ? (
       <div style={{ color: '#dc3545', fontSize: 18, padding: 32, textAlign: 'center' }}>Error: {error}</div>
     ) : filteredFavourites.length === 0 ? (
       <div style={{ 
@@ -278,7 +278,7 @@ const UserFavourites = () => {
           );
         })}
       </div>
-    )}
+      )}
   </div>
 );
 };

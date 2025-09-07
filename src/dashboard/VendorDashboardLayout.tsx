@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Home, List, Utensils, Archive, BarChart2, CreditCard, User, Table } from 'lucide-react';
 import DashboardNavbar from '../components/DashboardNavbar';
 import { useResponsive } from '../hooks/useResponsive';
+import { getThumbnailUrl } from '../services/cloudinaryService';
 
 interface VendorDashboardLayoutProps {
   children?: ReactNode;
@@ -16,15 +17,15 @@ interface LinkItem {
 
 const mainLinks: LinkItem[] = [
   { label: 'Dashboard', path: '/vendor/dashboard', icon: <Home size={20} /> },
-  { label: 'Food Orders', path: '/vendor/dashboard/orders', icon: <List size={20} /> },
-  { label: 'Menu', path: '/vendor/dashboard/menu', icon: <Utensils size={20} /> },
-  { label: 'Item Stock', path: '/vendor/dashboard/stock', icon: <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#e6f7f2', borderRadius: '50%', width: 32, height: 32 }}><Table size={18} color="#222" /></span> },
-  { label: 'Reports and Analytics', path: '/vendor/dashboard/analytics', icon: <BarChart2 size={20} /> },
+  { label: 'Food Orders', path: '/vendor/orders', icon: <List size={20} /> },
+  { label: 'Menu', path: '/vendor/menu', icon: <Utensils size={20} /> },
+  { label: 'Item Stock', path: '/vendor/stock', icon: <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#e6f7f2', borderRadius: '50%', width: 32, height: 32 }}><Table size={18} color="#222" /></span> },
+  { label: 'Reports and Analytics', path: '/vendor/analytics', icon: <BarChart2 size={20} /> },
 ];
 
 const bottomLinks = [
-  { label: 'Payouts', path: '/vendor/dashboard/payouts', icon: <CreditCard size={20} /> },
-  { label: 'Profile Settings', path: '/vendor/dashboard/profile', icon: <User size={20} /> },
+  { label: 'Payouts', path: '/vendor/payouts', icon: <CreditCard size={20} /> },
+  { label: 'Profile Settings', path: '/vendor/profile', icon: <User size={20} /> },
 ];
 
 const VendorDashboardLayout: React.FC<VendorDashboardLayoutProps> = ({ children }) => {
@@ -102,7 +103,7 @@ const VendorDashboardLayout: React.FC<VendorDashboardLayoutProps> = ({ children 
       </aside>
       <main style={{ flex: 1, background: '#f8fafc', minHeight: '100vh', padding: '0.5rem 2.5rem 2.5rem 2.5rem' }}>
         <DashboardNavbar
-          profileImageSrc={businessLogo || ""}
+          profileImageSrc={businessLogo ? getThumbnailUrl(businessLogo, 40) : ""}
           initials={businessName ? businessName[0] : 'V'}
         />
         <Outlet />

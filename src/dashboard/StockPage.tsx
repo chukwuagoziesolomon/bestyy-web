@@ -1,107 +1,772 @@
-import React, { useEffect, useState } from 'react';
-import { Edit, Trash2, Plus } from 'lucide-react';
-import { listMenuItems, API_URL } from '../api';
-import '../MenuPage.css';
-import ProfileImage from '../components/ProfileImage';
+import React, { useState, useEffect } from 'react';
+import { Edit, Trash2, Search, Filter, RefreshCw } from 'lucide-react';
+import { useResponsive } from '../hooks/useResponsive';
+import { fetchVendorStockItems, toggleStockItemAvailability, fetchStockSummary } from '../api';
+import MobileVendorStock from './MobileVendorStock';
 
-const StockPage = () => {
-  const [search, setSearch] = useState('');
-  const [items, setItems] = useState<any[]>([]);
+// Interface for stock item data from API
+interface StockItem {
+  id: number;
+  vendor: number;
+  vendor_name: string;
+  dish_name: string;
+  item_description: string;
+  price: string;
+  category: string;
+  image: string;
+  image_url: string;
+  image_urls: {
+    thumbnail: string;
+    medium: string;
+    large: string;
+    original: string;
+  };
+  available_now: boolean;
+  quantity: number;
+  created_at: string;
+  updated_at: string;
+}
+
+interface StockItemsResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: StockItem[];
+}
+
+interface StockSummary {
+  total_items: number;
+  available_items: number;
+  unavailable_items: number;
+  in_stock_items: number;
+  out_of_stock_items: number;
+  low_stock_items: number;
+}
+
+interface CategoryBreakdown {
+  category: string;
+  total_items: number;
+  available_items: number;
+  out_of_stock_items: number;
+}
+
+interface StockSummaryResponse {
+  summary: StockSummary;
+  category_breakdown: CategoryBreakdown[];
+}
+
+const StockPage: React.FC = () => {
+  const { isMobile, isTablet } = useResponsive();
+  
+  // API state management
+  const [stockItems, setStockItems] = useState<StockItem[]>([]);
+  const [stockSummary, setStockSummary] = useState<StockSummary | null>(null);
   const [loading, setLoading] = useState(true);
-  const token = localStorage.getItem('token');
+  const [error, setError] = useState<string | null>(null);
+  const [togglingItems, setTogglingItems] = useState<Set<number>>(new Set());
+  
+  // Filtering state
+  const [filters, setFilters] = useState({
+    search: '',
+    availability: undefined as boolean | undefined,
+    stock_status: undefined as 'in_stock' | 'out_of_stock' | 'low_stock' | undefined,
+    category: ''
+  });
+  const [showFilters, setShowFilters] = useState(false);
 
-  useEffect(() => {
-    async function fetchMenuItems() {
-      setLoading(true);
-      try {
-        if (token) {
-          const data = await listMenuItems(token);
-          setItems(data.menu_items || data || []);
-        }
-      } catch (err) {
-        // Optionally handle error
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchMenuItems();
-  }, [token]);
-
-  const handleToggle = (idx: number) => {
-    setItems(items => items.map((item, i) => i === idx ? { ...item, inStock: !item.inStock } : item));
+  // Get token function - using the same pattern as other working components
+  const getToken = () => {
+    return localStorage.getItem('access_token') || 
+           localStorage.getItem('vendor_token') || 
+           localStorage.getItem('token') || 
+           localStorage.getItem('auth_token');
   };
 
-  const getCorrectImageUrl = (imagePath?: string) => {
-    if (!imagePath) {
-      return '/image1.png';
+  // Fetch stock items from API
+  const fetchStockItems = async () => {
+    const token = getToken();
+    if (!token) {
+      setError('No authentication token found');
+      setLoading(false);
+      return;
     }
-    if (imagePath.startsWith('http')) {
-      return imagePath;
+
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetchVendorStockItems(token, {
+        page: 1,
+        page_size: 100, // Get all items for stock management
+        ...filters
+      });
+      
+      setStockItems(response.results);
+    } catch (err) {
+      console.error('Error fetching stock items:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load stock items');
+    } finally {
+      setLoading(false);
     }
-    if (imagePath.startsWith('/')) {
-      return `${API_URL}${imagePath}`;
+  };
+
+  // Fetch stock summary
+  const fetchStockSummaryData = async () => {
+    const token = getToken();
+    if (!token) return;
+
+    try {
+      const response = await fetchStockSummary(token);
+      setStockSummary(response.summary);
+    } catch (err) {
+      console.error('Error fetching stock summary:', err);
     }
-    return '/image1.png';
+  };
+
+  // Toggle item availability
+  const toggleItemAvailability = async (itemId: number) => {
+    const token = getToken();
+    if (!token) {
+      setError('No authentication token found');
+      return;
+    }
+
+    try {
+      setTogglingItems(prev => new Set(prev).add(itemId));
+      
+      const response = await toggleStockItemAvailability(token, itemId);
+      
+      // Update local state with the response data
+      setStockItems(prev => prev.map(item => 
+        item.id === itemId ? { ...item, available_now: response.item.available_now } : item
+      ));
+      
+      // Refresh summary data
+      fetchStockSummaryData();
+      
+    } catch (err) {
+      console.error('Error toggling item availability:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update item availability');
+    } finally {
+      setTogglingItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(itemId);
+        return newSet;
+      });
+    }
+  };
+
+  // Fetch data on component mount and when filters change
+  useEffect(() => {
+    fetchStockItems();
+    fetchStockSummaryData();
+  }, [filters]);
+
+  // Handle filter changes
+  const handleFilterChange = (key: string, value: any) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setFilters({
+      search: '',
+      availability: undefined,
+      stock_status: undefined,
+      category: ''
+    });
+  };
+
+  // Format currency
+  const formatCurrency = (price: string) => {
+    const numPrice = parseFloat(price);
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(numPrice);
+  };
+
+  // Use mobile component for mobile and tablet views
+  if (isMobile || isTablet) {
+    return <MobileVendorStock />;
+  }
+
+  const handleEdit = (id: number) => {
+    console.log('Edit item:', id);
+    // Navigate to edit page or open edit modal
+  };
+
+  const handleDelete = (id: number) => {
+    console.log('Delete item:', id);
+    // Show confirmation dialog and delete item
   };
 
   return (
-    <div style={{ fontFamily: 'Nunito Sans, sans-serif', background: '#fff', minHeight: '100vh', padding: '0 0 2rem 0' }}>
-      {/* Main Content: Title, Add Button, Table Card */}
-      <div style={{ width: '100%', maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-        <h2 style={{ fontWeight: 900, fontSize: 32, letterSpacing: 0.5, color: '#222', margin: 0 }}>Item Stock</h2>
-        <button style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#10b981', color: '#fff', fontWeight: 700, fontSize: 17, border: 'none', borderRadius: 8, padding: '12px 28px', cursor: 'pointer' }}>
-          <Plus size={20} /> Add new Item
-        </button>
+    <div style={{
+      fontFamily: 'Nunito Sans, sans-serif',
+      background: '#f8fafc',
+      minHeight: '100vh',
+      padding: '24px'
+    }}>
+      {/* Page Header */}
+      <div style={{
+        marginBottom: '32px'
+      }}>
+        <h1 style={{
+          fontSize: '32px',
+          fontWeight: '700',
+          color: '#1f2937',
+          margin: 0
+        }}>
+          Item Stock
+        </h1>
       </div>
-      {/* Table Card */}
-      <div className="dashboard-card" style={{ borderRadius: 16, padding: 0, maxWidth: 1200, margin: '0 auto', overflowX: 'auto', border: '1.5px solid #f3f4f6', boxShadow: '0 2px 16px #f3f4f6' }}>
-        {loading ? (
-          <div style={{ padding: 40, textAlign: 'center', color: '#888' }}>Loading menu items...</div>
-        ) : (
-        <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, fontSize: 17, fontFamily: 'inherit' }}>
-          <thead>
-            <tr style={{ color: '#222', fontWeight: 800, background: '#fff' }}>
-              <th style={{ padding: '24px 18px', textAlign: 'left', fontWeight: 700, borderRight: '1px solid #D1D5DB', borderBottom: '1px solid #D1D5DB' }}>Image</th>
-              <th style={{ padding: '24px 18px', textAlign: 'left', fontWeight: 700, borderRight: '1px solid #D1D5DB', borderBottom: '1px solid #D1D5DB' }}>Dish Name</th>
-              <th style={{ padding: '24px 18px', textAlign: 'left', fontWeight: 700, borderRight: '1px solid #D1D5DB', borderBottom: '1px solid #D1D5DB' }}>Description</th>
-              <th style={{ padding: '24px 18px', textAlign: 'left', fontWeight: 700, borderRight: '1px solid #D1D5DB', borderBottom: '1px solid #D1D5DB' }}>Price</th>
-              <th style={{ padding: '24px 18px', textAlign: 'left', fontWeight: 700, borderRight: '1px solid #D1D5DB', borderBottom: '1px solid #D1D5DB' }}>Category</th>
-              <th style={{ padding: '24px 18px', textAlign: 'center', fontWeight: 700, borderRight: '1px solid #D1D5DB', borderBottom: '1px solid #D1D5DB' }}>Stock Toggle</th>
-              <th style={{ padding: '24px 18px', textAlign: 'center', fontWeight: 700, borderBottom: '1px solid #D1D5DB' }}>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.filter(item => (item.dish_name || item.name || '').toLowerCase().includes(search.toLowerCase())).map((item, i, arr) => (
-              <tr key={i} style={{ background: '#fff' }}>
-                <td style={{ padding: '24px 18px', borderRight: '1px solid #D1D5DB', borderBottom: i !== arr.length - 1 ? '1px solid #D1D5DB' : 'none' }}>
-                  <img src={getCorrectImageUrl(item.image)} alt={item.dish_name || item.name} style={{ width: 54, height: 54, borderRadius: 12, objectFit: 'cover' }} />
-                </td>
-                <td style={{ padding: '24px 18px', fontWeight: 700, borderRight: '1px solid #D1D5DB', borderBottom: i !== arr.length - 1 ? '1px solid #D1D5DB' : 'none' }}>{item.dish_name || item.name}</td>
-                <td style={{ padding: '24px 18px', color: '#555', maxWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', borderRight: '1px solid #D1D5DB', borderBottom: i !== arr.length - 1 ? '1px solid #D1D5DB' : 'none' }}>{item.item_description || item.description}</td>
-                <td style={{ padding: '24px 18px', fontWeight: 700, borderRight: '1px solid #D1D5DB', borderBottom: i !== arr.length - 1 ? '1px solid #D1D5DB' : 'none' }}>₦{parseFloat(item.price).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                <td style={{ padding: '24px 18px', color: '#555', borderRight: '1px solid #D1D5DB', borderBottom: i !== arr.length - 1 ? '1px solid #D1D5DB' : 'none' }}>{item.category}</td>
-                <td style={{ padding: '24px 18px', textAlign: 'center', borderRight: '1px solid #D1D5DB', borderBottom: i !== arr.length - 1 ? '1px solid #D1D5DB' : 'none' }}>
-                  <label className="switch">
-                    <input type="checkbox" checked={item.available_now ?? item.inStock} onChange={() => handleToggle(i)} />
-                    <span className="slider"></span>
-                  </label>
-                </td>
-                <td style={{ padding: '24px 18px', textAlign: 'center', borderBottom: i !== arr.length - 1 ? '1px solid #D1D5DB' : 'none' }}>
-                  <button style={{ background: '#f8fafc', border: '1.5px solid #e5e7eb', borderRadius: 8, padding: 6, marginRight: 8, cursor: 'pointer' }} title="Edit">
-                    <Edit size={18} color="#10b981" />
-                  </button>
-                  <button style={{ background: '#f8fafc', border: '1.5px solid #e5e7eb', borderRadius: 8, padding: 6, cursor: 'pointer' }} title="Delete">
-                    <Trash2 size={18} color="#ef4444" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+
+      {/* Stock Summary Cards */}
+      {stockSummary && (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '16px',
+          marginBottom: '32px'
+        }}>
+          <div style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '12px',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+            border: '1px solid #e5e7eb'
+          }}>
+            <div style={{ color: '#6b7280', fontSize: '14px', marginBottom: '8px' }}>Total Items</div>
+            <div style={{ color: '#1f2937', fontSize: '24px', fontWeight: '700' }}>{stockSummary.total_items}</div>
+          </div>
+          <div style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '12px',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+            border: '1px solid #e5e7eb'
+          }}>
+            <div style={{ color: '#6b7280', fontSize: '14px', marginBottom: '8px' }}>Available</div>
+            <div style={{ color: '#059669', fontSize: '24px', fontWeight: '700' }}>{stockSummary.available_items}</div>
+          </div>
+          <div style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '12px',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+            border: '1px solid #e5e7eb'
+          }}>
+            <div style={{ color: '#6b7280', fontSize: '14px', marginBottom: '8px' }}>Unavailable</div>
+            <div style={{ color: '#dc2626', fontSize: '24px', fontWeight: '700' }}>{stockSummary.unavailable_items}</div>
+          </div>
+          <div style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '12px',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+            border: '1px solid #e5e7eb'
+          }}>
+            <div style={{ color: '#6b7280', fontSize: '14px', marginBottom: '8px' }}>In Stock</div>
+            <div style={{ color: '#059669', fontSize: '24px', fontWeight: '700' }}>{stockSummary.in_stock_items}</div>
+          </div>
+          <div style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '12px',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+            border: '1px solid #e5e7eb'
+          }}>
+            <div style={{ color: '#6b7280', fontSize: '14px', marginBottom: '8px' }}>Out of Stock</div>
+            <div style={{ color: '#dc2626', fontSize: '24px', fontWeight: '700' }}>{stockSummary.out_of_stock_items}</div>
+          </div>
+          <div style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '12px',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+            border: '1px solid #e5e7eb'
+          }}>
+            <div style={{ color: '#6b7280', fontSize: '14px', marginBottom: '8px' }}>Low Stock</div>
+            <div style={{ color: '#d97706', fontSize: '24px', fontWeight: '700' }}>{stockSummary.low_stock_items}</div>
+          </div>
+        </div>
+      )}
+
+      {/* Search and Filter Bar */}
+      <div style={{
+        background: 'white',
+        padding: '20px',
+        borderRadius: '12px',
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+        border: '1px solid #e5e7eb',
+        marginBottom: '24px'
+      }}>
+        <div style={{
+          display: 'flex',
+          gap: '16px',
+          alignItems: 'center',
+          flexWrap: 'wrap'
+        }}>
+          {/* Search Input */}
+          <div style={{ position: 'relative', flex: '1', minWidth: '300px' }}>
+            <Search size={20} style={{
+              position: 'absolute',
+              left: '12px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: '#6b7280'
+            }} />
+            <input
+              type="text"
+              placeholder="Search items..."
+              value={filters.search}
+              onChange={(e) => handleFilterChange('search', e.target.value)}
+              style={{
+                width: '100%',
+                padding: '12px 12px 12px 44px',
+                border: '1px solid #d1d5db',
+                borderRadius: '8px',
+                fontSize: '14px',
+                outline: 'none',
+                fontFamily: 'Nunito Sans, sans-serif'
+              }}
+            />
+          </div>
+
+          {/* Filter Toggle Button */}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '12px 16px',
+              background: showFilters ? '#3b82f6' : 'white',
+              color: showFilters ? 'white' : '#374151',
+              border: '1px solid #d1d5db',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+              fontFamily: 'Nunito Sans, sans-serif'
+            }}
+          >
+            <Filter size={16} />
+            Filters
+          </button>
+
+          {/* Refresh Button */}
+          <button
+            onClick={() => {
+              fetchStockItems();
+              fetchStockSummaryData();
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '12px 16px',
+              background: 'white',
+              color: '#374151',
+              border: '1px solid #d1d5db',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+              fontFamily: 'Nunito Sans, sans-serif'
+            }}
+          >
+            <RefreshCw size={16} />
+            Refresh
+          </button>
+        </div>
+
+        {/* Advanced Filters */}
+        {showFilters && (
+          <div style={{
+            marginTop: '20px',
+            paddingTop: '20px',
+            borderTop: '1px solid #e5e7eb',
+            display: 'flex',
+            gap: '16px',
+            flexWrap: 'wrap',
+            alignItems: 'center'
+          }}>
+            {/* Availability Filter */}
+            <select
+              value={filters.availability === undefined ? '' : filters.availability.toString()}
+              onChange={(e) => handleFilterChange('availability', e.target.value === '' ? undefined : e.target.value === 'true')}
+              style={{
+                padding: '8px 12px',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                fontSize: '14px',
+                fontFamily: 'Nunito Sans, sans-serif',
+                background: 'white'
+              }}
+            >
+              <option value="">All Availability</option>
+              <option value="true">Available</option>
+              <option value="false">Unavailable</option>
+            </select>
+
+            {/* Stock Status Filter */}
+            <select
+              value={filters.stock_status || ''}
+              onChange={(e) => handleFilterChange('stock_status', e.target.value || undefined)}
+              style={{
+                padding: '8px 12px',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                fontSize: '14px',
+                fontFamily: 'Nunito Sans, sans-serif',
+                background: 'white'
+              }}
+            >
+              <option value="">All Stock Status</option>
+              <option value="in_stock">In Stock</option>
+              <option value="out_of_stock">Out of Stock</option>
+              <option value="low_stock">Low Stock</option>
+            </select>
+
+            {/* Category Filter */}
+            <input
+              type="text"
+              placeholder="Category filter..."
+              value={filters.category}
+              onChange={(e) => handleFilterChange('category', e.target.value)}
+              style={{
+                padding: '8px 12px',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                fontSize: '14px',
+                fontFamily: 'Nunito Sans, sans-serif',
+                minWidth: '150px'
+              }}
+            />
+
+            {/* Clear Filters */}
+            <button
+              onClick={clearFilters}
+              style={{
+                padding: '8px 16px',
+                background: '#ef4444',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500',
+                fontFamily: 'Nunito Sans, sans-serif'
+              }}
+            >
+              Clear Filters
+            </button>
+          </div>
         )}
+      </div>
+
+      {/* Stock Table */}
+      <div style={{
+        background: '#fff',
+        borderRadius: '16px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+        border: '1px solid #f3f4f6',
+        overflow: 'hidden'
+      }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{
+            width: '100%',
+            borderCollapse: 'collapse'
+          }}>
+            <thead>
+              <tr style={{
+                background: '#f9fafb',
+                borderBottom: '1px solid #e5e7eb'
+              }}>
+                <th style={{
+                  padding: '16px',
+                  textAlign: 'left',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#374151'
+                }}>
+                  Image
+                </th>
+                <th style={{
+                  padding: '16px',
+                  textAlign: 'left',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#374151'
+                }}>
+                  Dish Name
+                </th>
+                <th style={{
+                  padding: '16px',
+                  textAlign: 'left',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#374151'
+                }}>
+                  Description
+                </th>
+                <th style={{
+                  padding: '16px',
+                  textAlign: 'left',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#374151'
+                }}>
+                  Price
+                </th>
+                <th style={{
+                  padding: '16px',
+                  textAlign: 'left',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#374151'
+                }}>
+                  Category
+                </th>
+                <th style={{
+                  padding: '16px',
+                  textAlign: 'left',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#374151'
+                }}>
+                  Stock Toggle
+                </th>
+                <th style={{
+                  padding: '16px',
+                  textAlign: 'left',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#374151'
+                }}>
+                  Action
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={7} style={{
+                    padding: '40px',
+                    textAlign: 'center',
+                    color: '#6b7280',
+                    fontSize: '16px'
+                  }}>
+                    Loading stock items...
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan={7} style={{
+                    padding: '40px',
+                    textAlign: 'center',
+                    color: '#dc2626',
+                    fontSize: '16px'
+                  }}>
+                    {error}
+                  </td>
+                </tr>
+              ) : stockItems.length === 0 ? (
+                <tr>
+                  <td colSpan={7} style={{
+                    padding: '40px',
+                    textAlign: 'center',
+                    color: '#6b7280',
+                    fontSize: '16px'
+                  }}>
+                    No stock items found
+                  </td>
+                </tr>
+              ) : (
+                stockItems.map((item, index) => (
+                  <tr key={item.id} style={{
+                    borderBottom: '1px solid #f3f4f6'
+                  }}>
+                    {/* Image */}
+                    <td style={{
+                      padding: '16px'
+                    }}>
+                      <div style={{
+                        width: '60px',
+                        height: '60px',
+                        borderRadius: '50%',
+                        overflow: 'hidden',
+                        background: '#f3f4f6'
+                      }}>
+                        <img
+                          src={item.image_urls?.thumbnail || item.image_url || item.image}
+                          alt={item.dish_name}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover'
+                          }}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/60x60?text=No+Image';
+                          }}
+                        />
+                      </div>
+                    </td>
+
+                    {/* Dish Name */}
+                    <td style={{
+                      padding: '16px',
+                      fontSize: '14px',
+                      color: '#374151',
+                      fontWeight: '500'
+                    }}>
+                      {item.dish_name}
+                    </td>
+
+                    {/* Description */}
+                    <td style={{
+                      padding: '16px',
+                      fontSize: '14px',
+                      color: '#6b7280',
+                      maxWidth: '200px'
+                    }}>
+                      {item.item_description || 'No description'}
+                    </td>
+
+                    {/* Price */}
+                    <td style={{
+                      padding: '16px',
+                      fontSize: '14px',
+                      color: '#374151',
+                      fontWeight: '600'
+                    }}>
+                      {formatCurrency(item.price)}
+                    </td>
+
+                    {/* Category */}
+                    <td style={{
+                      padding: '16px',
+                      fontSize: '14px',
+                      color: '#374151'
+                    }}>
+                      {item.category}
+                    </td>
+
+                    {/* Stock Toggle */}
+                    <td style={{
+                      padding: '16px'
+                    }}>
+                      <button
+                        onClick={() => toggleItemAvailability(item.id)}
+                        disabled={togglingItems.has(item.id)}
+                        style={{
+                          width: '48px',
+                          height: '24px',
+                          borderRadius: '12px',
+                          border: 'none',
+                          background: item.available_now ? '#10b981' : '#d1d5db',
+                          cursor: togglingItems.has(item.id) ? 'not-allowed' : 'pointer',
+                          position: 'relative',
+                          transition: 'background 0.2s ease',
+                          opacity: togglingItems.has(item.id) ? 0.6 : 1
+                        }}
+                      >
+                        <div style={{
+                          width: '20px',
+                          height: '20px',
+                          borderRadius: '50%',
+                          background: '#fff',
+                          position: 'absolute',
+                          top: '2px',
+                          left: item.available_now ? '26px' : '2px',
+                          transition: 'left 0.2s ease',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                        }} />
+                      </button>
+                      {togglingItems.has(item.id) && (
+                        <div style={{
+                          fontSize: '12px',
+                          color: '#6b7280',
+                          marginTop: '4px'
+                        }}>
+                          Updating...
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Action */}
+                    <td style={{
+                      padding: '16px'
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        gap: '8px'
+                      }}>
+                        <button
+                          onClick={() => handleEdit(item.id)}
+                          style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '6px',
+                            border: '1px solid #d1d5db',
+                            background: '#fff',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#f9fafb';
+                            e.currentTarget.style.borderColor = '#9ca3af';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = '#fff';
+                            e.currentTarget.style.borderColor = '#d1d5db';
+                          }}
+                        >
+                          <Edit size={16} color="#6b7280" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '6px',
+                            border: '1px solid #d1d5db',
+                            background: '#fff',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#fef2f2';
+                            e.currentTarget.style.borderColor = '#fca5a5';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = '#fff';
+                            e.currentTarget.style.borderColor = '#d1d5db';
+                          }}
+                        >
+                          <Trash2 size={16} color="#ef4444" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
 };
 
-export default StockPage; 
+export default StockPage;

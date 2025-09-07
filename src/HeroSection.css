@@ -3,7 +3,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 4rem 2rem 2rem 2rem;
+  padding: 5rem 2rem 2rem 2rem; /* Increased top padding to account for fixed navbar */
   background: var(--bg);
   min-height: 80vh;
 }
@@ -86,13 +86,11 @@ a.hero__cta {
   box-shadow: none;
   filter: none;
   position: relative;
-  z-index: 1;
 }
 
 .hero__chat-bubble {
   position: absolute;
   pointer-events: none;
-  z-index: 2;
 }
 
 .hero__chat-bubble--green {
@@ -102,7 +100,6 @@ a.hero__cta {
   width: 70%;
   max-width: 350px;
   min-width: 120px;
-  z-index: 2;
   transform: none;
 }
 
@@ -113,7 +110,6 @@ a.hero__cta {
   width: 80%;
   max-width: 400px;
   min-width: 120px;
-  z-index: 2;
   transform: none;
 }
 
@@ -139,7 +135,7 @@ a.hero__cta {
 
 @media (max-width: 900px) {
   .hero {
-    padding: 2.5rem 1rem 1.5rem 1rem;
+    padding: 4rem 1rem 1.5rem 1rem; /* Increased top padding to account for fixed navbar */
     min-height: 70vh;
   }
 
@@ -177,7 +173,7 @@ a.hero__cta {
 
 @media (max-width: 600px) {
   .hero {
-    padding: 1.5rem 0.5rem 0 0.5rem;
+    padding: 5rem 0.5rem 0 0.5rem; /* Increased top padding to account for fixed navbar */
     min-height: 90vh;
     justify-content: flex-start;
   }

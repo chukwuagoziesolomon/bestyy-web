@@ -1,6 +1,7 @@
 import React, { ReactNode } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useResponsive } from '../hooks/useResponsive';
+import { Home, List, BarChart3, Wallet, Settings } from 'lucide-react';
 
 interface CourierDashboardLayoutProps {
   children?: ReactNode;
@@ -43,13 +44,28 @@ const CourierDashboardLayout: React.FC<CourierDashboardLayoutProps> = ({ childre
           <img src="/logo.png" alt="Bestie Logo" style={{ width: 54, height: 'auto' }} />
         </div>
         <nav style={{ flex: 1 }}>
-          <Link to="/courier/dashboard" style={sidebarLinkStyle(location.pathname === '/courier/dashboard')}>Dashboard</Link>
-          <Link to="/courier/delivery-list" style={sidebarLinkStyle(location.pathname === '/courier/delivery-list')}>Delivery List</Link>
-          <Link to="/courier/analytics" style={sidebarLinkStyle(location.pathname === '/courier/analytics')}>Reports and Analytics</Link>
+          <Link to="/courier/dashboard" style={sidebarLinkStyle(location.pathname === '/courier/dashboard')}>
+            <Home size={20} />
+            Dashboard
+          </Link>
+          <Link to="/courier/deliveries" style={sidebarLinkStyle(location.pathname === '/courier/deliveries')}>
+            <List size={20} />
+            Delivery List
+          </Link>
+          <Link to="/courier/analytics" style={sidebarLinkStyle(location.pathname === '/courier/analytics')}>
+            <BarChart3 size={20} />
+            Reports and Analytics
+          </Link>
         </nav>
         <div style={{ marginTop: 32 }}>
-          <Link to="/courier/payouts" style={sidebarLinkStyle(location.pathname === '/courier/payouts')}>Payouts</Link>
-          <Link to="/courier/profile" style={sidebarLinkStyle(location.pathname === '/courier/profile')}>Profile Settings</Link>
+          <Link to="/courier/payouts" style={sidebarLinkStyle(location.pathname === '/courier/payouts')}>
+            <Wallet size={20} />
+            Payouts
+          </Link>
+          <Link to="/courier/profile" style={sidebarLinkStyle(location.pathname === '/courier/profile')}>
+            <Settings size={20} />
+            Profile Settings
+          </Link>
         </div>
       </aside>
       <main style={{ flex: 1, background: '#f8fafc', minHeight: '100vh' }}>

@@ -80,6 +80,7 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string, role: string, additionalData?: any) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -105,22 +106,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         // Get fresh user data from the backend using the configured axios instance
         const { data } = await api.get('/api/user/me/');
         
-        // Handle nested user structure if it exists
-        const userData = data.user ? {
-          id: data.user.id,
-          email: data.user.email,
-          first_name: data.user.first_name || '',
-          last_name: data.user.last_name || '',
-          role: data.user.role || 'user',
-          ...data.user
-        } : {
+        // The user data structure from /api/user/me/ endpoint
+        const userData = {
           id: data.id,
           email: data.email,
           first_name: data.first_name || '',
           last_name: data.last_name || '',
-          role: data.role || 'user',
+          role: data.role || 'user', // Backend now provides role
+          phone: data.phone || '',
           ...data
         };
+        
+        console.log('CheckAuth - Processed user data:', userData);
+        console.log('CheckAuth - User role:', userData.role);
         
         localStorage.setItem('user', JSON.stringify(userData));
         setUser(userData);
@@ -142,6 +140,40 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
 
+      
+  const signup = async (email: string, password: string, role: string, additionalData?: any) => {
+      try {
+        setLoading(true);
+      setError(null);
+      
+      // Store additional data for profile completion
+      if (additionalData) {
+        localStorage.setItem('pending_profile_data', JSON.stringify(additionalData));
+      }
+      
+      // Create user data with role
+      const userData = {
+        id: Date.now(), // Temporary ID until backend response
+        email,
+        first_name: additionalData?.first_name || '',
+        last_name: additionalData?.last_name || '',
+        role: role.toLowerCase(),
+        ...additionalData
+      };
+      
+      // Store user data temporarily
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+      
+      // Redirect to success page first, then to dashboard based on role
+      navigate('/success', { state: { userType: role.toLowerCase() } });
+      } catch (err) {
+      setError('Signup failed');
+      throw err;
+      } finally {
+        setLoading(false);
+      }
+    };
 
   const login = async (email: string, password: string) => {
     try {
@@ -159,40 +191,60 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Set the default authorization header for subsequent requests
       api.defaults.headers.common['Authorization'] = `Bearer ${access}`;
       
-      // Handle nested user structure if it exists
-      const userData = user.user ? {
-        id: user.user.id,
-        email: user.user.email,
-        first_name: user.user.first_name || '',
-        last_name: user.user.last_name || '',
-        role: user.user.role || 'user',
-        ...user.user
-      } : {
+            // Debug: Log the response to see what we're getting
+      console.log('=== LOGIN DEBUG ===');
+      console.log('Full response:', response.data);
+      console.log('Access token:', access);
+      console.log('Refresh token:', refresh);
+      console.log('User object:', user);
+      console.log('User role from response:', user.role);
+      console.log('==================');
+      
+      // The user object from the response contains the user data directly
+      const userData = {
         id: user.id,
         email: user.email,
         first_name: user.first_name || '',
         last_name: user.last_name || '',
-        role: user.role || 'user',
+        role: user.role || 'user', // Backend now provides role
+        phone: user.phone || '',
         ...user
       };
+      
+      // Debug: Log the processed user data
+      console.log('=== PROCESSED USER DATA ===');
+      console.log('Final user data:', userData);
+      console.log('Final user role:', userData.role);
+      console.log('Role type:', typeof userData.role);
+      console.log('Role lowercase:', userData.role.toLowerCase());
+      console.log('==========================');
       
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
       
-      // Redirect based on user role
-      switch(userData.role.toLowerCase()) {
-        case 'vendor':
-          navigate('/vendor/dashboard');
-          break;
-        case 'courier':
-          navigate('/courier/dashboard');
-          break;
-        case 'admin':
-          navigate('/admin/dashboard');
-          break;
-        default: // Regular user
-          navigate('/user/dashboard');
+        // Redirect based on user role
+      console.log('=== ROLE-BASED REDIRECTION ===');
+      console.log('User role for redirection:', userData.role);
+      console.log('User role lowercase:', userData.role.toLowerCase());
+      
+        switch(userData.role.toLowerCase()) {
+          case 'vendor':
+          console.log('✅ Redirecting to vendor dashboard');
+            navigate('/vendor/dashboard');
+            break;
+          case 'courier':
+          console.log('✅ Redirecting to courier dashboard');
+            navigate('/courier/dashboard');
+            break;
+          case 'admin':
+          console.log('✅ Redirecting to admin dashboard');
+            navigate('/admin/dashboard');
+            break;
+          default: // Regular user
+          console.log('✅ Redirecting to user dashboard (default)');
+            navigate('/user/dashboard');
       }
+      console.log('==============================');
     } catch (err) {
       setError('Invalid email or password');
       throw err;
@@ -220,22 +272,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const { data } = await api.get('/api/user/me/');
       
-      // Handle nested user structure if it exists
-      const userData = data.user ? {
-        id: data.user.id,
-        email: data.user.email,
-        first_name: data.user.first_name || '',
-        last_name: data.user.last_name || '',
-        role: data.user.role || 'user',
-        ...data.user
-      } : {
+      // The user data structure from /api/user/me/ endpoint
+      const userData = {
         id: data.id,
         email: data.email,
         first_name: data.first_name || '',
         last_name: data.last_name || '',
-        role: data.role || 'user',
+        role: data.role || 'user', // Backend now provides role
+        phone: data.phone || '',
         ...data
       };
+      
+      console.log('RefreshUser - Processed user data:', userData);
+      console.log('RefreshUser - User role:', userData.role);
       
       setUser(userData);
       return userData;
@@ -251,6 +300,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       loading,
       error,
       login,
+      signup,
       logout,
       refreshUser,
     }}>

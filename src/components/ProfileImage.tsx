@@ -1,4 +1,5 @@
 import React from 'react';
+import { getThumbnailUrl } from '../services/cloudinaryService';
 
 interface ProfileImageProps {
   src: string;
@@ -11,9 +12,13 @@ interface ProfileImageProps {
 const ProfileImage: React.FC<ProfileImageProps> = ({ src, alt = 'Profile', size = 40, style, initials }) => {
   // Helper to check if src is a non-empty string
   const hasImage = src && typeof src === 'string' && src.trim() !== '';
+  
+  // Get optimized image URL for Cloudinary images
+  const imageUrl = hasImage ? getThumbnailUrl(src, size) : '';
+  
   return hasImage ? (
     <img
-      src={src}
+      src={imageUrl}
       alt={alt}
       style={{
         width: size,
@@ -24,6 +29,12 @@ const ProfileImage: React.FC<ProfileImageProps> = ({ src, alt = 'Profile', size 
         border: '2px solid #fff',
         boxShadow: '0 1px 4px rgba(16,24,40,0.04)',
         ...style,
+      }}
+      onError={(e) => {
+        // Fallback to original URL if optimized URL fails
+        if (e.currentTarget.src !== src) {
+          e.currentTarget.src = src;
+        }
       }}
     />
   ) : (

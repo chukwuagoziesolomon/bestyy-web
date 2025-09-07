@@ -1,7 +1,7 @@
 import React from 'react';
 import { useResponsive } from '../hooks/useResponsive';
-import PayoutsPage from './PayoutsPage';
 import MobileCourierPayout from './MobileCourierPayout';
+import DesktopCourierPayout from './DesktopCourierPayout';
 
 const CourierPayout: React.FC = () => {
   const { isMobile, isTablet } = useResponsive();
@@ -11,8 +11,8 @@ const CourierPayout: React.FC = () => {
     return <MobileCourierPayout />;
   }
   
-  // Use desktop component for desktop view
-  return <PayoutsPage />;
+  // Use desktop courier component for desktop view
+  return <DesktopCourierPayout />;
 };
 
 export default CourierPayout;

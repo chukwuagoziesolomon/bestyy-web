@@ -1,70 +1,132 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, List, BarChart3, CreditCard, Menu, X, HelpCircle, Settings, Camera, Eye, EyeOff } from 'lucide-react';
-import { fetchUserProfile, updateUserProfile } from '../api';
-import { showSuccess, showError } from '../toast';
+import { Home, List, BarChart3, CreditCard, Menu, X, HelpCircle, Settings, Camera, Eye, EyeOff, Clock } from 'lucide-react';
+import VerificationBadge from '../components/VerificationBadge';
+import CourierHeader from '../components/CourierHeader';
 
 const MobileCourierProfile: React.FC = () => {
   const navigate = useNavigate();
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
   
-  // Editable fields
+  // Editable fields - will be populated from localStorage
   const [fullName, setFullName] = useState('');
-  const [nickName, setNickName] = useState('');
-  const [language, setLanguage] = useState('en');
   const [email, setEmail] = useState('');
-  const [emailNotifications, setEmailNotifications] = useState(false);
-  const [pushNotifications, setPushNotifications] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [deliveryRadius, setDeliveryRadius] = useState('');
+  const [openingTime, setOpeningTime] = useState('08:00');
+  const [closingTime, setClosingTime] = useState('18:00');
+  const [vehicleType, setVehicleType] = useState('Motorcycle');
+  const [verificationStatus, setVerificationStatus] = useState('pending'); // 'pending' or 'verified'
+  const [serviceAreas, setServiceAreas] = useState<string[]>([]);
+  const [hasBike, setHasBike] = useState(true);
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [previewPicture, setPreviewPicture] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const token = localStorage.getItem('token');
-
+  // Auto-populate profile data from localStorage on component mount
   useEffect(() => {
-    // First, try to populate from localStorage courier_profile
-    const savedCourier = localStorage.getItem('courier_profile');
-    if (savedCourier) {
+    const populateProfileData = () => {
       try {
-        const courier = JSON.parse(savedCourier);
-        setFullName(courier.first_name + ' ' + courier.last_name || '');
-        setNickName(courier.first_name || '');
-        setEmail(courier.email || '');
-        setProfilePicture(courier.profile_picture || null);
+        // Get user data from localStorage - check multiple possible sources
+        const storedFirstName = localStorage.getItem('first_name') || localStorage.getItem('user_first_name');
+        const storedLastName = localStorage.getItem('last_name') || localStorage.getItem('user_last_name');
+        const storedEmail = localStorage.getItem('email') || localStorage.getItem('user_email');
+        const storedPhone = localStorage.getItem('phone_number') || localStorage.getItem('user_phone') || localStorage.getItem('phone');
+        const storedProfileImage = localStorage.getItem('profile_image') || localStorage.getItem('user_profile_image');
+        const storedCourierProfile = localStorage.getItem('courier_profile');
+        
+        // Also check for signup data that might be stored
+        const signupData = localStorage.getItem('pending_profile_data');
+        let signupInfo = null;
+        if (signupData) {
+          try {
+            signupInfo = JSON.parse(signupData);
+            console.log('Found signup data:', signupInfo); // Debug log
       } catch (e) {
-        // Ignore parse errors and proceed to fetch from backend
-      }
-    }
-    
-    async function getProfile() {
-      setLoading(true);
-      setError(null);
-      try {
-        if (token) {
-          const data = await fetchUserProfile(token);
-          setProfile(data || null);
-          setFullName(data?.full_name || '');
-          setNickName(data?.nick_name || '');
-          setLanguage(data?.language || 'en');
-          setEmail(data?.email || '');
-          setEmailNotifications(!!data?.email_notifications);
-          setPushNotifications(!!data?.push_notifications);
-          setProfilePicture(data?.profile_picture || null);
-          setPreviewPicture(null);
+            console.log('Error parsing signup data:', e);
+          }
         }
-      } catch (err: any) {
-        setError(err.message || 'Could not fetch profile');
-        showError(err.message || 'Could not fetch profile');
-      } finally {
-        setLoading(false);
+        
+        // Set full name - prioritize stored data, then signup data
+        if (storedFirstName && storedLastName) {
+          setFullName(`${storedFirstName} ${storedLastName}`);
+        } else if (storedFirstName) {
+          setFullName(storedFirstName);
+        } else if (signupInfo?.fullName) {
+          setFullName(signupInfo.fullName);
+        }
+        
+        // Set email - prioritize stored data, then signup data
+        if (storedEmail) {
+          setEmail(storedEmail);
+        } else if (signupInfo?.email) {
+          setEmail(signupInfo.email);
+        }
+        
+        // Set phone number - prioritize stored data, then signup data
+        if (storedPhone) {
+          setPhoneNumber(storedPhone);
+        } else if (signupInfo?.phone) {
+          setPhoneNumber(signupInfo.phone);
+        }
+        
+        // Set profile picture
+        if (storedProfileImage) {
+          setProfilePicture(storedProfileImage);
+        }
+        
+        // Set courier-specific data if available
+        if (storedCourierProfile) {
+          try {
+            const courierData = JSON.parse(storedCourierProfile);
+            if (courierData.delivery_radius) setDeliveryRadius(courierData.delivery_radius);
+            if (courierData.opening_time) setOpeningTime(courierData.opening_time);
+            if (courierData.closing_time) setClosingTime(courierData.closing_time);
+            if (courierData.vehicle_type) setVehicleType(courierData.vehicle_type);
+            if (courierData.has_vehicle !== undefined) setHasBike(courierData.has_vehicle);
+            if (courierData.service_areas) setServiceAreas(courierData.service_areas);
+            if (courierData.verification_status) setVerificationStatus(courierData.verification_status);
+          } catch (error) {
+            console.log('Error parsing courier profile data:', error);
+          }
+        }
+        
+        // Also check signup data for courier-specific fields
+        if (signupInfo) {
+          if (signupInfo.serviceAreas && signupInfo.serviceAreas.length > 0) {
+            setServiceAreas(signupInfo.serviceAreas);
+          }
+          if (signupInfo.vehicleType) {
+            setVehicleType(signupInfo.vehicleType);
+          }
+        }
+        
+        // Set default values if no data found - use more realistic defaults
+        if (!fullName) {
+          setFullName('Courier Partner');
+        }
+        if (!email) {
+          setEmail('Enter your email');
+        }
+        if (!phoneNumber) {
+          setPhoneNumber('Enter your phone number');
+        }
+        if (serviceAreas.length === 0) {
+          setServiceAreas([]); // Empty array instead of fake areas
+        }
+        
+      } catch (error) {
+        console.log('Error populating profile data:', error);
+        // Set realistic fallback values
+        setFullName('Courier Partner');
+        setEmail('Enter your email');
+        setPhoneNumber('Enter your phone number');
+        setServiceAreas([]);
       }
-    }
-    getProfile();
-  }, [token]);
+    };
+
+    populateProfileData();
+  }, []);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -77,30 +139,137 @@ const MobileCourierProfile: React.FC = () => {
     }
   };
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token) {
-      showError('No authentication token found');
-      return;
-    }
+    
     try {
-      const profileData = {
-        full_name: fullName,
-        nick_name: nickName,
-        language: language,
-        email: email,
-        email_notifications: emailNotifications,
-        push_notifications: pushNotifications,
-        profile_picture: previewPicture !== null ? previewPicture : profilePicture,
+      // Save profile data to localStorage
+      if (previewPicture) {
+        setProfilePicture(previewPicture);
+        setPreviewPicture(null);
+        localStorage.setItem('profile_image', previewPicture);
+      }
+      
+      // Save courier-specific data
+      const courierData = {
+        delivery_radius: deliveryRadius,
+        opening_time: openingTime,
+        closing_time: closingTime,
+        vehicle_type: vehicleType,
+        has_vehicle: hasBike,
+        service_areas: serviceAreas,
+        verification_status: verificationStatus
       };
-      await updateUserProfile(token, profileData);
-      setProfile((prev: any) => ({ ...prev, ...profileData }));
-      setProfilePicture(profileData.profile_picture);
-      setPreviewPicture(null);
-      showSuccess('Profile updated successfully!');
+      
+      localStorage.setItem('courier_profile', JSON.stringify(courierData));
+      
+      // Save basic profile data
+      if (fullName) {
+        const nameParts = fullName.split(' ');
+        if (nameParts.length >= 2) {
+          localStorage.setItem('first_name', nameParts[0]);
+          localStorage.setItem('last_name', nameParts.slice(1).join(' '));
+        } else {
+          localStorage.setItem('first_name', fullName);
+        }
+      }
+      
+      if (email) {
+        localStorage.setItem('email', email);
+      }
+      
+      if (phoneNumber) {
+        localStorage.setItem('phone_number', phoneNumber);
+      }
+      
       setEditMode(false);
-    } catch (error: any) {
-      showError(error.message || 'Failed to update profile');
+      // Show success message
+      alert('Profile updated successfully and saved to local storage!');
+      
+    } catch (error) {
+      console.error('Error saving profile data:', error);
+      alert('Error saving profile data. Please try again.');
+    }
+  };
+
+  const handleCancel = () => {
+    setEditMode(false);
+    setPreviewPicture(null);
+    
+    // Reset to stored values from localStorage
+    try {
+      const storedFirstName = localStorage.getItem('first_name');
+      const storedLastName = localStorage.getItem('last_name');
+      const storedEmail = localStorage.getItem('email');
+      const storedPhone = localStorage.getItem('phone_number');
+      const storedCourierProfile = localStorage.getItem('courier_profile');
+      
+      // Reset basic profile
+      if (storedFirstName && storedLastName) {
+        setFullName(`${storedFirstName} ${storedLastName}`);
+      } else if (storedFirstName) {
+        setFullName(storedFirstName);
+              } else {
+          setFullName('Courier Partner');
+        }
+        
+        if (storedEmail) {
+          setEmail(storedEmail);
+        } else {
+          setEmail('Enter your email');
+        }
+        
+        if (storedPhone) {
+          setPhoneNumber(storedPhone);
+        } else {
+          setPhoneNumber('Enter your phone number');
+        }
+      
+      // Reset courier-specific data
+      if (storedCourierProfile) {
+        try {
+          const courierData = JSON.parse(storedCourierProfile);
+          setDeliveryRadius(courierData.delivery_radius || '10km');
+          setOpeningTime(courierData.opening_time || '08:00');
+          setClosingTime(courierData.closing_time || '18:00');
+          setVehicleType(courierData.vehicle_type || 'Motorcycle');
+          setHasBike(courierData.has_vehicle !== undefined ? courierData.has_vehicle : true);
+          setServiceAreas(courierData.service_areas || ['Lagos Island', 'Victoria Island', 'Ikoyi']);
+          setVerificationStatus(courierData.verification_status || 'pending');
+        } catch (error) {
+          console.log('Error parsing stored courier data:', error);
+          // Set default values
+          setDeliveryRadius('10km');
+          setOpeningTime('08:00');
+          setClosingTime('18:00');
+          setVehicleType('Motorcycle');
+          setHasBike(true);
+          setServiceAreas(['Lagos Island', 'Victoria Island', 'Ikoyi']);
+          setVerificationStatus('pending');
+        }
+              } else {
+          // Set default values if no stored data
+          setDeliveryRadius('');
+          setOpeningTime('08:00');
+          setClosingTime('18:00');
+          setVehicleType('Motorcycle');
+          setHasBike(true);
+          setServiceAreas([]);
+          setVerificationStatus('pending');
+        }
+      } catch (error) {
+        console.log('Error resetting profile data:', error);
+        // Set realistic fallback values
+        setFullName('Courier Partner');
+        setEmail('Enter your email');
+        setPhoneNumber('Enter your phone number');
+        setDeliveryRadius('');
+        setOpeningTime('08:00');
+        setClosingTime('18:00');
+        setVehicleType('Motorcycle');
+        setHasBike(true);
+        setServiceAreas([]);
+        setVerificationStatus('pending');
     }
   };
 
@@ -112,219 +281,57 @@ const MobileCourierProfile: React.FC = () => {
       paddingBottom: '80px'
     }}>
       {/* Header */}
-      <div style={{
-        background: '#fff',
-        padding: '20px 16px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        position: 'relative',
-        zIndex: 10
-      }}>
-        <h1 style={{
-          fontSize: '24px',
-          fontWeight: 700,
-          margin: 0,
-          color: '#1f2937'
-        }}>
-          Profile Settings
-        </h1>
-        <div 
-          onClick={() => setShowDropdown(!showDropdown)}
-          style={{
-            cursor: 'pointer',
-            padding: '8px',
-            borderRadius: '8px',
-            transition: 'background-color 0.2s ease'
-          }}
-        >
-          <Menu size={24} color="#6b7280" />
-        </div>
-      </div>
+      <CourierHeader title="Profile" />
 
-      {/* Dropdown Menu */}
-      {showDropdown && (
-        <>
-          {/* Backdrop */}
-          <div 
-            onClick={() => setShowDropdown(false)}
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'rgba(0,0,0,0.5)',
-              zIndex: 40
-            }}
-          />
-          
-          {/* Dropdown Content */}
-          <div style={{
-            position: 'fixed',
-            top: '80px',
-            right: '16px',
-            background: '#fff',
-            borderRadius: '12px',
-            boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
-            zIndex: 50,
-            minWidth: '200px',
-            overflow: 'hidden'
-          }}>
-            {/* Header */}
-            <div style={{
-              padding: '16px 20px',
-              borderBottom: '1px solid #f3f4f6',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between'
-            }}>
-              <span style={{
-                fontSize: '16px',
-                fontWeight: 600,
-                color: '#1f2937'
-              }}>
-                Menu
-              </span>
-              <X 
-                size={20} 
-                color="#6b7280" 
-                style={{ cursor: 'pointer' }}
-                onClick={() => setShowDropdown(false)}
-              />
-            </div>
-
-            {/* Menu Items */}
-            <div style={{ padding: '8px 0' }}>
-              {[
-                { icon: <HelpCircle size={20} />, label: 'Help/Support', onClick: () => navigate('/courier/support') },
-                { icon: <Settings size={20} />, label: 'Profile', onClick: () => {}, active: true }
-              ].map((item, index) => (
-                <div 
-                  key={index}
-                  onClick={() => {
-                    item.onClick();
-                    setShowDropdown(false);
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    padding: '12px 20px',
-                    cursor: 'pointer',
-                    background: item.active ? '#f0fdf4' : 'transparent',
-                    color: item.active ? '#10b981' : '#374151',
-                    transition: 'all 0.2s ease',
-                    fontSize: '14px',
-                    fontWeight: 500
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!item.active) {
-                      e.currentTarget.style.background = '#f9fafb';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!item.active) {
-                      e.currentTarget.style.background = 'transparent';
-                    }
-                  }}
-                >
-                  {item.icon}
-                  {item.label}
-                </div>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
 
       {/* Profile Content */}
       <div style={{ padding: '24px 16px' }}>
-        {loading ? (
-          <div style={{ 
-            textAlign: 'center', 
-            padding: '40px', 
-            color: '#6b7280' 
-          }}>
-            Loading profile...
-          </div>
-        ) : error ? (
-          <div style={{ 
-            textAlign: 'center', 
-            padding: '40px', 
-            color: '#ef4444' 
-          }}>
-            {error}
-          </div>
-        ) : (
-          <form onSubmit={handleSave}>
+
             {/* Profile Picture Section */}
             <div style={{
               background: '#fff',
               borderRadius: '12px',
-              padding: '24px 20px',
+            padding: '24px',
               marginBottom: '24px',
               boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
               textAlign: 'center'
             }}>
-              <div style={{
-                position: 'relative',
-                width: '80px',
-                height: '80px',
-                margin: '0 auto 16px',
+          <div style={{ position: 'relative', display: 'inline-block', marginBottom: '16px' }}>
+            <img
+              src={previewPicture || profilePicture || '/logo.png'}
+              alt="Profile"
+              style={{
+                width: '120px',
+                height: '120px',
                 borderRadius: '50%',
-                overflow: 'hidden',
-                background: '#f3f4f6'
-              }}>
-                {previewPicture || profilePicture ? (
-                  <img 
-                    src={previewPicture || profilePicture || ''} 
-                    alt="Profile" 
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover'
-                    }}
-                  />
-                ) : (
-                  <div style={{
-                    width: '100%',
-                    height: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: '#e5e7eb',
-                    color: '#6b7280',
-                    fontSize: '24px',
-                    fontWeight: 600
-                  }}>
-                    {nickName ? nickName[0].toUpperCase() : 'C'}
-                  </div>
-                )}
-                
+                objectFit: 'cover',
+                border: '4px solid #fff',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+              }}
+            />
                 {editMode && (
-                  <div 
+              <button
                     onClick={() => fileInputRef.current?.click()}
                     style={{
                       position: 'absolute',
-                      bottom: 0,
-                      right: 0,
-                      width: '24px',
-                      height: '24px',
+                  bottom: '0',
+                  right: '0',
+                  background: '#10b981',
+                  border: 'none',
                       borderRadius: '50%',
-                      background: '#10b981',
+                  width: '40px',
+                  height: '40px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      cursor: 'pointer'
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
                     }}
                   >
-                    <Camera size={12} color="#fff" />
-                  </div>
+                <Camera size={20} color="#fff" />
+              </button>
                 )}
               </div>
-              
               <input
                 ref={fileInputRef}
                 type="file"
@@ -332,73 +339,108 @@ const MobileCourierProfile: React.FC = () => {
                 onChange={handleImageUpload}
                 style={{ display: 'none' }}
               />
-              
-              <div style={{
-                fontSize: '18px',
-                fontWeight: 600,
-                color: '#1f2937',
-                marginBottom: '4px'
-              }}>
-                {fullName || 'Courier Name'}
-              </div>
-              <div style={{
-                fontSize: '14px',
-                color: '#6b7280'
-              }}>
-                {email || 'courier@example.com'}
-              </div>
+          <h2 style={{
+            fontSize: '24px',
+            fontWeight: '700',
+            margin: '0 0 8px 0',
+            color: '#1f2937'
+          }}>
+            {fullName}
+          </h2>
+          <p style={{
+            fontSize: '16px',
+            color: '#6b7280',
+            margin: '0 0 16px 0'
+          }}>
+            Courier Partner
+          </p>
+          
+          {/* Verification Badge */}
+              <div style={{ marginBottom: '16px' }}>
+            <VerificationBadge 
+              status={verificationStatus as 'verified' | 'pending' | 'rejected' | 'under_review'} 
+              size="small"
+            />
+          </div>
             </div>
 
-            {/* Profile Information */}
+        {/* Profile Form */}
             <div style={{
               background: '#fff',
               borderRadius: '12px',
-              padding: '24px 20px',
+          padding: '24px',
               marginBottom: '24px',
               boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
             }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: '20px'
-              }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
                 <h3 style={{
-                  fontSize: '18px',
-                  fontWeight: 600,
+              fontSize: '20px',
+              fontWeight: '600',
                   margin: 0,
                   color: '#1f2937'
                 }}>
                   Personal Information
                 </h3>
+            {!editMode ? (
+              <button
+                onClick={() => setEditMode(true)}
+                style={{
+                  background: '#10b981',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '8px 16px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer'
+                }}
+              >
+                Edit
+              </button>
+            ) : (
+              <div style={{ display: 'flex', gap: '8px' }}>
                 <button
-                  type="button"
-                  onClick={() => setEditMode(!editMode)}
+                  onClick={handleCancel}
                   style={{
-                    background: editMode ? '#ef4444' : '#10b981',
+                    background: '#6b7280',
                     color: '#fff',
                     border: 'none',
-                    borderRadius: '6px',
+                    borderRadius: '8px',
                     padding: '8px 16px',
                     fontSize: '14px',
-                    fontWeight: 500,
+                    fontWeight: '500',
                     cursor: 'pointer'
                   }}
                 >
-                  {editMode ? 'Cancel' : 'Edit'}
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  style={{
+                    background: '#10b981',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '8px 16px',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Save
                 </button>
               </div>
+            )}
+              </div>
 
-              <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '16px'
-              }}>
+          <form onSubmit={handleSave}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {/* Full Name */}
                 <div>
                   <label style={{
                     display: 'block',
                     fontSize: '14px',
-                    fontWeight: 500,
+                  fontWeight: '500',
                     color: '#374151',
                     marginBottom: '8px'
                   }}>
@@ -414,18 +456,47 @@ const MobileCourierProfile: React.FC = () => {
                       padding: '12px',
                       border: '1px solid #d1d5db',
                       borderRadius: '8px',
+                    fontSize: '16px',
+                    background: editMode ? '#fff' : '#f9fafb',
+                    color: editMode ? '#1f2937' : '#6b7280'
+                  }}
+                />
+              </div>
+
+              {/* Phone Number */}
+              <div>
+                <label style={{
+                  display: 'block',
                       fontSize: '14px',
+                  fontWeight: '500',
+                  color: '#374151',
+                  marginBottom: '8px'
+                }}>
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  disabled={!editMode}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '16px',
                       background: editMode ? '#fff' : '#f9fafb',
                       color: editMode ? '#1f2937' : '#6b7280'
                     }}
                   />
                 </div>
 
+              {/* Email */}
                 <div>
                   <label style={{
                     display: 'block',
                     fontSize: '14px',
-                    fontWeight: 500,
+                  fontWeight: '500',
                     color: '#374151',
                     marginBottom: '8px'
                   }}>
@@ -441,7 +512,160 @@ const MobileCourierProfile: React.FC = () => {
                       padding: '12px',
                       border: '1px solid #d1d5db',
                       borderRadius: '8px',
+                    fontSize: '16px',
+                    background: editMode ? '#fff' : '#f9fafb',
+                    color: editMode ? '#1f2937' : '#6b7280'
+                  }}
+                />
+              </div>
+
+              {/* Vehicle Type */}
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: '#374151',
+                  marginBottom: '8px'
+                }}>
+                  Vehicle Type
+                </label>
+                <select
+                  value={vehicleType}
+                  onChange={(e) => setVehicleType(e.target.value)}
+                  disabled={!editMode}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    background: editMode ? '#fff' : '#f9fafb',
+                    color: editMode ? '#1f2937' : '#6b7280'
+                  }}
+                >
+                  <option value="Motorcycle">Motorcycle</option>
+                  <option value="Bicycle">Bicycle</option>
+                  <option value="Car">Car</option>
+                  <option value="Van">Van</option>
+                </select>
+              </div>
+
+              {/* Has Bike */}
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: '#374151',
+                  marginBottom: '8px'
+                }}>
+                  Do you have a vehicle?
+                </label>
+                <div style={{ display: 'flex', gap: '16px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input
+                      type="radio"
+                      name="hasBike"
+                      checked={hasBike}
+                      onChange={() => setHasBike(true)}
+                      disabled={!editMode}
+                      style={{ width: '16px', height: '16px' }}
+                    />
+                    <span style={{ fontSize: '14px', color: '#374151' }}>Yes</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input
+                      type="radio"
+                      name="hasBike"
+                      checked={!hasBike}
+                      onChange={() => setHasBike(false)}
+                      disabled={!editMode}
+                      style={{ width: '16px', height: '16px' }}
+                    />
+                    <span style={{ fontSize: '14px', color: '#374151' }}>No</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Delivery Radius */}
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: '#374151',
+                  marginBottom: '8px'
+                }}>
+                  Delivery Radius
+                </label>
+                <input
+                  type="text"
+                  value={deliveryRadius}
+                  onChange={(e) => setDeliveryRadius(e.target.value)}
+                  disabled={!editMode}
+                  placeholder="e.g., 10km"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    background: editMode ? '#fff' : '#f9fafb',
+                    color: editMode ? '#1f2937' : '#6b7280'
+                  }}
+                />
+              </div>
+
+              {/* Opening and Closing Time */}
+              <div style={{ display: 'flex', gap: '16px' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '8px'
+                  }}>
+                    Opening Time
+                  </label>
+                  <input
+                    type="time"
+                    value={openingTime}
+                    onChange={(e) => setOpeningTime(e.target.value)}
+                    disabled={!editMode}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '8px',
+                      fontSize: '16px',
+                      background: editMode ? '#fff' : '#f9fafb',
+                      color: editMode ? '#1f2937' : '#6b7280'
+                    }}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{
+                    display: 'block',
                       fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '8px'
+                  }}>
+                    Closing Time
+                  </label>
+                  <input
+                    type="time"
+                    value={closingTime}
+                    onChange={(e) => setClosingTime(e.target.value)}
+                    disabled={!editMode}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '8px',
+                      fontSize: '16px',
                       background: editMode ? '#fff' : '#f9fafb',
                       color: editMode ? '#1f2937' : '#6b7280'
                     }}
@@ -449,28 +673,141 @@ const MobileCourierProfile: React.FC = () => {
                 </div>
               </div>
 
-              {editMode && (
-                <button
-                  type="submit"
-                  style={{
-                    width: '100%',
-                    background: '#10b981',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '12px',
-                    fontSize: '16px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    marginTop: '20px'
-                  }}
-                >
-                  Save Changes
-                </button>
-              )}
+              {/* Service Areas */}
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: '#374151',
+                  marginBottom: '8px'
+                }}>
+                  Service Areas
+                </label>
+                <div style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '8px',
+                  padding: '12px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  background: editMode ? '#fff' : '#f9fafb',
+                  minHeight: '48px'
+                }}>
+                  {serviceAreas.map((area, index) => (
+                    <span key={index} style={{
+                      background: '#10b981',
+                      color: '#fff',
+                      padding: '4px 12px',
+                      borderRadius: '16px',
+                      fontSize: '12px',
+                      fontWeight: '500'
+                    }}>
+                      {area}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+
             </div>
           </form>
-        )}
+
+          {/* Change Password Section */}
+          <div style={{
+            background: '#fff',
+            borderRadius: '12px',
+            padding: '24px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            marginTop: '24px'
+          }}>
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              margin: '0 0 16px 0',
+              color: '#1f2937'
+            }}>
+              Change Password
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: '#374151',
+                  marginBottom: '8px'
+                }}>
+                  Current Password
+                </label>
+                <input
+                  type="password"
+                  disabled={!editMode}
+                  placeholder="Enter current password"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    background: editMode ? '#fff' : '#f9fafb',
+                    color: editMode ? '#1f2937' : '#6b7280'
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: '#374151',
+                  marginBottom: '8px'
+                }}>
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  disabled={!editMode}
+                  placeholder="Enter new password"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    background: editMode ? '#fff' : '#f9fafb',
+                    color: editMode ? '#1f2937' : '#6b7280'
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: '#374151',
+                  marginBottom: '8px'
+                }}>
+                  Confirm New Password
+                </label>
+                <input
+                  type="password"
+                  disabled={!editMode}
+                  placeholder="Confirm new password"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    background: editMode ? '#fff' : '#f9fafb',
+                    color: editMode ? '#1f2937' : '#6b7280'
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Bottom Navigation */}
@@ -497,7 +834,7 @@ const MobileCourierProfile: React.FC = () => {
             icon: <List size={20} />, 
             label: 'Delivery List', 
             active: false,
-            onClick: () => navigate('/courier/delivery-list')
+            onClick: () => navigate('/courier/deliveries')
           },
           { 
             icon: <BarChart3 size={20} />, 
@@ -510,6 +847,12 @@ const MobileCourierProfile: React.FC = () => {
             label: 'Payout', 
             active: false,
             onClick: () => navigate('/courier/payouts')
+          },
+          { 
+            icon: <Settings size={20} />, 
+            label: 'Profile', 
+            active: true,
+            onClick: () => navigate('/courier/profile')
           }
         ].map((item, index) => (
           <div 
@@ -525,7 +868,7 @@ const MobileCourierProfile: React.FC = () => {
             }}
           >
             {item.icon}
-            <span style={{ fontSize: '10px', fontWeight: 500 }}>{item.label}</span>
+            <span style={{ fontSize: '10px', fontWeight: '500' }}>{item.label}</span>
           </div>
         ))}
       </div>

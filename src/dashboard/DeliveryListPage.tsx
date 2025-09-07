@@ -1,354 +1,786 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import axios from 'axios';
-import { format } from 'date-fns';
-
-// Types
-type DeliveryStatus = 'pending' | 'out_for_delivery' | 'delivered' | 'completed' | 'cancelled';
+import { useNavigate } from 'react-router-dom';
+import { Package, Filter, ChevronDown, ChevronUp, Search, RefreshCw, Eye } from 'lucide-react';
+import { fetchCourierDeliveries } from '../api';
 
 interface Delivery {
   id: number;
   order_number: string;
-  customer_name: string;
-  pickup_address: string;
+  vendor: {
+    id: number;
+    business_name: string;
+  };
   delivery_address: string;
   total_price: string;
-  status: DeliveryStatus;
+  status: string;
   created_at: string;
-  delivered_at: string | null;
-  delivery_time_minutes: number | null;
+  delivered_at?: string;
 }
 
-interface DeliveriesResponse {
+interface DeliveryResponse {
   count: number;
-  total_earnings: number;
-  average_delivery_time_minutes: number;
-  deliveries: Delivery[];
+  next: string | null;
+  previous: string | null;
+  results: Delivery[];
 }
 
-interface FilterParams {
-  status?: DeliveryStatus;
-  date?: string;
-  search?: string;
-  limit?: number;
-  offset?: number;
-}
-
-// Status display mapping
-const statusDisplay: Record<DeliveryStatus, string> = {
-  pending: 'Pending',
-  out_for_delivery: 'Out for Delivery',
-  delivered: 'Delivered',
-  completed: 'Completed',
-  cancelled: 'Cancelled'
-};
-
-const statusColors: Record<DeliveryStatus, { bg: string; color: string }> = {
-  pending: { bg: '#fef3c7', color: '#f59e42' }, // Yellow
-  out_for_delivery: { bg: '#e0f2fe', color: '#0ea5e9' }, // Blue
-  delivered: { bg: '#d1fae5', color: '#10b981' }, // Green
-  completed: { bg: '#d1fae5', color: '#10b981' }, // Green
-  cancelled: { bg: '#fee2e2', color: '#ef4444' } // Red
-};
-
-const DeliveryListPage = () => {
-  // State
+const DeliveryListPage: React.FC = () => {
+  const navigate = useNavigate();
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState<FilterParams>({
-    limit: 10,
-    offset: 0,
-  });
-  const [stats, setStats] = useState<{
-    count: number;
-    total_earnings: number;
-    average_delivery_time_minutes: number;
-  }>({ count: 0, total_earnings: 0, average_delivery_time_minutes: 0 });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
+  const [selectedStatus, setSelectedStatus] = useState<string>('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Format currency
-  const formatCurrency = (amount: number | string): string => {
-    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(num);
+  const statusOptions = [
+    { value: '', label: 'All Status' },
+    { value: 'pending', label: 'Pending' },
+    { value: 'accepted', label: 'Accepted' },
+    { value: 'in_progress', label: 'In Progress' },
+    { value: 'delivered', label: 'Delivered' },
+    { value: 'cancelled', label: 'Cancelled' }
+  ];
+
+  const statusColors: Record<string, { bg: string; color: string }> = {
+    pending: { bg: '#fef3c7', color: '#f59e0b' },
+    accepted: { bg: '#dbeafe', color: '#2563eb' },
+    in_progress: { bg: '#e0f2fe', color: '#0ea5e9' },
+    delivered: { bg: '#d1fae5', color: '#10b981' },
+    cancelled: { bg: '#fee2e2', color: '#ef4444' }
   };
 
-  // Format date
-  const formatDate = (dateString: string): string => {
-    return format(new Date(dateString), 'dd MMM yyyy');
-  };
-
-  // Fetch deliveries
-  const fetchDeliveries = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const params = new URLSearchParams();
-      if (filters.status) params.append('status', filters.status);
-      if (filters.date) params.append('date', filters.date);
-      if (filters.search) params.append('search', filters.search);
-      if (filters.limit) params.append('limit', filters.limit.toString());
-      if (filters.offset) params.append('offset', filters.offset.toString());
-
-      const response = await axios.get<DeliveriesResponse>(
-        `/api/user/couriers/deliveries/?${params.toString()}`
-      );
-
-      setDeliveries(response.data.deliveries);
-      setStats({
-        count: response.data.count,
-        total_earnings: response.data.total_earnings,
-        average_delivery_time_minutes: response.data.average_delivery_time_minutes
-      });
-    } catch (err) {
-      console.error('Error fetching deliveries:', err);
-      setError('Failed to load deliveries. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Fetch deliveries when filters change
+  // Check if mobile
   useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Fetch deliveries data
+  useEffect(() => {
+    const fetchDeliveries = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Try multiple possible token keys
+        const token = localStorage.getItem('access_token') || 
+                     localStorage.getItem('token') || 
+                     localStorage.getItem('courier_token') ||
+                     localStorage.getItem('auth_token');
+                     
+        if (!token) {
+          throw new Error('No authentication token found. Please log in again.');
+        }
+
+        console.log('Using token for API call:', token.substring(0, 20) + '...');
+
+        const data: DeliveryResponse = await fetchCourierDeliveries(token, {
+          status: selectedStatus || undefined,
+          page: currentPage,
+          page_size: pageSize
+        });
+
+        console.log('Deliveries API Response:', data);
+
+        setDeliveries(data.results || []);
+        setTotalCount(data.count);
+        setTotalPages(Math.ceil(data.count / pageSize));
+      } catch (err: any) {
+        console.error('Error fetching deliveries:', err);
+        // Handle authentication errors specifically
+        if (err.message?.includes('401') || err.message?.includes('Unauthorized')) {
+          setError('Authentication failed. Please log in again.');
+          // Optionally redirect to login
+          // navigate('/login');
+        } else {
+          setError(err.message || 'Failed to fetch deliveries');
+        }
+        setDeliveries([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchDeliveries();
-  }, [filters]);
+  }, [currentPage, selectedStatus, pageSize]);
 
-  // Handle status filter change
-  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const status = e.target.value as DeliveryStatus | 'all';
-    setFilters(prev => ({
-      ...prev,
-      status: status === 'all' ? undefined : status,
-      offset: 0 // Reset to first page when changing filters
-    }));
+  const handleStatusChange = (status: string) => {
+    setSelectedStatus(status);
+    setCurrentPage(1);
   };
 
-  // Handle date filter change
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFilters(prev => ({
-      ...prev,
-      date: e.target.value || undefined,
-      offset: 0 // Reset to first page when changing filters
-    }));
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
-  // Handle search
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFilters(prev => ({
-      ...prev,
-      search: e.target.value || undefined,
-      offset: 0 // Reset to first page when searching
-    }));
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    setCurrentPage(1);
   };
 
-  // Handle pagination
-  const handlePageChange = (newOffset: number) => {
-    setFilters(prev => ({
-      ...prev,
-      offset: newOffset
-    }));
-    window.scrollTo(0, 0);
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
-  // Calculate pagination
-  const currentPage = Math.floor((filters.offset || 0) / (filters.limit || 10)) + 1;
-  const totalPages = Math.ceil(stats.count / (filters.limit || 10));
+  const formatPrice = (price: string) => {
+    return `₦${parseFloat(price).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+  };
 
+  const getStatusDisplay = (status: string) => {
+    return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  const filteredDeliveries = deliveries.filter(delivery =>
+    delivery.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    delivery.vendor.business_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    delivery.delivery_address.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  if (loading) {
   return (
-    <main style={{ flex: 1, background: '#f8fafc', minHeight: '100vh', padding: '2.5rem 2.5rem 2.5rem 2.5rem', fontFamily: 'Nunito Sans, sans-serif' }}>
-      <div style={{ marginBottom: '2rem' }}>
-        {/* Stats Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-          <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-            <div style={{ color: '#6b7280', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Total Deliveries</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: '600' }}>{stats.count}</div>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
+        <div style={{ textAlign: 'center' }}>
+          <RefreshCw size={40} style={{ animation: 'spin 1s linear infinite' }} />
+          <p style={{ marginTop: '16px', color: '#6b7280' }}>Loading deliveries...</p>
           </div>
-          <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-            <div style={{ color: '#6b7280', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Total Earnings</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: '600' }}>{formatCurrency(stats.total_earnings)}</div>
           </div>
-          <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-            <div style={{ color: '#6b7280', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Avg. Delivery Time</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: '600' }}>
-              {stats.average_delivery_time_minutes ? `${stats.average_delivery_time_minutes} mins` : 'N/A'}
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ textAlign: 'center', padding: '40px', color: '#ef4444' }}>
+        <p>Error: {error}</p>
+        <button 
+          onClick={() => window.location.reload()} 
+          style={{ 
+            marginTop: '16px', 
+            padding: '8px 16px', 
+            background: '#3b82f6', 
+            color: 'white', 
+            border: 'none', 
+            borderRadius: '6px',
+            cursor: 'pointer'
+          }}
+        >
+          Retry
+        </button>
             </div>
+    );
+  }
+
+  // Mobile View
+  if (isMobile) {
+    return (
+      <div style={{ fontFamily: 'Nunito Sans, sans-serif', padding: '16px', background: '#f8fafc', minHeight: '100vh' }}>
+        {/* Header */}
+        <div style={{ marginBottom: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h1 style={{ fontSize: '24px', fontWeight: '900', margin: '0', color: '#111827' }}>
+              Delivery List
+            </h1>
+            <button
+              onClick={() => window.location.reload()}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 12px',
+                background: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              <RefreshCw size={16} />
+              Refresh
+            </button>
           </div>
+          
+          <p style={{ margin: '0', color: '#6b7280', fontSize: '14px' }}>
+            {totalCount} total deliveries
+          </p>
         </div>
 
         {/* Filters */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
-          <input
-            type="text"
-            placeholder="Search by order number or customer"
-            onChange={handleSearch}
+        <div style={{ marginBottom: '20px' }}>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
             style={{
-              flex: '1 1 300px',
-              minWidth: '250px',
-              background: '#fff',
-              border: '1px solid #e5e7eb',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '12px 16px',
+              background: 'white',
+              border: '1px solid #d1d5db',
               borderRadius: '8px',
-              padding: '0.75rem 1rem',
-              fontSize: '0.9375rem',
-              outline: 'none',
-              transition: 'border-color 0.2s',
-            }}
-          />
-          
-          <select
-            onChange={handleStatusChange}
-            style={{
-              minWidth: '180px',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              padding: '0.75rem 1rem',
-              fontSize: '0.9375rem',
-              color: '#374151',
-              background: '#fff',
-              outline: 'none',
               cursor: 'pointer',
-              appearance: 'none',
-              backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%236b7280\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpath d=\'M6 9l6 6 6-6\'/%3E%3C/svg%3E")',
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'right 0.75rem center',
-              backgroundSize: '1rem',
-              paddingRight: '2.5rem',
+              fontSize: '14px',
+              fontWeight: '500',
+              width: '100%',
+              justifyContent: 'space-between'
             }}
           >
-            <option value="all">All Status</option>
-            {Object.entries(statusDisplay).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-
-          <input
-            type="date"
-            onChange={handleDateChange}
-            style={{
-              minWidth: '180px',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              padding: '0.75rem 1rem',
-              fontSize: '0.9375rem',
-              color: '#374151',
-              background: '#fff',
-              outline: 'none',
-            }}
-          />
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Filter size={16} />
+              Filters
+            </span>
+            {showFilters ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+          
+          {showFilters && (
+            <div style={{ 
+              background: 'white', 
+              padding: '16px', 
+              borderRadius: '8px', 
+              marginTop: '12px',
+              border: '1px solid #e5e7eb'
+            }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#374151', fontSize: '14px' }}>
+                    Search
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
+                    <input
+                      type="text"
+                      placeholder="Search deliveries..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      style={{
+                        padding: '10px 12px 10px 40px',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '8px',
+                        width: '100%',
+                        fontSize: '14px',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#374151', fontSize: '14px' }}>
+                    Status
+                  </label>
+                  <select
+                    value={selectedStatus}
+                    onChange={(e) => handleStatusChange(e.target.value)}
+                    style={{
+                      padding: '10px 12px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      width: '100%',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    {statusOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
-        <div style={{ background: '#fff', borderRadius: 18, boxShadow: '0 2px 12px #e5e7eb', padding: 32, margin: '0 auto', maxWidth: 1200 }}>
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '3rem 0' }}>
-              <div style={{ fontSize: '1.125rem', color: '#4b5563' }}>Loading deliveries...</div>
-            </div>
-          ) : error ? (
-            <div style={{ textAlign: 'center', padding: '3rem 0', color: '#ef4444' }}>
-              <div style={{ marginBottom: '1rem' }}>Error loading deliveries</div>
-              <button
-                onClick={fetchDeliveries}
-                style={{
-                  background: '#3b82f6',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  padding: '0.5rem 1rem',
-                  cursor: 'pointer',
-                  fontSize: '0.9375rem',
+        {/* Deliveries List */}
+        <div style={{ marginBottom: '24px' }}>
+          {filteredDeliveries.map((delivery) => (
+            <div
+              key={delivery.id}
+              style={{
+                background: 'white',
+                borderRadius: '12px',
+                padding: '16px',
+                marginBottom: '12px',
+                border: '1px solid #e5e7eb',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                <div>
+                  <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: '600', color: '#111827' }}>
+                    {delivery.order_number}
+                  </h3>
+                  <p style={{ margin: '0', fontSize: '14px', color: '#6b7280' }}>
+                    {delivery.vendor.business_name}
+                  </p>
+                </div>
+                
+                <span style={{
+                  padding: '4px 12px',
+                  borderRadius: '20px',
+                  fontSize: '12px',
                   fontWeight: '500',
+                  background: statusColors[delivery.status]?.bg || '#f3f4f6',
+                  color: statusColors[delivery.status]?.color || '#6b7280'
+                }}>
+                  {getStatusDisplay(delivery.status)}
+                </span>
+              </div>
+              
+              <div style={{ marginBottom: '12px' }}>
+                <p style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#374151' }}>
+                  <strong>Address:</strong> {delivery.delivery_address}
+                </p>
+                <p style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#374151' }}>
+                  <strong>Created:</strong> {formatDate(delivery.created_at)}
+                </p>
+                {delivery.delivered_at && (
+                  <p style={{ margin: '0', fontSize: '14px', color: '#374151' }}>
+                    <strong>Delivered:</strong> {formatDate(delivery.delivered_at)}
+                  </p>
+                )}
+              </div>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ fontSize: '18px', fontWeight: '700', color: '#10b981' }}>
+                  {formatPrice(delivery.total_price)}
+                </div>
+                
+                <button
+                  onClick={() => navigate(`/courier/dashboard/deliveries/${delivery.id}`)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 16px',
+                    background: '#f3f4f6',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    color: '#374151'
+                  }}
+                >
+                  <Eye size={16} />
+                  View Details
+                </button>
+              </div>
+            </div>
+          ))}
+          
+          {filteredDeliveries.length === 0 && (
+            <div style={{ 
+              textAlign: 'center', 
+              padding: '60px 20px', 
+              background: 'white',
+              borderRadius: '12px',
+              border: '1px solid #e5e7eb'
+            }}>
+              <Package size={48} style={{ marginBottom: '16px', opacity: 0.5 }} />
+              <p style={{ margin: '0', fontSize: '16px', color: '#6b7280' }}>
+                {searchTerm || selectedStatus ? 'No deliveries match your filters' : 'No deliveries found'}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div style={{ 
+            background: 'white',
+            padding: '16px',
+            borderRadius: '12px',
+            border: '1px solid #e5e7eb',
+            marginBottom: '24px'
+          }}>
+            <div style={{ textAlign: 'center', marginBottom: '16px', color: '#6b7280', fontSize: '14px' }}>
+              Page {currentPage} of {totalPages}
+            </div>
+            
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                style={{
+                  padding: '8px 16px',
+                  border: '1px solid #d1d5db',
+                  background: currentPage === 1 ? '#f3f4f6' : 'white',
+                  color: currentPage === 1 ? '#9ca3af' : '#374151',
+                  borderRadius: '8px',
+                  cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                  fontSize: '14px'
                 }}
               >
-                Retry
+                Previous
+              </button>
+              
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                style={{
+                  padding: '8px 16px',
+                  border: '1px solid #d1d5db',
+                  background: currentPage === totalPages ? '#f3f4f6' : 'white',
+                  color: currentPage === totalPages ? '#9ca3af' : '#374151',
+                  borderRadius: '8px',
+                  cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                Next
               </button>
             </div>
-          ) : deliveries.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '3rem 0' }}>
-              <div style={{ fontSize: '1.125rem', color: '#6b7280' }}>No deliveries found</div>
-              <p style={{ color: '#9ca3af', marginTop: '0.5rem' }}>Try adjusting your filters</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Desktop View
+  return (
+    <div style={{ fontFamily: 'Nunito Sans, sans-serif', padding: '24px' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+        <div>
+          <h1 style={{ fontSize: '32px', fontWeight: '900', margin: '0 0 8px 0', color: '#111827' }}>
+            Delivery List
+          </h1>
+          <p style={{ margin: '0', color: '#6b7280', fontSize: '16px' }}>
+            {totalCount} total deliveries
+          </p>
+        </div>
+        
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 16px',
+              background: '#f3f4f6',
+              border: '1px solid #d1d5db',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500'
+            }}
+          >
+            <Filter size={16} />
+            Filters
+            {showFilters ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+          
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 16px',
+              background: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500'
+            }}
+          >
+            <RefreshCw size={16} />
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      {/* Filters */}
+      {showFilters && (
+        <div style={{ 
+          background: 'white', 
+          padding: '24px', 
+          borderRadius: '12px', 
+          marginBottom: '24px',
+          border: '1px solid #e5e7eb',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+        }}>
+          <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#374151' }}>
+                Search
+              </label>
+              <div style={{ position: 'relative' }}>
+                <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
+                <input
+                  type="text"
+                  placeholder="Search by order number, vendor, or address..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={{
+                    padding: '10px 12px 10px 40px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    width: '300px',
+                    fontSize: '14px'
+                  }}
+                />
+              </div>
             </div>
-          ) : (
-            <>
+            
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#374151' }}>
+                Status
+              </label>
+              <select
+                value={selectedStatus}
+                onChange={(e) => handleStatusChange(e.target.value)}
+                style={{
+                  padding: '10px 12px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  minWidth: '150px'
+                }}
+              >
+                {statusOptions.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+        </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#374151' }}>
+                Page Size
+              </label>
+              <select
+                value={pageSize}
+                onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                style={{
+                  padding: '10px 12px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  minWidth: '100px'
+                }}
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Deliveries Table */}
+      <div style={{ 
+        background: 'white', 
+        borderRadius: '12px', 
+        overflow: 'hidden',
+        border: '1px solid #e5e7eb',
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+      }}>
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9375rem', border: '1px solid #e5e7eb', fontFamily: 'inherit' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr style={{ color: '#6b7280', fontWeight: '600', textAlign: 'left', backgroundColor: '#f9fafb' }}>
-                      <th style={{ padding: '1rem', borderRight: '1px solid #e5e7eb', borderBottom: '1px solid #e5e7eb' }}>ORDER #</th>
-                      <th style={{ padding: '1rem', borderRight: '1px solid #e5e7eb', borderBottom: '1px solid #e5e7eb' }}>CUSTOMER</th>
-                      <th style={{ padding: '1rem', borderRight: '1px solid #e5e7eb', borderBottom: '1px solid #e5e7eb' }}>PICK UP</th>
-                      <th style={{ padding: '1rem', borderRight: '1px solid #e5e7eb', borderBottom: '1px solid #e5e7eb' }}>DROP-OFF</th>
-                      <th style={{ padding: '1rem', borderRight: '1px solid #e5e7eb', borderBottom: '1px solid #e5e7eb' }}>DATE</th>
-                      <th style={{ padding: '1rem', borderRight: '1px solid #e5e7eb', borderBottom: '1px solid #e5e7eb', textAlign: 'right' }}>AMOUNT</th>
-                      <th style={{ padding: '1rem', borderBottom: '1px solid #e5e7eb', textAlign: 'center' }}>STATUS</th>
+              <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                <th style={{ padding: '16px', textAlign: 'left', fontWeight: '600', color: '#374151', fontSize: '14px' }}>
+                  Order Number
+                </th>
+                <th style={{ padding: '16px', textAlign: 'left', fontWeight: '600', color: '#374151', fontSize: '14px' }}>
+                  Vendor
+                </th>
+                <th style={{ padding: '16px', textAlign: 'left', fontWeight: '600', color: '#374151', fontSize: '14px' }}>
+                  Delivery Address
+                </th>
+                <th style={{ padding: '16px', textAlign: 'left', fontWeight: '600', color: '#374151', fontSize: '14px' }}>
+                  Status
+                </th>
+                <th style={{ padding: '16px', textAlign: 'left', fontWeight: '600', color: '#374151', fontSize: '14px' }}>
+                  Created
+                </th>
+                <th style={{ padding: '16px', textAlign: 'left', fontWeight: '600', color: '#374151', fontSize: '14px' }}>
+                  Delivered
+                </th>
+                <th style={{ padding: '16px', textAlign: 'right', fontWeight: '600', color: '#374151', fontSize: '14px' }}>
+                  Total Price
+                </th>
+                <th style={{ padding: '16px', textAlign: 'center', fontWeight: '600', color: '#374151', fontSize: '14px' }}>
+                  Actions
+                </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {deliveries.map((delivery) => (
-                      <tr key={delivery.id} style={{ borderBottom: '1px solid #e5e7eb', backgroundColor: '#fff', transition: 'background-color 0.2s' }}>
-                        <td style={{ padding: '1rem', fontWeight: '600', color: '#111827' }}>
-                          <Link 
-                            to={`/dashboard/deliveries/${delivery.id}`} 
-                            style={{ color: '#3b82f6', textDecoration: 'none' }}
-                            className="hover:underline"
-                          >
+                    {filteredDeliveries.map((delivery) => (
+                <tr key={delivery.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <td style={{ padding: '16px', fontWeight: '600', color: '#111827' }}>
                             {delivery.order_number}
-                          </Link>
                         </td>
-                        <td style={{ padding: '1rem', color: '#4b5563' }}>{delivery.customer_name}</td>
-                        <td style={{ padding: '1rem', color: '#4b5563', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={delivery.pickup_address}>
-                          {delivery.pickup_address}
+                  <td style={{ padding: '16px', color: '#374151' }}>
+                    {delivery.vendor.business_name}
                         </td>
-                        <td style={{ padding: '1rem', color: '#4b5563', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={delivery.delivery_address}>
+                  <td style={{ padding: '16px', color: '#374151', maxWidth: '250px' }}>
+                    <div style={{ 
+                      overflow: 'hidden', 
+                      textOverflow: 'ellipsis', 
+                      whiteSpace: 'nowrap',
+                      cursor: 'pointer'
+                    }} title={delivery.delivery_address}>
                           {delivery.delivery_address}
+                    </div>
+                  </td>
+                  <td style={{ padding: '16px' }}>
+                    <span style={{
+                      padding: '4px 12px',
+                      borderRadius: '20px',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      background: statusColors[delivery.status]?.bg || '#f3f4f6',
+                      color: statusColors[delivery.status]?.color || '#6b7280'
+                    }}>
+                      {getStatusDisplay(delivery.status)}
+                    </span>
+                  </td>
+                  <td style={{ padding: '16px', color: '#6b7280', fontSize: '14px' }}>
+                    {formatDate(delivery.created_at)}
+                  </td>
+                  <td style={{ padding: '16px', color: '#6b7280', fontSize: '14px' }}>
+                    {delivery.delivered_at ? formatDate(delivery.delivered_at) : '-'}
                         </td>
-                        <td style={{ padding: '1rem', color: '#6b7280' }}>{formatDate(delivery.created_at)}</td>
-                        <td style={{ padding: '1rem', textAlign: 'right', color: '#1f2937', fontWeight: '600' }}>
-                          {formatCurrency(delivery.total_price)}
+                  <td style={{ padding: '16px', textAlign: 'right', fontWeight: '600', color: '#111827' }}>
+                    {formatPrice(delivery.total_price)}
                         </td>
-                        <td style={{ padding: '1rem', textAlign: 'center' }}>
-                          <span
+                  <td style={{ padding: '16px', textAlign: 'center' }}>
+                    <button
+                      onClick={() => navigate(`/courier/dashboard/deliveries/${delivery.id}`)}
                             style={{
-                              display: 'inline-flex',
+                        display: 'flex',
                               alignItems: 'center',
-                              justifyContent: 'center',
-                              padding: '0.25rem 0.75rem',
-                              borderRadius: '9999px',
-                              fontSize: '0.75rem',
-                              fontWeight: '600',
-                              backgroundColor: statusColors[delivery.status].bg,
-                              color: statusColors[delivery.status].color,
-                              minWidth: '100px',
-                            }}
-                          >
-                            {statusDisplay[delivery.status]}
-                          </span>
+                        gap: '6px',
+                        padding: '6px 12px',
+                        background: '#f3f4f6',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        color: '#374151'
+                      }}
+                    >
+                      <Eye size={14} />
+                      View
+                    </button>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            </>
-          )}
-        </div>
+
+        {filteredDeliveries.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '60px 20px', color: '#6b7280' }}>
+            <Package size={48} style={{ marginBottom: '16px', opacity: 0.5 }} />
+            <p style={{ margin: '0', fontSize: '16px' }}>
+              {searchTerm || selectedStatus ? 'No deliveries match your filters' : 'No deliveries found'}
+            </p>
+          </div>
+        )}
       </div>
-    </main>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          marginTop: '24px',
+          padding: '20px',
+          background: 'white',
+          borderRadius: '12px',
+          border: '1px solid #e5e7eb'
+        }}>
+          <div style={{ color: '#6b7280', fontSize: '14px' }}>
+            Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount} results
+          </div>
+          
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              style={{
+                padding: '8px 12px',
+                border: '1px solid #d1d5db',
+                background: currentPage === 1 ? '#f3f4f6' : 'white',
+                color: currentPage === 1 ? '#9ca3af' : '#374151',
+                borderRadius: '6px',
+                cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              Previous
+            </button>
+            
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              const page = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+              if (page > totalPages) return null;
+              
+              return (
+                <button
+                  key={page}
+                  onClick={() => handlePageChange(page)}
+                  style={{
+                    padding: '8px 12px',
+                    border: '1px solid #d1d5db',
+                    background: page === currentPage ? '#3b82f6' : 'white',
+                    color: page === currentPage ? 'white' : '#374151',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: page === currentPage ? '600' : '400'
+                  }}
+                >
+                  {page}
+                </button>
+              );
+            })}
+            
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              style={{
+                padding: '8px 12px',
+                border: '1px solid #d1d5db',
+                background: currentPage === totalPages ? '#f3f4f6' : 'white',
+                color: currentPage === totalPages ? '#9ca3af' : '#374151',
+                borderRadius: '6px',
+                cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+      </div>
   );
 };
-
-function sidebarLinkStyle(active: boolean): React.CSSProperties {
-  return {
-    display: 'flex', alignItems: 'center', gap: 14, padding: '0.85rem 2.2rem', borderRadius: 8,
-    textDecoration: 'none', color: active ? '#fff' : '#222',
-    background: active ? '#10b981' : 'none',
-    fontWeight: 600, fontSize: 16, marginBottom: 2,
-    transition: 'background 0.2s',
-  };
-}
 
 export default DeliveryListPage; 

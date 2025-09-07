@@ -3,21 +3,21 @@ import './Testimonials.css';
 
 const testimonials = [
   {
-    name: 'Silver Snow',
-    review: 'Highly Recommend! Used  Bestyy Delivery for a last-minute delivery. They were quick to respond, affordable, and handled my packages with care. Will be my go-to delivery service from now on! 5 stars.',
-    avatar: 'https://via.placeholder.com/64?text=SS',
+    name: 'Marcus Johnson',
+    review: 'Highly Recommend! Used  Bestyy Delivery for a last-minute delivery. They were quick to respond, affordable, and handled my packages with care. Will be my go-to delivery service from now on! 5 stars.',
+    avatar: '/review1.jpg',
     rating: 5,
   },
   {
-    name: 'Silver Snow',
-    review: 'Simple, fast, and reliable, this app makes delivery easy and even brings access to essentials in rural areas.Also stress free.',
-    avatar: 'https://via.placeholder.com/64?text=SS',
+    name: 'Aisha Williams',
+    review: 'Simple, fast, and reliable, this app makes delivery easy and even brings access to essentials in rural areas.Also stress free.',
+    avatar: '/review2.jpg',
     rating: 5,
   },
   {
-    name: 'Silver Snow',
-    review: 'Real-time updates and delivery tracking were spot on.',
-    avatar: 'https://via.placeholder.com/64?text=SS',
+    name: 'David Thompson',
+    review: 'Bestie has made my life so much easier. I can order food from my favorite restaurants and have it delivered to my door in no time. I highly recommend it to anyone looking for a hassle-free food ordering experience.',
+    avatar: '/1000121265.jpg',
     rating: 5,
   },
 ];

@@ -274,6 +274,49 @@ const UserDashboardHome = () => {
           </table>
         </div>
       </div>
+
+      {/* WhatsApp Chat Button */}
+      <div 
+        onClick={() => {
+          const whatsappUrl = `https://wa.me/2348090530061?text=${encodeURIComponent('Hi! I need help with my account.')}`;
+          window.open(whatsappUrl, '_blank');
+        }}
+        style={{
+          position: 'fixed',
+          bottom: '30px',
+          right: '30px',
+          background: '#25D366',
+          borderRadius: '50%',
+          width: '60px',
+          height: '60px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 4px 12px rgba(37, 211, 102, 0.3)',
+          cursor: 'pointer',
+          zIndex: 1000,
+          transition: 'all 0.3s ease'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'scale(1.1)';
+          e.currentTarget.style.boxShadow = '0 6px 16px rgba(37, 211, 102, 0.4)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'scale(1)';
+          e.currentTarget.style.boxShadow = '0 4px 12px rgba(37, 211, 102, 0.3)';
+        }}
+      >
+        <svg 
+          width="32" 
+          height="32" 
+          viewBox="0 0 32 32" 
+          fill="none" 
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <circle cx="16" cy="16" r="16" fill="white"/>
+          <path d="M23.47 19.37c-.34-.17-2.01-.99-2.32-1.1-.31-.12-.54-.17-.77.17-.23.34-.89 1.1-1.09 1.33-.2.23-.4.25-.74.08-.34-.17-1.44-.53-2.74-1.7-1.01-.9-1.7-2.01-1.9-2.35-.2-.34-.02-.52.15-.69.15-.15.34-.4.51-.6.17-.2.23-.34.34-.57.11-.23.06-.43-.03-.6-.09-.17-.77-1.85-1.06-2.54-.28-.68-.57-.59-.77-.6-.2-.01-.43-.01-.66-.01-.23 0-.6.09-.91.43-.31.34-1.2 1.17-1.2 2.85 0 1.68 1.23 3.31 1.4 3.54.17.23 2.42 3.7 5.87 5.04.82.32 1.46.51 1.96.65.82.26 1.57.22 2.16.13.66-.1 2.01-.82 2.3-1.61.28-.79.28-1.47.2-1.61-.08-.14-.31-.23-.65-.4z" fill="#25D366"/>
+        </svg>
+      </div>
     </div>
   );
 };

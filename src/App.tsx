@@ -32,20 +32,22 @@ import UserSignup from './pages/UserSignup';
 // Vendor Components
 import VendorDashboardLayout from './dashboard/VendorDashboardLayout';
 import ResponsiveVendorDashboard from './dashboard/ResponsiveVendorDashboard';
+import ResponsiveVendorOrders from './dashboard/ResponsiveVendorOrders';
 import MenuPage from './dashboard/MenuPage';
 import AddMenuItemPage from './dashboard/AddMenuItemPage';
 import ResponsiveEditMenu from './dashboard/ResponsiveEditMenu';
+import StockPage from './dashboard/StockPage';
 import AnalyticsPage from './dashboard/AnalyticsPage';
 import PayoutsPage from './dashboard/PayoutsPage';
-import ProfilePage from './dashboard/ProfilePage';
+import ResponsiveProfilePage from './dashboard/ResponsiveProfilePage';
 
 // Courier Components
 import CourierDashboardLayout from './dashboard/CourierDashboardLayout';
-import CourierDashboardHome from './dashboard/CourierDashboardHome';
-import DeliveryListPage from './dashboard/DeliveryListPage';
-import CourierAnalytics from './dashboard/CourierAnalytics';
+import ResponsiveCourierDashboard from './dashboard/ResponsiveCourierDashboard';
+import ResponsiveCourierDeliveryList from './dashboard/ResponsiveCourierDeliveryList';
+import MobileCourierAnalytics from './dashboard/MobileCourierAnalytics';
 import CourierPayout from './dashboard/CourierPayout';
-import CourierProfile from './dashboard/CourierProfile';
+import ResponsiveCourierProfile from './dashboard/ResponsiveCourierProfile';
 
 // User Components
 import UserDashboardLayout from './dashboard/UserDashboardLayout';
@@ -60,6 +62,7 @@ import ResponsiveFavorites from './user/ResponsiveFavorites';
 import ResponsivePaymentMethods from './user/ResponsivePaymentMethods';
 import ResponsiveAddCard from './user/ResponsiveAddCard';
 import ResponsiveProfileSettings from './user/ResponsiveProfileSettings';
+import RoleBasedRedirect from './components/RoleBasedRedirect';
 
 // Role-based route components
 const VendorRoute: React.FC = () => {
@@ -146,14 +149,16 @@ function App() {
         
               </PublicRoute>
             }>
-              <Route index element={
+                          <Route index element={
+              <PublicRoute>
                 <>
                   <HeroSection />
                   <HowItWorks />
                   <Testimonials />
                   <FAQ />
                 </>
-              } />
+              </PublicRoute>
+            } />
             <Route path="role-selection" element={<RoleSelection />} />
             <Route path="plans" element={<PlanSelection />} />
             <Route path="terms" element={<TermsAndConditions />} />
@@ -191,6 +196,9 @@ function App() {
             </PublicRoute>
           } />
           
+          {/* Role-based redirect route */}
+          <Route path="/dashboard" element={<RoleBasedRedirect />} />
+          
           {/* Profile route */}
           <Route path="/profile" element={
             <ProtectedRoute>
@@ -202,23 +210,24 @@ function App() {
           <Route path="/vendor" element={<VendorRoute />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<ResponsiveVendorDashboard />} />
-            <Route path="orders" element={<ResponsiveOrders />} />
+            <Route path="orders" element={<ResponsiveVendorOrders />} />
             <Route path="menu" element={<MenuPage />} />
             <Route path="menu/add" element={<AddMenuItemPage />} />
             <Route path="menu/edit/:id" element={<ResponsiveEditMenu />} />
+            <Route path="stock" element={<StockPage />} />
             <Route path="analytics" element={<AnalyticsPage />} />
             <Route path="payouts" element={<PayoutsPage />} />
-            <Route path="profile" element={<ProfilePage />} />
+            <Route path="profile" element={<ResponsiveProfilePage />} />
           </Route>
 
           {/* Courier routes */}
           <Route path="/courier" element={<CourierRoute />}>
             <Route index element={<Navigate to="deliveries" replace />} />
-            <Route path="dashboard" element={<CourierDashboardHome />} />
-            <Route path="deliveries" element={<DeliveryListPage />} />
-            <Route path="analytics" element={<CourierAnalytics />} />
+            <Route path="dashboard" element={<ResponsiveCourierDashboard />} />
+            <Route path="deliveries" element={<ResponsiveCourierDeliveryList />} />
+            <Route path="analytics" element={<MobileCourierAnalytics />} />
             <Route path="payouts" element={<CourierPayout />} />
-            <Route path="profile" element={<CourierProfile />} />
+            <Route path="profile" element={<ResponsiveCourierProfile />} />
           </Route>
 
           {/* User routes */}
@@ -263,3 +272,4 @@ function App() {
 }
 
 export default App;
+

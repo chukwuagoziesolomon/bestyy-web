@@ -132,7 +132,7 @@ const MobileDashboardHome: React.FC = () => {
           }
         `}
       </style>
-              {/* Header */}
+      {/* Header */}
         <MobileHeader 
           title="Dashboard"
           variant="elevated"
@@ -140,14 +140,14 @@ const MobileDashboardHome: React.FC = () => {
           showProfileImage={true}
         />
 
-              {/* Welcome Section */}
-        <div style={{ 
+      {/* Welcome Section */}
+      <div style={{ 
           padding: '24px 16px 20px',
-          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-          color: 'white',
+        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+        color: 'white',
           marginBottom: '24px',
           marginTop: '8px'
-        }}>
+      }}>
         <h2 style={{ 
           margin: '0 0 8px 0', 
           fontSize: '20px',
@@ -409,8 +409,8 @@ const MobileDashboardHome: React.FC = () => {
                     {formatDate(order.created_at)}
                   </span>
                   <span style={{ 
-                    color: '#10B981',
-                    fontSize: '14px',
+              color: '#10B981',
+              fontSize: '14px',
                     fontWeight: 600
                   }}>
                     {order.total_price_display || order.total_price}

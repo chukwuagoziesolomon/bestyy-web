@@ -1,37 +1,36 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Camera } from 'lucide-react';
+import { useResponsive } from '../hooks/useResponsive';
 import { createMenuItem } from '../api';
-import { showError, showSuccess, showApiError } from '../toast';
-import './AddMenuItemPage.css';
+import MobileAddMenu from './MobileAddMenu';
 
-type NewMenuItem = {
-  name: string;
-  item_description: string;
-  category: string;
-  quantity: string;
-  price: string;
-  image?: File;
-  available_now: boolean;
-};
-
-const AddMenuItemPage = () => {
+const AddMenuItemPage: React.FC = () => {
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [menuItem, setMenuItem] = useState<NewMenuItem>({
-    name: '',
-    item_description: '',
-    category: '',
-    quantity: '',
-    price: '',
-    image: undefined,
+  const { isMobile, isTablet } = useResponsive();
+  
+  const [formData, setFormData] = useState({
+    dish_name: 'Jollof rice',
+    item_description: 'Smoky jollof rice with sausage, carrot and diced chunks',
+    category: 'Rice Dish',
+    price: '1500',
     available_now: true,
+    quantity: 50
   });
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Use mobile component for mobile and tablet views
+  if (isMobile || isTablet) {
+    return <MobileAddMenu />;
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    setMenuItem(prev => ({
+    setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
     }));
@@ -40,104 +39,601 @@ const AddMenuItemPage = () => {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setMenuItem(prev => ({ ...prev, image: file }));
+      setSelectedImage(file);
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewImage(reader.result as string);
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!token) {
-      showError('You must be logged in to add an item.');
-      return;
-    }
-    if (!menuItem.name || !menuItem.price || !menuItem.category || !menuItem.item_description || !menuItem.quantity) {
-      showError('All fields except image are required.');
-      return;
-    }
-    setIsSubmitting(true);
+  const handleSave = async () => {
     try {
-      await createMenuItem(token, {
-        dish_name: menuItem.name,
-        item_description: menuItem.item_description,
-        price: parseFloat(menuItem.price).toFixed(2),
-        category: menuItem.category,
-        quantity: parseInt(menuItem.quantity, 10),
-        image: menuItem.image,
-        available_now: menuItem.available_now,
-      });
-      showSuccess('Menu item added successfully!');
-      navigate('/vendor/dashboard/menu');
-    } catch (err: any) {
-      showApiError(err, 'Failed to add menu item.');
+      setLoading(true);
+      setError(null);
+
+      // Get token - using the same pattern as other working components
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      // Prepare data for API
+      const menuData = {
+        dish_name: formData.dish_name,
+        item_description: formData.item_description,
+        price: formData.price,
+        category: formData.category,
+        available_now: formData.available_now,
+        quantity: formData.quantity,
+        image: selectedImage || undefined
+      };
+
+      // Call API
+      const response = await createMenuItem(token, menuData);
+      console.log('Menu item created successfully:', response);
+      
+      // Navigate back to menu page
+      navigate('/vendor/menu');
+    } catch (err) {
+      console.error('Error creating menu item:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create menu item');
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="add-menu-container">
-      <h1 className="add-menu-title">Add New Menu</h1>
-      <div className="add-menu-form-container">
-        <form onSubmit={handleSubmit}>
-          <div className="upload-section">
-            <label htmlFor="image-upload" className="upload-label">
-              {previewImage ? (
-                <img src={previewImage} alt="Preview" className="image-preview" />
-              ) : (
-                <div className="upload-placeholder">
-                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="24" cy="24" r="20" fill="#E0F2F2"/>
-                    <path d="M24 30C27.3137 30 30 27.3137 30 24C30 20.6863 27.3137 18 24 18C20.6863 18 18 20.6863 18 24C18 27.3137 20.6863 30 24 30Z" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M18 20H18.02" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M34 22V28C34 32 32 34 28 34H20C16 34 14 32 14 28V20C14 16 16 14 20 14H22" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <span className="upload-text">Upload Photo</span>
+    <div style={{
+      fontFamily: 'Nunito Sans, sans-serif',
+      background: '#f8fafc',
+      minHeight: '100vh',
+      padding: '32px'
+    }}>
+      {/* Page Header */}
+      <div style={{
+        marginBottom: '40px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between'
+      }}>
+        <div>
+          <h1 style={{
+            fontSize: '36px',
+            fontWeight: '700',
+            color: '#1f2937',
+            margin: '0 0 8px 0',
+            letterSpacing: '-0.025em'
+          }}>
+            Add New Menu Item
+          </h1>
+          <p style={{
+            fontSize: '16px',
+            color: '#6b7280',
+            margin: 0
+          }}>
+            Create a new menu item for your restaurant
+          </p>
+        </div>
+        <button
+          onClick={() => navigate('/vendor/menu')}
+          style={{
+            padding: '10px 20px',
+            border: '1px solid #d1d5db',
+            borderRadius: '8px',
+            background: '#fff',
+            color: '#374151',
+            fontSize: '14px',
+            fontWeight: '500',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = '#10b981';
+            e.currentTarget.style.color = '#10b981';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = '#d1d5db';
+            e.currentTarget.style.color = '#374151';
+          }}
+        >
+          ← Back to Menu
+        </button>
+      </div>
+
+      {/* Main Content */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: '40px',
+        maxWidth: '1200px',
+        margin: '0 auto'
+      }}>
+        {/* Left Column - Image Upload */}
+        <div style={{
+          background: '#fff',
+          borderRadius: '20px',
+          boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
+          border: '1px solid #f3f4f6',
+          padding: '32px',
+          height: 'fit-content'
+        }}>
+          <h2 style={{
+            fontSize: '20px',
+            fontWeight: '600',
+            color: '#1f2937',
+            margin: '0 0 24px 0'
+          }}>
+            Item Photo
+          </h2>
+          <div style={{
+            position: 'relative',
+            width: '100%',
+            height: '280px',
+            borderRadius: '16px',
+            overflow: 'hidden',
+            background: imagePreview ? '#fff' : 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)',
+            border: imagePreview ? '1px solid #e5e7eb' : '2px dashed #d1d5db',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            boxShadow: imagePreview ? '0 4px 6px rgba(0,0,0,0.05)' : 'none'
+          }}
+          onMouseEnter={(e) => {
+            if (!imagePreview) {
+              e.currentTarget.style.borderColor = '#10b981';
+              e.currentTarget.style.background = 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!imagePreview) {
+              e.currentTarget.style.borderColor = '#d1d5db';
+              e.currentTarget.style.background = 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)';
+            }
+          }}
+          >
+            {imagePreview ? (
+              <>
+                <img
+                  src={imagePreview}
+                  alt="Upload preview"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover'
+                  }}
+                />
+                <div style={{
+                  position: 'absolute',
+                  top: '12px',
+                  right: '12px',
+                  background: 'rgba(0,0,0,0.7)',
+                  color: '#fff',
+                  padding: '6px 12px',
+                  borderRadius: '20px',
+                  fontSize: '12px',
+                  fontWeight: '500'
+                }}>
+                  Change Photo
                 </div>
-              )}
-            </label>
-            <input id="image-upload" type="file" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} />
+              </>
+            ) : (
+              <>
+                <div style={{
+                  width: '80px',
+                  height: '80px',
+                  borderRadius: '50%',
+                  background: '#10b981',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '16px'
+                }}>
+                  <Camera size={32} color="#fff" />
+                </div>
+                <div style={{
+                  fontSize: '18px',
+                  fontWeight: '600',
+                  color: '#1f2937',
+                  marginBottom: '8px'
+                }}>
+                  Upload Item Photo
+                </div>
+                <div style={{
+                  fontSize: '14px',
+                  color: '#6b7280',
+                  textAlign: 'center',
+                  maxWidth: '200px'
+                }}>
+                  Click to browse or drag and drop your image here
+                </div>
+              </>
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                opacity: 0,
+                cursor: 'pointer'
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Right Column - Form Fields */}
+        <div style={{
+          background: '#fff',
+          borderRadius: '20px',
+          boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
+          border: '1px solid #f3f4f6',
+          padding: '32px'
+        }}>
+          <h2 style={{
+            fontSize: '20px',
+            fontWeight: '600',
+            color: '#1f2937',
+            margin: '0 0 24px 0'
+          }}>
+            Item Details
+          </h2>
+
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '24px'
+          }}>
+            {/* Item Name */}
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '14px',
+                fontWeight: '600',
+                color: '#374151',
+                marginBottom: '8px'
+              }}>
+                Item Name *
+              </label>
+              <input
+                type="text"
+                name="dish_name"
+                value={formData.dish_name}
+                onChange={handleInputChange}
+                placeholder="Enter item name"
+                style={{
+                  width: '100%',
+                  padding: '14px 16px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '12px',
+                  fontSize: '16px',
+                  background: '#fff',
+                  outline: 'none',
+                  color: '#374151',
+                  transition: 'border-color 0.2s ease',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#10b981';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = '#d1d5db';
+                  e.target.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
+                }}
+              />
+            </div>
+
+            {/* Category */}
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '14px',
+                fontWeight: '600',
+                color: '#374151',
+                marginBottom: '8px'
+              }}>
+                Category *
+              </label>
+              <select
+                name="category"
+                value={formData.category}
+                onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+                style={{
+                  width: '100%',
+                  padding: '14px 16px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '12px',
+                  fontSize: '16px',
+                  background: '#fff',
+                  outline: 'none',
+                  color: '#374151',
+                  transition: 'border-color 0.2s ease',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                  cursor: 'pointer'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#10b981';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = '#d1d5db';
+                  e.target.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
+                }}
+              >
+                <option value="Rice Dish">Rice Dish</option>
+                <option value="Soup">Soup</option>
+                <option value="Meat">Meat</option>
+                <option value="Fish">Fish</option>
+                <option value="Vegetarian">Vegetarian</option>
+                <option value="Appetizer">Appetizer</option>
+                <option value="Dessert">Dessert</option>
+                <option value="Beverage">Beverage</option>
+              </select>
+            </div>
+
+            {/* Item Description */}
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '14px',
+                fontWeight: '600',
+                color: '#374151',
+                marginBottom: '8px'
+              }}>
+                Description *
+              </label>
+              <textarea
+                name="item_description"
+                value={formData.item_description}
+                onChange={handleInputChange}
+                rows={4}
+                placeholder="Describe your menu item..."
+                style={{
+                  width: '100%',
+                  padding: '14px 16px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '12px',
+                  fontSize: '16px',
+                  background: '#fff',
+                  outline: 'none',
+                  color: '#374151',
+                  resize: 'vertical',
+                  fontFamily: 'inherit',
+                  transition: 'border-color 0.2s ease',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#10b981';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = '#d1d5db';
+                  e.target.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
+                }}
+              />
+            </div>
+
+            {/* Price and Variation Row */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '16px'
+            }}>
+              {/* Price */}
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#374151',
+                  marginBottom: '8px'
+                }}>
+                  Price (₦) *
+                </label>
+                <input
+                  type="number"
+                  name="price"
+                  value={formData.price}
+                  onChange={handleInputChange}
+                  placeholder="0"
+                  style={{
+                    width: '100%',
+                    padding: '14px 16px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '12px',
+                    fontSize: '16px',
+                    background: '#fff',
+                    outline: 'none',
+                    color: '#374151',
+                    transition: 'border-color 0.2s ease',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#10b981';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = '#d1d5db';
+                    e.target.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
+                  }}
+                />
+              </div>
+
+              {/* Quantity */}
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#374151',
+                  marginBottom: '8px'
+                }}>
+                  Quantity *
+                </label>
+                <input
+                  type="number"
+                  name="quantity"
+                  value={formData.quantity}
+                  onChange={handleInputChange}
+                  placeholder="50"
+                  min="0"
+                  style={{
+                    width: '100%',
+                    padding: '14px 16px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '12px',
+                    fontSize: '16px',
+                    background: '#fff',
+                    outline: 'none',
+                    color: '#374151',
+                    transition: 'border-color 0.2s ease',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#10b981';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = '#d1d5db';
+                    e.target.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Availability Toggle */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '16px',
+              background: '#f9fafb',
+              borderRadius: '12px',
+              border: '1px solid #e5e7eb'
+            }}>
+              <input
+                type="checkbox"
+                name="available_now"
+                checked={formData.available_now}
+                onChange={handleInputChange}
+                style={{
+                  width: '18px',
+                  height: '18px',
+                  accentColor: '#10b981'
+                }}
+              />
+              <label style={{
+                fontSize: '14px',
+                fontWeight: '600',
+                color: '#374151',
+                cursor: 'pointer'
+              }}>
+                Available Now
+              </label>
+            </div>
           </div>
 
-          <div className="form-grid">
-            <div className="form-group">
-              <label htmlFor="name">Item Name</label>
-              <input type="text" id="name" name="name" value={menuItem.name} onChange={handleInputChange} placeholder="Jollof rice" required />
+          {/* Error Display */}
+          {error && (
+            <div style={{
+              background: '#fef2f2',
+              border: '1px solid #fecaca',
+              borderRadius: '12px',
+              padding: '16px',
+              marginBottom: '24px'
+            }}>
+              <p style={{
+                color: '#dc2626',
+                fontSize: '14px',
+                fontWeight: '500',
+                margin: 0
+              }}>
+                {error}
+              </p>
             </div>
-            <div className="form-group item-description">
-              <label htmlFor="item_description">Item Description</label>
-              <textarea id="item_description" name="item_description" value={menuItem.item_description} onChange={handleInputChange} placeholder="Smoky jollof rice with susage, carrot and diced chunks" required/>
-            </div>
-            <div className="form-group">
-              <label htmlFor="category">Category</label>
-              <input type="text" id="category" name="category" value={menuItem.category} onChange={handleInputChange} placeholder="Rice Dish" required/>
-            </div>
-            <div className="form-group">
-              <label htmlFor="quantity">Quantity</label>
-              <input type="number" id="quantity" name="quantity" value={menuItem.quantity} onChange={handleInputChange} placeholder="20" required min="1"/>
-            </div>
-            <div className="form-group">
-              <label htmlFor="price">Price</label>
-              <input type="number" id="price" name="price" value={menuItem.price} onChange={handleInputChange} placeholder="1500.00" required step="0.01"/>
-            </div>
-            <div className="form-group">
-              <label htmlFor="available_now">Available Now?</label>
-              <input type="checkbox" id="available_now" name="available_now" checked={menuItem.available_now} onChange={handleInputChange} />
-            </div>
-          </div>
-          <div className="save-button-container">
-            <button type="submit" className="save-button" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : 'Save'}
+          )}
+
+          {/* Action Buttons */}
+          <div style={{
+            display: 'flex',
+            gap: '16px',
+            marginTop: '32px',
+            paddingTop: '24px',
+            borderTop: '1px solid #f3f4f6'
+          }}>
+            <button
+              onClick={() => navigate('/vendor/menu')}
+              style={{
+                flex: 1,
+                padding: '14px 24px',
+                border: '1px solid #d1d5db',
+                borderRadius: '12px',
+                background: '#fff',
+                color: '#374151',
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#9ca3af';
+                e.currentTarget.style.background = '#f9fafb';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#d1d5db';
+                e.currentTarget.style.background = '#fff';
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={loading}
+              style={{
+                flex: 2,
+                padding: '14px 24px',
+                border: 'none',
+                borderRadius: '12px',
+                background: loading ? '#9ca3af' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                color: '#fff',
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: loading ? 'none' : '0 4px 6px rgba(16, 185, 129, 0.2)',
+                opacity: loading ? 0.7 : 1
+              }}
+              onMouseEnter={(e) => {
+                if (!loading) {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
+                  e.currentTarget.style.boxShadow = '0 6px 8px rgba(16, 185, 129, 0.3)';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!loading) {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                  e.currentTarget.style.boxShadow = '0 4px 6px rgba(16, 185, 129, 0.2)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }
+              }}
+            >
+              {loading ? 'Creating...' : 'Save Menu Item'}
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
 };
 
-export default AddMenuItemPage; 
+export default AddMenuItemPage;

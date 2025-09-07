@@ -93,7 +93,7 @@ const UserSavedAddresses = () => {
   };
 
   return (
-    <div style={{ fontFamily: 'Nunito Sans, sans-serif', color: '#111' }}>
+  <div style={{ fontFamily: 'Nunito Sans, sans-serif', color: '#111' }}>
       <style>
         {`
           @keyframes spin {
@@ -103,18 +103,18 @@ const UserSavedAddresses = () => {
         `}
       </style>
       
-      {/* Saved Address Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-        <div>
-          <h2 style={{ fontWeight: 600, fontSize: 32, marginBottom: 0 }}>Saved Address</h2>
-          <div style={{ color: '#888', fontSize: 16, marginBottom: 0 }}>Quickly select saved delivery locations when placing food orders. Add or update them anytime.</div>
-        </div>
-        <button onClick={handleAddAddress} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#10b981', color: '#fff', fontWeight: 700, fontSize: 17, border: 'none', borderRadius: 8, padding: '12px 28px', cursor: 'pointer' }}>
-          <Plus size={20} /> Add new Address
-        </button>
+    {/* Saved Address Header */}
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+      <div>
+        <h2 style={{ fontWeight: 600, fontSize: 32, marginBottom: 0 }}>Saved Address</h2>
+        <div style={{ color: '#888', fontSize: 16, marginBottom: 0 }}>Quickly select saved delivery locations when placing food orders. Add or update them anytime.</div>
       </div>
+        <button onClick={handleAddAddress} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#10b981', color: '#fff', fontWeight: 700, fontSize: 17, border: 'none', borderRadius: 8, padding: '12px 28px', cursor: 'pointer' }}>
+        <Plus size={20} /> Add new Address
+      </button>
+    </div>
       
-      {/* Saved Address Cards */}
+    {/* Saved Address Cards */}
       <div style={{ display: 'flex', gap: 24, marginBottom: 40, minHeight: 120 }}>
         {loading ? (
           <div style={{ 
@@ -236,7 +236,7 @@ const UserSavedAddresses = () => {
                 <div style={{ color: '#888', fontSize: 16, marginBottom: 18 }}>
                   {addr.address}, {addr.city}, {addr.state}, {addr.zip_code}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'flex-end' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'flex-end' }}>
                   {!addr.is_default && (
                     <button 
                       style={{ 
@@ -292,12 +292,12 @@ const UserSavedAddresses = () => {
                       <Trash2 size={18} />
                     )}
                   </button>
-                </div>
-              </div>
+          </div>
+        </div>
             );
           })
         )}
-      </div>
+    </div>
 
       {/* Delete Confirmation Modal */}
       {deleteAddressId && (
@@ -378,7 +378,7 @@ const UserSavedAddresses = () => {
         </div>
       )}
     </div>
-  );
+);
 };
 
 export default UserSavedAddresses; 

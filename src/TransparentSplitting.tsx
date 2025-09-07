@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import './TransparentSplitting.css';
 
 const TransparentSplitting = () => {
@@ -14,9 +15,9 @@ const TransparentSplitting = () => {
           Once your booking is confirmed, Bestie connects with trusted couriers like Preshempire or Jennifer Adannaya to handle delivery. You’ll receive real-time updates, name of the rider, and how long it’ll take just like ordering from a premium delivery app, but it all happens in chat.
 
           </h4>
-          <button className="transparent-splitting__cta">
+          <Link to="/login" className="transparent-splitting__cta">
             Get Started
-          </button>
+          </Link>
         </div>
         
         <div className="transparent-splitting__center">

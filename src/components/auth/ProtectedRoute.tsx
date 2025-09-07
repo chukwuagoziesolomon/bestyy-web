@@ -43,7 +43,24 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Check if user has required role
   if (roles.length > 0 && !roles.includes(user.role)) {
-    return <Navigate to="/unauthorized" state={{ from: location }} replace />;
+    // Redirect to appropriate dashboard based on user's actual role
+    let redirectPath = '/user/dashboard';
+    
+    switch (user.role.toLowerCase()) {
+      case 'vendor':
+        redirectPath = '/vendor/dashboard';
+        break;
+      case 'courier':
+        redirectPath = '/courier/dashboard';
+        break;
+      case 'admin':
+        redirectPath = '/admin/dashboard';
+        break;
+      default:
+        redirectPath = '/user/dashboard';
+    }
+    
+    return <Navigate to={redirectPath} replace />;
   }
 
 
