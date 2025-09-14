@@ -1,8 +1,16 @@
 // Cloudinary configuration
+const isConfigured = Boolean(
+  process.env.REACT_APP_CLOUDINARY_CLOUD_NAME && 
+  process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET &&
+  process.env.REACT_APP_CLOUDINARY_CLOUD_NAME !== 'your-actual-cloud-name' &&
+  process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET !== 'your-actual-upload-preset'
+);
+
 export const CLOUDINARY_CONFIG = {
   // Replace these with your actual Cloudinary credentials
-  cloudName: process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || 'your-cloud-name',
-  uploadPreset: process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET || 'your-upload-preset',
+  cloudName: process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || 'demo',
+  uploadPreset: process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET || 'demo-preset',
+  isConfigured,
   
   // Default transformations for different image types
   transformations: {

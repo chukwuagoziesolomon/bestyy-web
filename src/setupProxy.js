@@ -4,7 +4,7 @@ module.exports = function(app) {
   app.use(
     '/api',
     createProxyMiddleware({
-      target: process.env.REACT_APP_API_URL || 'http://localhost:8000',
+      target: process.env.REACT_APP_API_URL || 'https://bestie-server.onrender.com',
       changeOrigin: true,
       pathRewrite: {
         '^/api': '', // Remove /api prefix when forwarding to backend
@@ -28,7 +28,7 @@ module.exports = function(app) {
   app.use(
     '/ws',
     createProxyMiddleware({
-      target: process.env.REACT_APP_WS_URL || 'ws://localhost:8000',
+      target: process.env.REACT_APP_WS_URL || 'wss://bestie-server.onrender.com',
       ws: true,
       changeOrigin: true,
       logLevel: 'debug', // Enable for debugging WebSocket issues

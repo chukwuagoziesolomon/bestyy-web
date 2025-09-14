@@ -4,6 +4,7 @@ import { Camera } from 'lucide-react';
 import { useResponsive } from '../hooks/useResponsive';
 import { createMenuItem } from '../api';
 import MobileAddMenu from './MobileAddMenu';
+import VariantManager, { MenuVariant } from '../components/VariantManager';
 
 const AddMenuItemPage: React.FC = () => {
   const navigate = useNavigate();
@@ -15,7 +16,8 @@ const AddMenuItemPage: React.FC = () => {
     category: 'Rice Dish',
     price: '1500',
     available_now: true,
-    quantity: 50
+    quantity: 50,
+    variants: [] as MenuVariant[]
   });
 
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -67,7 +69,8 @@ const AddMenuItemPage: React.FC = () => {
         category: formData.category,
         available_now: formData.available_now,
         quantity: formData.quantity,
-        image: selectedImage || undefined
+        image: selectedImage || undefined,
+        variants: formData.variants
       };
 
       // Call API
@@ -539,6 +542,15 @@ const AddMenuItemPage: React.FC = () => {
               }}>
                 Available Now
               </label>
+            </div>
+
+            {/* Variant Manager */}
+            <div style={{ marginTop: '24px' }}>
+              <VariantManager
+                variants={formData.variants}
+                onChange={(variants) => setFormData(prev => ({ ...prev, variants }))}
+                disabled={loading}
+              />
             </div>
           </div>
 

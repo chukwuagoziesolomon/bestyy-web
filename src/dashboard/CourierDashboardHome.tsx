@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Package, CreditCard, Timer, TrendingUp, Bell, Moon, BarChart3, List, Settings, Wallet, Clock, Truck } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useResponsive } from '../hooks/useResponsive';
+import { API_URL } from '../api';
 
 interface Delivery {
   id: number;
@@ -62,7 +63,7 @@ const CourierDashboardHome = () => {
           throw new Error('No access token found');
         }
 
-        const response = await fetch('http://127.0.0.1:8000/api/user/couriers/dashboard/analytics/', {
+        const response = await fetch(`${API_URL}/api/user/couriers/dashboard/analytics/`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -79,7 +80,7 @@ const CourierDashboardHome = () => {
         
         // Fetch earnings chart data
         try {
-          const chartResponse = await fetch('http://127.0.0.1:8000/api/user/couriers/dashboard/earnings-chart/', {
+          const chartResponse = await fetch(`${API_URL}/api/user/couriers/dashboard/earnings-chart/`, {
             method: 'GET',
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -98,7 +99,7 @@ const CourierDashboardHome = () => {
         
         // Fetch recent deliveries data
         try {
-          const deliveriesResponse = await fetch('http://127.0.0.1:8000/api/user/couriers/dashboard/recent-deliveries/', {
+          const deliveriesResponse = await fetch(`${API_URL}/api/user/couriers/dashboard/recent-deliveries/`, {
             method: 'GET',
             headers: {
               'Authorization': `Bearer ${token}`,

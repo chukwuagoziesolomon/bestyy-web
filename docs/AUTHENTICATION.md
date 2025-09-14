@@ -19,8 +19,8 @@ Create a `.env` file in the root directory with the following variables:
 
 ```env
 # API Configuration
-REACT_APP_API_URL=http://localhost:8000
-REACT_APP_FRONTEND_URL=http://localhost:3000
+REACT_APP_API_URL=https://bestie-server.onrender.com
+REACT_APP_FRONTEND_URL=https://your-frontend-domain.com
 
 # Google OAuth Configuration
 REACT_APP_GOOGLE_CLIENT_ID=your_google_client_id_here
@@ -35,10 +35,10 @@ REACT_APP_GOOGLE_CLIENT_SECRET=your_google_client_secret_here
 4. Click "Create Credentials" and select "OAuth client ID"
 5. Configure the consent screen if prompted
 6. For "Authorized JavaScript origins", add:
-   - `http://localhost:3000`
+   - `https://your-frontend-domain.com`
    - Your production domain
 7. For "Authorized redirect URIs", add:
-   - `http://localhost:3000/api/auth/google/callback`
+   - `https://your-frontend-domain.com/api/auth/google/callback`
    - `https://your-production-domain.com/api/auth/google/callback`
 8. Copy the Client ID and Client Secret to your `.env` file
 

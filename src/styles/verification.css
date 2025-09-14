@@ -1,0 +1,144 @@
+/* Verification Notification System Styles */
+
+/* Animation for notification popup */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes shrink {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Verification status styles */
+.verification-status {
+  animation: slideInRight 0.3s ease-out;
+}
+
+.verification-history {
+  animation: slideInRight 0.3s ease-out;
+}
+
+/* Notification popup styles */
+.verification-notification-popup {
+  animation: slideInRight 0.3s ease-out;
+}
+
+.verification-notification-popup.closing {
+  animation: slideOutRight 0.3s ease-in;
+}
+
+/* Loading spinner */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Progress bar animation */
+.progress-bar {
+  animation: shrink 15s linear forwards;
+}
+
+/* Status colors */
+.status-approved {
+  color: #10b981;
+}
+
+.status-rejected {
+  color: #ef4444;
+}
+
+.status-pending {
+  color: #f59e0b;
+}
+
+.status-suspended {
+  color: #ef4444;
+}
+
+.status-incomplete {
+  color: #f59e0b;
+}
+
+/* Timeline styles */
+.timeline-item {
+  position: relative;
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  top: 32px;
+  width: 2px;
+  height: 24px;
+  background: #e5e7eb;
+}
+
+.timeline-item:last-child::before {
+  display: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .verification-notification-popup {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+}
+
+/* Hover effects */
+.verification-status button:hover,
+.verification-history button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+}
+
+/* Focus styles for accessibility */
+.verification-status button:focus,
+.verification-history button:focus,
+.verification-notification-popup button:focus {
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .verification-status,
+  .verification-history {
+    background: #1f2937;
+    border-color: #374151;
+    color: #f9fafb;
+  }
+  
+  .verification-notification-popup {
+    background: #1f2937;
+    border-color: #374151;
+    color: #f9fafb;
+  }
+}

@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Typewriter } from 'react-simple-typewriter';
 import './HeroSection.css';
-import Navbar from './Navbar';
 
 
 const phrases = [
@@ -14,15 +13,8 @@ const phrases = [
 ];
 
 const HeroSection: React.FC = () => {
-  const [darkMode, setDarkMode] = useState(false);
-  const toggleDarkMode = () => {
-    setDarkMode(prev => !prev);
-    document.documentElement.classList.toggle('dark-mode');
-  };
-  
   return (
   <section className="hero" id="home">
-    <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
     <div className="hero__content">
       <h1>
         <span className="hero__typewriter" style={{ marginRight: '0.5ch' }}>
@@ -39,7 +31,7 @@ const HeroSection: React.FC = () => {
         <span className="hero__gradient-text">Bestyy</span>
       </h1>
       <p className="hero__text">Book with ease using Bestyy's AI chat, fast,<br />affordable and convenient.</p>
-      <Link to="/login" className="hero__cta">Get Started</Link>
+      <Link to="/user-dashboard" className="hero__cta">Get Started</Link>
     </div>
     <div className="hero__image">
       <img src="/image1.png" alt="Phone Mockup" className="hero__phone-mockup" />

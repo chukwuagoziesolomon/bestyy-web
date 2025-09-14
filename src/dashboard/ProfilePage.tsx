@@ -1,6 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { showError, showSuccess } from '../toast';
 import { Edit2, Camera, Building2, Bell, Shield, Clock, MapPin, Truck, User, Mail, Phone } from 'lucide-react';
+import VerificationStatus from '../components/VerificationStatus';
+import VerificationHistory from '../components/VerificationHistory';
+import VerificationStatusBadge from '../components/VerificationStatusBadge';
+import VerificationNotificationPopup from '../components/VerificationNotificationPopup';
+import { websocketService, VerificationNotificationData } from '../services/websocketService';
 
 const ProfilePage = () => {
 
@@ -27,6 +32,10 @@ const ProfilePage = () => {
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [previewPicture, setPreviewPicture] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // WebSocket notification state
+  const [notification, setNotification] = useState<VerificationNotificationData | null>(null);
+  const [showNotification, setShowNotification] = useState(false);
 
   // Get user role from localStorage
   const getUserRole = () => {
@@ -159,7 +168,52 @@ const ProfilePage = () => {
     } else {
       console.log('No local data found, showing empty form for user input');
     }
+
+    // Setup WebSocket for verification notifications
+    setupWebSocketNotifications();
+    
+    // Cleanup WebSocket on unmount
+    return () => {
+      websocketService.disconnectAll();
+    };
   }, []);
+
+  // Setup WebSocket notifications
+  const setupWebSocketNotifications = () => {
+    // Set up notification callback
+    websocketService.setVerificationNotificationCallback((data: VerificationNotificationData) => {
+      setNotification(data);
+      setShowNotification(true);
+    });
+
+    // Connect to appropriate WebSocket based on user type
+    if (isVendor) {
+      websocketService.connectVendorWebSocket();
+    } else if (isCourier) {
+      websocketService.connectCourierWebSocket();
+    }
+  };
+
+  // Handle notification actions
+  const handleViewStatus = () => {
+    setShowNotification(false);
+    // Scroll to verification status section
+    const verificationSection = document.querySelector('.verification-status');
+    if (verificationSection) {
+      verificationSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleResubmit = () => {
+    setShowNotification(false);
+    // Navigate to application form or show resubmit modal
+    console.log('Resubmit application');
+  };
+
+  const handleCloseNotification = () => {
+    setShowNotification(false);
+    setNotification(null);
+  };
 
   const handlePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files && e.target.files[0];
@@ -274,6 +328,19 @@ const ProfilePage = () => {
           <div style={{ fontSize: '14px' }}>Customize your preferences to get the best delivery experience.</div>
         </div>
       )}
+
+      {/* Verification Status Section - Only for Vendors and Couriers */}
+      {(isVendor || isCourier) && (
+        <VerificationStatus 
+          userType={isVendor ? 'vendor' : 'courier'} 
+          className="verification-status"
+        />
+      )}
+
+      {/* Verification History Section - Only for Couriers */}
+      {isCourier && (
+        <VerificationHistory className="verification-history" />
+      )}
       
       {loading ? (
         <div style={{ color: '#888', fontSize: 18 }}>Loading profile...</div>
@@ -327,8 +394,23 @@ const ProfilePage = () => {
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 700, fontSize: 22 }}>{nickName || fullName || 'User'}</div>
               <div style={{ color: '#888', fontSize: 16 }}>{email}</div>
-              <div style={{ color: '#10b981', fontSize: 14, fontWeight: '600', textTransform: 'capitalize' }}>
-                {userRole === 'user' ? 'Customer' : userRole === 'vendor' ? 'Business Owner' : 'Delivery Partner'}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '8px' }}>
+                <div style={{ color: '#10b981', fontSize: 14, fontWeight: '600', textTransform: 'capitalize' }}>
+                  {userRole === 'user' ? 'Customer' : userRole === 'vendor' ? 'Business Owner' : 'Delivery Partner'}
+                </div>
+                {/* Verification Status Badge - Only for Vendors and Couriers */}
+                {(isVendor || isCourier) && (
+                  <VerificationStatusBadge 
+                    userType={isVendor ? 'vendor' : 'courier'} 
+                    size="medium"
+                    onClick={() => {
+                      const verificationSection = document.querySelector('.verification-status');
+                      if (verificationSection) {
+                        verificationSection.scrollIntoView({ behavior: 'smooth' });
+                      }
+                    }}
+                  />
+                )}
               </div>
         </div>
             <button type="button" onClick={() => setEditMode(!editMode)} style={{ background: '#10b981', color: '#fff', fontWeight: 700, fontSize: 16, border: 'none', borderRadius: 8, padding: '10px 28px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -628,6 +710,16 @@ const ProfilePage = () => {
         </form>
       ) : (
         <div style={{ color: '#888', fontSize: 18 }}>No profile data found.</div>
+      )}
+
+      {/* WebSocket Notification Popup */}
+      {showNotification && notification && (
+        <VerificationNotificationPopup
+          notification={notification}
+          onClose={handleCloseNotification}
+          onViewStatus={handleViewStatus}
+          onResubmit={handleResubmit}
+        />
       )}
     </div>
   );

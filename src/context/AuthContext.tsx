@@ -144,32 +144,93 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const signup = async (email: string, password: string, role: string, additionalData?: any) => {
       try {
         setLoading(true);
-      setError(null);
-      
-      // Store additional data for profile completion
-      if (additionalData) {
-        localStorage.setItem('pending_profile_data', JSON.stringify(additionalData));
-      }
-      
-      // Create user data with role
-      const userData = {
-        id: Date.now(), // Temporary ID until backend response
-        email,
-        first_name: additionalData?.first_name || '',
-        last_name: additionalData?.last_name || '',
-        role: role.toLowerCase(),
-        ...additionalData
-      };
-      
-      // Store user data temporarily
-      localStorage.setItem('user', JSON.stringify(userData));
-      setUser(userData);
-      
-      // Redirect to success page first, then to dashboard based on role
-      navigate('/success', { state: { userType: role.toLowerCase() } });
+        setError(null);
+        
+        let response;
+        
+        // Call appropriate signup API based on role
+        if (role.toLowerCase() === 'vendor') {
+          // Import signupVendor function
+          const { signupVendor } = await import('../api');
+          response = await signupVendor({
+            email,
+            password,
+            first_name: additionalData?.first_name || '',
+            last_name: additionalData?.last_name || '',
+            phone: additionalData?.phone || '',
+            business_name: additionalData?.business_name || '',
+            business_category: additionalData?.business_category || '',
+            cac_number: additionalData?.cac_number || '',
+            business_description: additionalData?.business_description || '',
+            business_address: additionalData?.business_address || '',
+            delivery_radius: additionalData?.delivery_radius || '',
+            service_areas: additionalData?.service_areas || '',
+            opening_hours: additionalData?.opening_hours || '',
+            closing_hours: additionalData?.closing_hours || '',
+            offers_delivery: additionalData?.offers_delivery || false,
+          });
+        } else {
+          // Import signupUser function for regular users
+          const { signupUser } = await import('../api');
+          response = await signupUser({
+            email,
+            password,
+            first_name: additionalData?.first_name || '',
+            last_name: additionalData?.last_name || '',
+            phone: additionalData?.phone || '',
+          });
+        }
+        
+        // Check if the response contains tokens (successful signup)
+        if (response.access && response.refresh) {
+          // Store tokens
+          localStorage.setItem('access_token', response.access);
+          localStorage.setItem('refresh_token', response.refresh);
+          
+          // Set the default authorization header for subsequent requests
+          api.defaults.headers.common['Authorization'] = `Bearer ${response.access}`;
+          
+          // Process user data from response
+          const userData = {
+            id: response.user?.id || Date.now(),
+            email: response.user?.email || email,
+            first_name: response.user?.first_name || additionalData?.first_name || '',
+            last_name: response.user?.last_name || additionalData?.last_name || '',
+            role: response.user?.role || role.toLowerCase(),
+            phone: response.user?.phone || additionalData?.phone || '',
+            ...response.user,
+            ...additionalData
+          };
+          
+          localStorage.setItem('user', JSON.stringify(userData));
+          setUser(userData);
+          
+          // Redirect to success page
+          navigate('/success', { state: { userType: role.toLowerCase() } });
+        } else {
+          // If no tokens returned, it might be a pending approval case
+          // Store user data temporarily for pending approval
+          const userData = {
+            id: response.user?.id || Date.now(),
+            email: response.user?.email || email,
+            first_name: response.user?.first_name || additionalData?.first_name || '',
+            last_name: response.user?.last_name || additionalData?.last_name || '',
+            role: response.user?.role || role.toLowerCase(),
+            phone: response.user?.phone || additionalData?.phone || '',
+            ...response.user,
+            ...additionalData
+          };
+          
+          localStorage.setItem('user', JSON.stringify(userData));
+          setUser(userData);
+          
+          // Redirect to success page
+          navigate('/success', { state: { userType: role.toLowerCase() } });
+        }
       } catch (err) {
-      setError('Signup failed');
-      throw err;
+        console.error('Signup error:', err);
+        setError(err instanceof Error ? err.message : 'Signup failed');
+        throw err;
       } finally {
         setLoading(false);
       }

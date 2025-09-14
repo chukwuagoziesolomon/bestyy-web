@@ -22,7 +22,7 @@ const CourierBottomNavigation: React.FC<CourierBottomNavigationProps> = ({ curre
     {
       path: '/courier/deliveries',
       icon: <List size={20} />,
-      label: 'Delivery List'
+      label: 'Deliveries'
     },
     {
       path: '/courier/analytics',
@@ -30,9 +30,9 @@ const CourierBottomNavigation: React.FC<CourierBottomNavigationProps> = ({ curre
       label: 'Analytics'
     },
     {
-      path: '/courier/payouts',
+      path: '/courier/profile',
       icon: <CreditCard size={20} />,
-      label: 'Payout'
+      label: 'Profile'
     }
   ];
 
@@ -69,12 +69,12 @@ const CourierBottomNavigation: React.FC<CourierBottomNavigationProps> = ({ curre
               transition: 'all 0.2s ease'
             }}
           >
-            <div style={{ color: isActive ? '#10b981' : '#9ca3af' }}>
+            <div style={{ color: isActive ? '#0ea5e9' : '#9ca3af' }}>
               {item.icon}
             </div>
             <span style={{ 
               fontSize: '12px', 
-              color: isActive ? '#10b981' : '#9ca3af', 
+              color: isActive ? '#0ea5e9' : '#9ca3af', 
               fontWeight: isActive ? '600' : '500' 
             }}>
               {item.label}

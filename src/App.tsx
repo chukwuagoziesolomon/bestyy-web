@@ -28,6 +28,7 @@ import SuccessPage from './SuccessPage';
 import VendorSuccessPage from './VendorSuccessPage';
 import Profile from './pages/Profile';
 import UserSignup from './pages/UserSignup';
+import NotificationsWrapper from './components/NotificationsWrapper';
 
 // Vendor Components
 import VendorDashboardLayout from './dashboard/VendorDashboardLayout';
@@ -45,9 +46,11 @@ import ResponsiveProfilePage from './dashboard/ResponsiveProfilePage';
 import CourierDashboardLayout from './dashboard/CourierDashboardLayout';
 import ResponsiveCourierDashboard from './dashboard/ResponsiveCourierDashboard';
 import ResponsiveCourierDeliveryList from './dashboard/ResponsiveCourierDeliveryList';
-import MobileCourierAnalytics from './dashboard/MobileCourierAnalytics';
+import ResponsiveCourierAnalytics from './dashboard/ResponsiveCourierAnalytics';
 import CourierPayout from './dashboard/CourierPayout';
 import ResponsiveCourierProfile from './dashboard/ResponsiveCourierProfile';
+import Explore from './explore';
+import VendorProfile from './VendorProfile';
 
 // User Components
 import UserDashboardLayout from './dashboard/UserDashboardLayout';
@@ -141,6 +144,7 @@ function App() {
             <Route path="/" element={
               <PublicRoute>
                 <>
+                  <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
                   <main className="main-content">
                     <Outlet />
                   </main>
@@ -150,14 +154,12 @@ function App() {
               </PublicRoute>
             }>
                           <Route index element={
-              <PublicRoute>
                 <>
                   <HeroSection />
                   <HowItWorks />
                   <Testimonials />
                   <FAQ />
                 </>
-              </PublicRoute>
             } />
             <Route path="role-selection" element={<RoleSelection />} />
             <Route path="plans" element={<PlanSelection />} />
@@ -183,6 +185,20 @@ function App() {
             <PublicRoute>
               <main>
                 <CourierSignUp />
+              </main>
+            </PublicRoute>
+          } />
+          <Route path="/user-dashboard" element={
+            <PublicRoute>
+              <main>
+                <Explore />
+              </main>
+            </PublicRoute>
+          } />
+          <Route path="/vendor/:id" element={
+            <PublicRoute>
+              <main>
+                <VendorProfile />
               </main>
             </PublicRoute>
           } />
@@ -218,6 +234,7 @@ function App() {
             <Route path="analytics" element={<AnalyticsPage />} />
             <Route path="payouts" element={<PayoutsPage />} />
             <Route path="profile" element={<ResponsiveProfilePage />} />
+            <Route path="notifications" element={<NotificationsWrapper />} />
           </Route>
 
           {/* Courier routes */}
@@ -225,9 +242,10 @@ function App() {
             <Route index element={<Navigate to="deliveries" replace />} />
             <Route path="dashboard" element={<ResponsiveCourierDashboard />} />
             <Route path="deliveries" element={<ResponsiveCourierDeliveryList />} />
-            <Route path="analytics" element={<MobileCourierAnalytics />} />
+            <Route path="analytics" element={<ResponsiveCourierAnalytics />} />
             <Route path="payouts" element={<CourierPayout />} />
             <Route path="profile" element={<ResponsiveCourierProfile />} />
+            <Route path="notifications" element={<NotificationsWrapper />} />
           </Route>
 
           {/* User routes */}
@@ -240,6 +258,7 @@ function App() {
             <Route path="addresses/add" element={<MobileAddAddressPage />} />
             <Route path="addresses/edit/:id" element={<MobileAddAddressPage />} />
             <Route path="favorites" element={<ResponsiveFavorites />} />
+            <Route path="notifications" element={<NotificationsWrapper />} />
     
             <Route path="payments" element={<ResponsivePaymentMethods />} />
             <Route path="payments/add" element={<ResponsiveAddCard />} />
@@ -249,6 +268,7 @@ function App() {
           {/* Other routes */}
           <Route path="/success" element={<SuccessPage />} />
           <Route path="/vendor/success" element={<VendorSuccessPage />} />
+          <Route path="/notifications" element={<NotificationsWrapper />} />
           <Route path="/payment" element={
             <ProtectedRoute>
               <PaymentPage />

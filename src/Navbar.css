@@ -1,139 +1,102 @@
+/* Import Montserrat Font */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+
+/* Navbar Styles */
 .navbar {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 2rem 3rem 1.5rem 3rem;
-  background: var(--card-bg);
-  box-shadow: none;
-  position: fixed;
-  top: 0;
-  left: 0;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: white;
+  font-family: 'Montserrat', sans-serif;
   width: 100%;
-  z-index: 1000;
+  box-sizing: border-box;
 }
 
-.navbar__logo {
+.navbar-left {
   display: flex;
   align-items: center;
-  font-weight: bold;
-  font-size: 1.4rem;
-  letter-spacing: 1px;
-  gap: 0.5rem;
 }
 
-.navbar__logo-icon {
-  font-size: 2rem;
-  margin-right: 0.3rem;
-}
-
-.navbar__logo-img {
-  height: 40px;
+.logo {
+  height: 35px;
   width: auto;
-  margin-right: 0.5rem;
-  display: inline-block;
-  vertical-align: middle;
 }
 
-.navbar__links {
+.navbar-center {
   display: flex;
-  gap: 2.5rem;
-  list-style: none;
-  margin: 0;
-  padding: 0;
+  justify-content: center;
+  flex: 1;
 }
 
-.navbar__links li a {
+.nav-link {
+  color: #374151;
   text-decoration: none;
-  color: var(--text);
   font-weight: 500;
-  font-size: 1.05rem;
+  font-size: 1rem;
   transition: color 0.2s;
 }
 
-.navbar__links li a:hover {
-  color: #00b894;
+.nav-link:hover {
+  color: #10b981;
 }
 
-.navbar__cta {
-  background: var(--bestie-gradient);
-  color: #fff;
-  padding: 0.7rem 1.7rem;
-  border-radius: 8px;
+.navbar-right {
+  display: flex;
+  align-items: center;
+}
+
+.login-btn {
+  background: #10b981;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
   text-decoration: none;
   font-weight: 600;
-  font-size: 1.05rem;
-  transition: filter 0.2s;
-  box-shadow: 0 2px 8px rgba(25,198,172,0.08);
-  border: none;
-  display: inline-block;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  white-space: nowrap;
 }
 
-.navbar__cta:hover {
-  filter: brightness(0.95);
+.login-btn:hover {
+  background: #059669;
 }
 
-.navbar__toggle-dark {
-  background: none;
-  border: none;
-  outline: none;
-  cursor: pointer;
-  margin-left: 1.2rem;
-  padding: 0.3rem 0.6rem;
-  display: flex;
-  align-items: center;
-  color: #10b981;
-  font-size: 1.3rem;
-  transition: color 0.2s;
-}
-.navbar__toggle-dark:hover {
-  color: #34e7e4;
-}
-
-@media (max-width: 900px) {
+/* Responsive Design */
+@media (max-width: 768px) {
   .navbar {
-    flex-direction: column;
-    align-items: flex-start;
     padding: 1rem;
   }
-  .navbar__links {
-    gap: 1.2rem;
-    margin-top: 0.5rem;
+  
+  .logo {
+    height: 30px;
   }
-  .navbar__cta {
-    margin-top: 0.5rem;
+  
+  .nav-link {
+    font-size: 0.9rem;
+  }
+  
+  .login-btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 480px) {
   .navbar {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1.2rem 1rem 1.2rem 1rem;
-    width: 100%;
-    box-sizing: border-box;
-    overflow: hidden;
+    padding: 0.8rem;
   }
-  .navbar__links,
-  .navbar__cta {
-    display: none;
+  
+  .logo {
+    height: 28px;
   }
-  .navbar__hamburger {
-    display: block;
-    background: none;
-    border: none;
-    outline: none;
-    cursor: pointer;
-    margin-left: auto;
-    padding: 0.2rem 0.5rem;
-    flex-shrink: 0;
+  
+  .nav-link {
+    font-size: 0.85rem;
   }
-  .navbar__toggle-dark {
-    flex-shrink: 0;
-    margin-left: 0.5rem;
+  
+  .login-btn {
+    padding: 0.4rem 0.7rem;
+    font-size: 0.75rem;
   }
 }
-
-.navbar__hamburger {
-  display: none;
-} 

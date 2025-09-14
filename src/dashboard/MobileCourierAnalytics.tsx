@@ -4,7 +4,7 @@ import { Menu, ChevronDown, Package, Clock, TrendingUp, Info } from 'lucide-reac
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Area, AreaChart } from 'recharts';
 import CourierBottomNavigation from '../components/CourierBottomNavigation';
 import CourierHeader from '../components/CourierHeader';
-import { fetchCourierEarningsBreakdown, fetchCourierCompanyAnalytics } from '../api';
+import { fetchCourierEarningsBreakdown, fetchCourierCompanyAnalytics, API_URL } from '../api';
 import { showError } from '../toast';
 
 const MobileCourierAnalytics: React.FC = () => {
@@ -112,7 +112,7 @@ const MobileCourierAnalytics: React.FC = () => {
       }
 
       // Fetch main analytics data
-      const analyticsResponse = await fetch('http://127.0.0.1:8000/api/user/couriers/dashboard/analytics/', {
+      const analyticsResponse = await fetch(`${API_URL}/api/user/couriers/dashboard/analytics/`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -128,7 +128,7 @@ const MobileCourierAnalytics: React.FC = () => {
       console.log('Analytics API Response:', analyticsApiData);
 
       // Fetch earnings chart data
-      const chartResponse = await fetch('http://127.0.0.1:8000/api/user/couriers/dashboard/earnings-chart/', {
+      const chartResponse = await fetch(`${API_URL}/api/user/couriers/dashboard/earnings-chart/`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,

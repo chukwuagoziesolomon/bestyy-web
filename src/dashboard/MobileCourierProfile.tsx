@@ -3,6 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { Home, List, BarChart3, CreditCard, Menu, X, HelpCircle, Settings, Camera, Eye, EyeOff, Clock } from 'lucide-react';
 import VerificationBadge from '../components/VerificationBadge';
 import CourierHeader from '../components/CourierHeader';
+import VerificationStatus from '../components/VerificationStatus';
+import VerificationHistory from '../components/VerificationHistory';
+import VerificationStatusBadge from '../components/VerificationStatusBadge';
+import VerificationNotificationPopup from '../components/VerificationNotificationPopup';
+import { websocketService, VerificationNotificationData } from '../services/websocketService';
 
 const MobileCourierProfile: React.FC = () => {
   const navigate = useNavigate();
@@ -22,6 +27,10 @@ const MobileCourierProfile: React.FC = () => {
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [previewPicture, setPreviewPicture] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // WebSocket notification state
+  const [notification, setNotification] = useState<VerificationNotificationData | null>(null);
+  const [showNotification, setShowNotification] = useState(false);
 
   // Auto-populate profile data from localStorage on component mount
   useEffect(() => {
@@ -126,7 +135,48 @@ const MobileCourierProfile: React.FC = () => {
     };
 
     populateProfileData();
+    
+    // Setup WebSocket notifications
+    setupWebSocketNotifications();
+    
+    // Cleanup WebSocket on unmount
+    return () => {
+      websocketService.disconnectAll();
+    };
   }, []);
+
+  // Setup WebSocket notifications
+  const setupWebSocketNotifications = () => {
+    // Set up notification callback
+    websocketService.setVerificationNotificationCallback((data: VerificationNotificationData) => {
+      setNotification(data);
+      setShowNotification(true);
+    });
+
+    // Connect to courier WebSocket
+    websocketService.connectCourierWebSocket();
+  };
+
+  // Handle notification actions
+  const handleViewStatus = () => {
+    setShowNotification(false);
+    // Scroll to verification status section
+    const verificationSection = document.querySelector('.verification-status');
+    if (verificationSection) {
+      verificationSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleResubmit = () => {
+    setShowNotification(false);
+    // Navigate to application form or show resubmit modal
+    console.log('Resubmit application');
+  };
+
+  const handleCloseNotification = () => {
+    setShowNotification(false);
+    setNotification(null);
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -355,14 +405,29 @@ const MobileCourierProfile: React.FC = () => {
             Courier Partner
           </p>
           
-          {/* Verification Badge */}
-              <div style={{ marginBottom: '16px' }}>
-            <VerificationBadge 
-              status={verificationStatus as 'verified' | 'pending' | 'rejected' | 'under_review'} 
-              size="small"
+          {/* Verification Status Badge */}
+          <div style={{ marginBottom: '16px' }}>
+            <VerificationStatusBadge 
+              userType="courier" 
+              size="medium"
+              onClick={() => {
+                const verificationSection = document.querySelector('.verification-status');
+                if (verificationSection) {
+                  verificationSection.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
             />
           </div>
             </div>
+
+        {/* Verification Status Section */}
+        <VerificationStatus 
+          userType="courier" 
+          className="verification-status"
+        />
+
+        {/* Verification History Section */}
+        <VerificationHistory className="verification-history" />
 
         {/* Profile Form */}
             <div style={{
@@ -872,6 +937,16 @@ const MobileCourierProfile: React.FC = () => {
           </div>
         ))}
       </div>
+
+      {/* WebSocket Notification Popup */}
+      {showNotification && notification && (
+        <VerificationNotificationPopup
+          notification={notification}
+          onClose={handleCloseNotification}
+          onViewStatus={handleViewStatus}
+          onResubmit={handleResubmit}
+        />
+      )}
     </div>
   );
 };

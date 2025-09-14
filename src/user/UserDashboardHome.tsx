@@ -50,14 +50,16 @@ const UserDashboardHome = () => {
   useEffect(() => {
     const loadOrders = async () => {
       if (!token) {
-        setError('No authentication token found');
+        // If no token, user might be pending approval or not fully authenticated
+        console.log('No authentication token found - user might be pending approval');
+        setError('Account pending approval. Please wait for admin approval or contact support.');
         setLoading(false);
         return;
       }
       
       try {
         setLoading(true);
-      setError(null);
+        setError(null);
         const response: OrdersResponse = await fetchUserOrders(token);
         setOrders(response.results || []);
       } catch (err) {
@@ -136,27 +138,36 @@ const UserDashboardHome = () => {
         <div style={{ 
           textAlign: 'center',
           padding: 32,
-          background: '#fee2e2',
-          border: '1px solid #fecaca',
+          background: error.includes('pending approval') ? '#fef3c7' : '#fee2e2',
+          border: `1px solid ${error.includes('pending approval') ? '#fde68a' : '#fecaca'}`,
           borderRadius: 12,
           maxWidth: 400
         }}>
-          <h3 style={{ color: '#dc2626', marginBottom: 8 }}>Error Loading Orders</h3>
-          <p style={{ color: '#991b1b', marginBottom: 16 }}>{error}</p>
-        <button 
-            onClick={() => window.location.reload()}
-          style={{
-              background: '#dc2626',
-            color: 'white',
-            border: 'none',
-              borderRadius: 8,
-              padding: '12px 24px',
-            cursor: 'pointer',
-              fontWeight: 600
-          }}
-        >
-          Try Again
-        </button>
+          <h3 style={{ color: error.includes('pending approval') ? '#d97706' : '#dc2626', marginBottom: 8 }}>
+            {error.includes('pending approval') ? 'Account Pending Approval' : 'Error Loading Orders'}
+          </h3>
+          <p style={{ color: error.includes('pending approval') ? '#92400e' : '#991b1b', marginBottom: 16 }}>{error}</p>
+          {error.includes('pending approval') ? (
+            <div style={{ marginBottom: 16, color: '#6b7280', fontSize: '14px' }}>
+              <p>Your account is being reviewed. You'll receive an email notification once approved.</p>
+              <p>In the meantime, you can contact our support team for assistance.</p>
+            </div>
+          ) : (
+            <button 
+              onClick={() => window.location.reload()}
+              style={{
+                background: '#dc2626',
+                color: 'white',
+                border: 'none',
+                borderRadius: 8,
+                padding: '12px 24px',
+                cursor: 'pointer',
+                fontWeight: 600
+              }}
+            >
+              Try Again
+            </button>
+          )}
         </div>
       </div>
     );

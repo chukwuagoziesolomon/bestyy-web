@@ -30,7 +30,7 @@ export const useImageUpload = (options?: UseImageUploadOptions): UseImageUploadR
     try {
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        throw new Error('Please select a valid image file');
+        throw new Error('Please select a valid image file (JPG, PNG, GIF, etc.)');
       }
 
       // Validate file size (max 10MB)
@@ -38,6 +38,8 @@ export const useImageUpload = (options?: UseImageUploadOptions): UseImageUploadR
       if (file.size > maxSize) {
         throw new Error('Image size must be less than 10MB');
       }
+
+      console.log('Starting image upload:', { fileName: file.name, fileSize: file.size, type });
 
       let uploadFunction;
       switch (type) {
@@ -56,13 +58,27 @@ export const useImageUpload = (options?: UseImageUploadOptions): UseImageUploadR
 
       const imageUrl = await uploadFunction(file);
       
+      console.log('Image upload successful:', imageUrl);
+      
       if (options?.onSuccess) {
         options.onSuccess(imageUrl, ...args);
       }
 
       return imageUrl;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Upload failed';
+      console.error('Image upload error:', err);
+      
+      let errorMessage = 'Upload failed';
+      if (err instanceof Error) {
+        if (err.message.includes('not properly configured')) {
+          errorMessage = 'Image upload is not configured. Please contact support.';
+        } else if (err.message.includes('network') || err.message.includes('fetch')) {
+          errorMessage = 'Network error. Please check your internet connection and try again.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
       setError(errorMessage);
       
       if (options?.onError) {

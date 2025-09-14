@@ -434,11 +434,56 @@ export async function signupVendor(vendorData: {
   
   if (!response.ok) {
     let errorMsg = 'Vendor signup failed';
+    let errorDetails = '';
+    
     try {
       const errorData = await response.json();
-      errorMsg = errorData?.message || errorMsg;
-    } catch {}
-    throw new Error(errorMsg);
+      console.log('Vendor signup error response:', errorData);
+      
+      // Extract error message from various possible response structures
+      if (errorData?.message) {
+        errorMsg = errorData.message;
+      } else if (errorData?.error) {
+        errorMsg = errorData.error;
+      } else if (errorData?.detail) {
+        errorMsg = errorData.detail;
+      } else if (errorData?.non_field_errors) {
+        errorMsg = Array.isArray(errorData.non_field_errors) 
+          ? errorData.non_field_errors.join(', ') 
+          : errorData.non_field_errors;
+      } else if (errorData?.email) {
+        errorMsg = `Email: ${Array.isArray(errorData.email) ? errorData.email.join(', ') : errorData.email}`;
+      } else if (errorData?.password) {
+        errorMsg = `Password: ${Array.isArray(errorData.password) ? errorData.password.join(', ') : errorData.password}`;
+      } else if (errorData?.business_name) {
+        errorMsg = `Business Name: ${Array.isArray(errorData.business_name) ? errorData.business_name.join(', ') : errorData.business_name}`;
+      } else if (errorData?.phone) {
+        errorMsg = `Phone: ${Array.isArray(errorData.phone) ? errorData.phone.join(', ') : errorData.phone}`;
+      } else if (typeof errorData === 'object') {
+        // If it's an object with field-specific errors, collect them
+        const fieldErrors = Object.entries(errorData)
+          .filter(([key, value]) => Array.isArray(value) && value.length > 0)
+          .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
+          .join('; ');
+        
+        if (fieldErrors) {
+          errorMsg = fieldErrors;
+        }
+      }
+      
+      // Add additional context if available
+      if (errorData?.status_code) {
+        errorDetails = ` (Status: ${errorData.status_code})`;
+      }
+      
+    } catch (parseError) {
+      console.error('Failed to parse error response:', parseError);
+      errorMsg = `Vendor signup failed with status ${response.status}`;
+    }
+    
+    const fullErrorMessage = errorMsg + errorDetails;
+    console.error('Vendor signup error:', fullErrorMessage);
+    throw new Error(fullErrorMessage);
   }
   
   const result = await response.json();
@@ -1164,7 +1209,7 @@ export async function fetchVendorOrdersList(token: string, params?: {
   return response.json();
 }
 
-// Create menu item
+// Create menu item with variants support
 export async function createMenuItem(token: string, menuData: {
   dish_name: string;
   item_description: string;
@@ -1173,6 +1218,14 @@ export async function createMenuItem(token: string, menuData: {
   image?: File;
   available_now?: boolean;
   quantity?: number;
+  variants?: Array<{
+    name: string;
+    type: 'size' | 'extra' | 'addon' | 'substitute';
+    price_modifier: number;
+    is_required?: boolean;
+    is_available?: boolean;
+    sort_order?: number;
+  }>;
 }) {
   const formData = new FormData();
   
@@ -1188,6 +1241,11 @@ export async function createMenuItem(token: string, menuData: {
   }
   if (menuData.quantity !== undefined) {
     formData.append('quantity', menuData.quantity.toString());
+  }
+  
+  // Add variants if provided
+  if (menuData.variants && menuData.variants.length > 0) {
+    formData.append('variants', JSON.stringify(menuData.variants));
   }
   
   // Add image file if provided
@@ -1206,6 +1264,23 @@ export async function createMenuItem(token: string, menuData: {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.detail || `Failed to create menu item: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// Get menu item customization options
+export async function getMenuItemCustomization(itemId: number) {
+  const response = await fetch(`${API_URL}/api/user/menu-items/${itemId}/customize/`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Failed to get customization options: ${response.statusText}`);
   }
 
   return response.json();
@@ -1372,7 +1447,101 @@ export async function fetchVendorOrderActivity(token: string, params?: {
   });
 
   if (!response.ok) {
-    let errorMsg = 'Failed to fetch order activity';
+  let errorMsg = 'Failed to fetch order activity';
+  try {
+    const errorData = await response.json();
+    errorMsg = errorData?.message || errorMsg;
+  } catch {}
+  throw new Error(errorMsg);
+}
+
+return response.json();
+}
+
+// Guest Order API Functions
+export async function createGuestOrder(orderData: {
+  guestInfo: {
+    firstName: string;
+    lastName: string;
+    phone: string;
+    email: string;
+    deliveryAddress: string;
+    city: string;
+    deliveryInstructions?: string;
+  };
+  cartItems: Array<{
+    id: string;
+    name: string;
+    price: number;
+    quantity: number;
+    customizations?: any;
+    totalPrice: number;
+  }>;
+  vendor: {
+    id?: number;
+    business_name?: string;
+    business_address?: string;
+  };
+  total: number;
+  deliveryFee: number;
+  paymentMethod: string;
+  paymentReference?: string;
+}) {
+  const response = await fetch(`${API_URL}/api/guest/orders/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      customer_info: {
+        first_name: orderData.guestInfo.firstName,
+        last_name: orderData.guestInfo.lastName,
+        phone: orderData.guestInfo.phone,
+        email: orderData.guestInfo.email,
+        delivery_address: orderData.guestInfo.deliveryAddress,
+        city: orderData.guestInfo.city,
+        delivery_instructions: orderData.guestInfo.deliveryInstructions || '',
+      },
+      vendor_id: orderData.vendor.id,
+      items: orderData.cartItems.map(item => ({
+        item_id: item.id,
+        item_name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        customizations: item.customizations || {},
+        total_price: item.totalPrice,
+      })),
+      total_amount: orderData.total,
+      delivery_fee: orderData.deliveryFee,
+      payment_method: orderData.paymentMethod,
+      payment_reference: orderData.paymentReference,
+      order_status: 'pending',
+    }),
+  });
+
+  if (!response.ok) {
+    let errorMsg = 'Failed to create guest order';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+
+  return response.json();
+}
+
+export async function getGuestOrderStatus(orderId: string, phone: string) {
+  const response = await fetch(`${API_URL}/api/guest/orders/${orderId}/status/`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ phone }),
+  });
+
+  if (!response.ok) {
+    let errorMsg = 'Failed to fetch order status';
     try {
       const errorData = await response.json();
       errorMsg = errorData?.message || errorMsg;

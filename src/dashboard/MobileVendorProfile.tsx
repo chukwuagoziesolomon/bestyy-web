@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Camera, Edit, Save, X, Home, List, Utensils, Layers } from 'lucide-react';
 import VendorHeader from '../components/VendorHeader';
 import VerificationBadge from '../components/VerificationBadge';
 import VendorBottomNavigation from '../components/VendorBottomNavigation';
+import VerificationStatus from '../components/VerificationStatus';
+import VerificationStatusBadge from '../components/VerificationStatusBadge';
+import VerificationNotificationPopup from '../components/VerificationNotificationPopup';
+import { websocketService, VerificationNotificationData } from '../services/websocketService';
 
 const MobileVendorProfile: React.FC = () => {
   const navigate = useNavigate();
@@ -21,6 +25,10 @@ const MobileVendorProfile: React.FC = () => {
   });
 
   const [tempData, setTempData] = useState(profileData);
+  
+  // WebSocket notification state
+  const [notification, setNotification] = useState<VerificationNotificationData | null>(null);
+  const [showNotification, setShowNotification] = useState(false);
 
   const handleInputChange = (field: string, value: string) => {
     setTempData(prev => ({
@@ -63,6 +71,48 @@ const MobileVendorProfile: React.FC = () => {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  // Setup WebSocket notifications
+  useEffect(() => {
+    setupWebSocketNotifications();
+    
+    // Cleanup WebSocket on unmount
+    return () => {
+      websocketService.disconnectAll();
+    };
+  }, []);
+
+  const setupWebSocketNotifications = () => {
+    // Set up notification callback
+    websocketService.setVerificationNotificationCallback((data: VerificationNotificationData) => {
+      setNotification(data);
+      setShowNotification(true);
+    });
+
+    // Connect to vendor WebSocket
+    websocketService.connectVendorWebSocket();
+  };
+
+  // Handle notification actions
+  const handleViewStatus = () => {
+    setShowNotification(false);
+    // Scroll to verification status section
+    const verificationSection = document.querySelector('.verification-status');
+    if (verificationSection) {
+      verificationSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleResubmit = () => {
+    setShowNotification(false);
+    // Navigate to application form or show resubmit modal
+    console.log('Resubmit application');
+  };
+
+  const handleCloseNotification = () => {
+    setShowNotification(false);
+    setNotification(null);
   };
 
   return (
@@ -194,14 +244,26 @@ const MobileVendorProfile: React.FC = () => {
             )}
           </p>
 
-          {/* Verification Badge */}
+          {/* Verification Status Badge */}
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
-            <VerificationBadge 
-              status={profileData.verificationStatus as 'verified' | 'pending' | 'rejected' | 'under_review'} 
+            <VerificationStatusBadge 
+              userType="vendor" 
               size="medium"
+              onClick={() => {
+                const verificationSection = document.querySelector('.verification-status');
+                if (verificationSection) {
+                  verificationSection.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
             />
           </div>
         </div>
+
+        {/* Verification Status Section */}
+        <VerificationStatus 
+          userType="vendor" 
+          className="verification-status"
+        />
 
         {/* Profile Details */}
         <div style={{
@@ -493,6 +555,16 @@ const MobileVendorProfile: React.FC = () => {
 
       {/* Bottom Navigation */}
       <VendorBottomNavigation currentPath="/vendor/dashboard" />
+
+      {/* WebSocket Notification Popup */}
+      {showNotification && notification && (
+        <VerificationNotificationPopup
+          notification={notification}
+          onClose={handleCloseNotification}
+          onViewStatus={handleViewStatus}
+          onResubmit={handleResubmit}
+        />
+      )}
     </div>
   );
 };

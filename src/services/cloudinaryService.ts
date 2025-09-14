@@ -4,6 +4,18 @@ import { CLOUDINARY_CONFIG } from '../config/cloudinary';
 interface CloudinaryConfig {
   cloudName: string;
   uploadPreset: string;
+  isConfigured: boolean;
+  transformations: {
+    vendorLogo: string;
+    menuItem: string;
+    profileImage: string;
+    thumbnail: string;
+  };
+  folders: {
+    vendorLogos: string;
+    menuItems: string;
+    profileImages: string;
+  };
 }
 
 export interface CloudinaryUploadResult {
@@ -44,6 +56,11 @@ export class CloudinaryService {
     folder?: string,
     transformation?: string
   ): Promise<CloudinaryUploadResult> {
+    // Check if Cloudinary is properly configured
+    if (!this.config.isConfigured) {
+      throw new Error('Cloudinary is not properly configured. Please set up your Cloudinary credentials in the .env file.');
+    }
+
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', this.config.uploadPreset);
@@ -52,11 +69,17 @@ export class CloudinaryService {
       formData.append('folder', folder);
     }
     
-    if (transformation) {
-      formData.append('transformation', transformation);
-    }
+    // Note: Transformations are not allowed in unsigned uploads
+    // They should be applied when displaying images using the getOptimizedImageUrl method
 
     try {
+      console.log('Uploading to Cloudinary:', {
+        cloudName: this.config.cloudName,
+        uploadPreset: this.config.uploadPreset,
+        folder
+        // Note: Transformations are not used in unsigned uploads
+      });
+
       const response = await fetch(
         `https://api.cloudinary.com/v1_1/${this.config.cloudName}/image/upload`,
         {
@@ -67,10 +90,12 @@ export class CloudinaryService {
 
       if (!response.ok) {
         const errorData: CloudinaryUploadError = await response.json();
-        throw new Error(errorData.error.message || 'Upload failed');
+        console.error('Cloudinary upload failed:', errorData);
+        throw new Error(errorData.error.message || `Upload failed with status ${response.status}`);
       }
 
       const result: CloudinaryUploadResult = await response.json();
+      console.log('Cloudinary upload successful:', result);
       return result;
     } catch (error) {
       console.error('Cloudinary upload error:', error);
@@ -133,8 +158,8 @@ export const cloudinaryService = CloudinaryService.getInstance();
 export const uploadVendorLogo = async (file: File): Promise<string> => {
   const result = await cloudinaryService.uploadImage(
     file, 
-    CLOUDINARY_CONFIG.folders.vendorLogos, 
-    CLOUDINARY_CONFIG.transformations.vendorLogo
+    CLOUDINARY_CONFIG.folders.vendorLogos
+    // Note: Transformations are applied when displaying, not during upload
   );
   return result.secure_url;
 };
@@ -142,8 +167,8 @@ export const uploadVendorLogo = async (file: File): Promise<string> => {
 export const uploadMenuItemImage = async (file: File): Promise<string> => {
   const result = await cloudinaryService.uploadImage(
     file, 
-    CLOUDINARY_CONFIG.folders.menuItems, 
-    CLOUDINARY_CONFIG.transformations.menuItem
+    CLOUDINARY_CONFIG.folders.menuItems
+    // Note: Transformations are applied when displaying, not during upload
   );
   return result.secure_url;
 };
@@ -151,8 +176,8 @@ export const uploadMenuItemImage = async (file: File): Promise<string> => {
 export const uploadProfileImage = async (file: File): Promise<string> => {
   const result = await cloudinaryService.uploadImage(
     file, 
-    CLOUDINARY_CONFIG.folders.profileImages, 
-    CLOUDINARY_CONFIG.transformations.profileImage
+    CLOUDINARY_CONFIG.folders.profileImages
+    // Note: Transformations are applied when displaying, not during upload
   );
   return result.secure_url;
 };

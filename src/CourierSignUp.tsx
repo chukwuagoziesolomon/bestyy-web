@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { registerCourier, loginUser } from './api';
 import { useAuth } from './context/AuthContext';
 import { showApiError, showError, showSuccess } from './toast';
+import WhatsAppVerification from './components/WhatsAppVerification';
 
 // Custom styles to override problematic CSS
 const customStyles = `
@@ -224,6 +225,7 @@ const CourierSignUp = () => {
     uploadId: null as File | null,
     uploadProfile: null as File | null,
     vehicleType: '' as '' | 'bike' | 'car' | 'van' | 'other',
+    whatsappVerified: false, // NEW - WhatsApp verification status
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -265,6 +267,28 @@ const CourierSignUp = () => {
           <label>Phone Number</label>
           <input name="phone" type="tel" placeholder="+234 801 234 5678" value={form.phone} onChange={handleChange} className="user-login__input" />
         </div>
+        
+        {/* WhatsApp Verification */}
+        {form.phone.trim() && (
+          <div style={{ marginBottom: '24px' }}>
+            <WhatsAppVerification
+              phoneNumber={form.phone}
+              countryCode="+234"
+              onVerificationComplete={(verified, phoneNumber) => {
+                setForm({ ...form, whatsappVerified: verified });
+                if (verified) {
+                  showSuccess('WhatsApp number verified successfully!');
+                }
+              }}
+              onVerificationSkip={() => {
+                setForm({ ...form, whatsappVerified: false });
+                showSuccess('WhatsApp verification skipped. You can verify later in your profile.');
+              }}
+              required={false}
+            />
+          </div>
+        )}
+        
         <div className="form-group">
           <label>Email Address</label>
           <input name="email" type="email" placeholder="your.email@example.com" value={form.email} onChange={handleChange} className="user-login__input" />

@@ -4,6 +4,7 @@ import { Package, TrendingUp, CreditCard, Truck } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import CourierHeader from '../components/CourierHeader';
 import CourierBottomNavigation from '../components/CourierBottomNavigation';
+import { API_URL } from '../api';
 
 const MobileCourierDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -35,7 +36,7 @@ const MobileCourierDashboard: React.FC = () => {
         }
 
         // Fetch analytics data
-        const analyticsResponse = await fetch('http://127.0.0.1:8000/api/user/couriers/dashboard/analytics/', {
+        const analyticsResponse = await fetch(`${API_URL}/api/user/couriers/dashboard/analytics/`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -51,7 +52,7 @@ const MobileCourierDashboard: React.FC = () => {
         console.log('Mobile Analytics API Response:', analyticsData);
         
         // Fetch earnings chart data
-        const chartResponse = await fetch('http://127.0.0.1:8000/api/user/couriers/dashboard/earnings-chart/', {
+        const chartResponse = await fetch(`${API_URL}/api/user/couriers/dashboard/earnings-chart/`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -67,7 +68,7 @@ const MobileCourierDashboard: React.FC = () => {
         
         // Fetch recent deliveries data
         try {
-          const deliveriesResponse = await fetch('http://127.0.0.1:8000/api/user/couriers/dashboard/recent-deliveries/', {
+          const deliveriesResponse = await fetch(`${API_URL}/api/user/couriers/dashboard/recent-deliveries/`, {
             method: 'GET',
             headers: {
               'Authorization': `Bearer ${token}`,

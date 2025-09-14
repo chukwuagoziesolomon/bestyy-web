@@ -1,6 +1,7 @@
 import React from 'react';
 import { Search, Bell, Moon } from 'lucide-react';
 import ProfileImage from './ProfileImage';
+import NotificationBell from './NotificationBell';
 
 interface DashboardNavbarProps {
   searchValue?: string;
@@ -11,6 +12,8 @@ interface DashboardNavbarProps {
   showNotification?: boolean;
   showProfileImage?: boolean;
   initials?: string; // Add initials prop
+  userId?: number; // Add userId for notifications
+  userType?: string; // Add userType for notifications
 }
 
 const DashboardNavbar: React.FC<DashboardNavbarProps> = ({
@@ -22,6 +25,8 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({
   showNotification = true,
   showProfileImage = true,
   initials, // Add initials prop
+  userId,
+  userType,
 }) => (
   <div style={{
     width: '100%',
@@ -71,9 +76,17 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({
         </div>
       )}
       {showNotification && (
-        <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 4px rgba(16,24,40,0.04)', cursor: 'pointer' }}>
-          <Bell size={22} color="#555" />
-        </div>
+        userId && userType ? (
+          <NotificationBell 
+            userId={userId} 
+            userType={userType}
+            className="dashboard-notification-bell"
+          />
+        ) : (
+          <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 4px rgba(16,24,40,0.04)', cursor: 'pointer' }}>
+            <Bell size={22} color="#555" />
+          </div>
+        )
       )}
       {showProfileImage && (
         <ProfileImage src={profileImageSrc} size={40} initials={initials} />

@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import { ArrowLeft } from 'lucide-react';
 import { useResponsive } from './hooks/useResponsive';
+import { createGuestOrder } from './api';
 import './UserLogin.css';
 
 const visaIcon = (
@@ -44,12 +45,58 @@ const PaymentPage = () => {
   const { isMobile, isTablet } = useResponsive();
 
   const userType = (location.state as any)?.userType || 'vendor';
+  const isGuestOrder = (location.state as any)?.isGuestOrder || false;
+  const guestOrderData = (location.state as any)?.orderData || null;
+  
   const backToPlan = userType === 'courier' ? '/courier/plan-selection' : '/vendor/plan-selection';
   const successRoute = userType === 'courier' ? '/success' : '/vendor/signup-success';
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [orderData, setOrderData] = useState<any>(null);
+
+  useEffect(() => {
+    if (isGuestOrder && guestOrderData) {
+      setOrderData(guestOrderData);
+    } else if (isGuestOrder) {
+      // Try to get order data from localStorage
+      const storedOrderData = localStorage.getItem('guestOrderData');
+      if (storedOrderData) {
+        setOrderData(JSON.parse(storedOrderData));
+      }
+    }
+  }, [isGuestOrder, guestOrderData]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (userType === 'courier') {
+    
+    if (isGuestOrder && orderData) {
+      setIsProcessing(true);
+      try {
+        // Create guest order
+        const orderResponse = await createGuestOrder({
+          ...orderData,
+          paymentMethod: 'card', // You can make this dynamic based on selected payment method
+          paymentReference: `guest_${Date.now()}` // Generate a unique reference
+        });
+        
+        // Clear the stored order data
+        localStorage.removeItem('guestOrderData');
+        
+        // Navigate to success page with order details
+        navigate('/guest-order-success', { 
+          state: { 
+            orderId: orderResponse.order_id,
+            orderData: orderData,
+            guestInfo: orderData.guestInfo
+          } 
+        });
+      } catch (error) {
+        console.error('Error creating guest order:', error);
+        alert('Failed to process your order. Please try again.');
+      } finally {
+        setIsProcessing(false);
+      }
+    } else if (userType === 'courier') {
       navigate(successRoute, { state: { userType: 'courier' } });
     } else {
       navigate(successRoute);
@@ -254,30 +301,35 @@ const PaymentPage = () => {
             {/* Submit Button */}
             <button
               type="submit"
+              disabled={isProcessing}
               style={{
                 marginTop: '24px',
-                background: '#10b981',
+                background: isProcessing ? '#9ca3af' : '#10b981',
                 color: '#fff',
                 fontWeight: '600',
                 fontSize: '16px',
                 border: 'none',
                 borderRadius: '12px',
                 padding: '16px',
-                cursor: 'pointer',
+                cursor: isProcessing ? 'not-allowed' : 'pointer',
                 width: '100%',
                 boxShadow: '0 2px 8px rgba(16, 185, 129, 0.2)',
                 transition: 'all 0.2s ease'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-1px)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)';
+                if (!isProcessing) {
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)';
+                }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.2)';
+                if (!isProcessing) {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.2)';
+                }
               }}
             >
-              Continue
+              {isProcessing ? 'Processing...' : 'Continue'}
             </button>
           </form>
         </div>
@@ -330,8 +382,8 @@ const PaymentPage = () => {
               <span style={{ position: 'absolute', right: 12 }}>{infoIcon}</span>
             </div>
           </div>
-          <button type="submit" style={{ marginTop: '1.7rem', background: '#10b981', color: '#fff', fontWeight: 700, fontSize: '1.18rem', border: 'none', borderRadius: 8, padding: '1.1rem 0', cursor: 'pointer', width: '100%', boxShadow: '0 2px 8px rgba(25,198,172,0.08)' }}>
-            Continue
+          <button type="submit" disabled={isProcessing} style={{ marginTop: '1.7rem', background: isProcessing ? '#9ca3af' : '#10b981', color: '#fff', fontWeight: 700, fontSize: '1.18rem', border: 'none', borderRadius: 8, padding: '1.1rem 0', cursor: isProcessing ? 'not-allowed' : 'pointer', width: '100%', boxShadow: '0 2px 8px rgba(25,198,172,0.08)' }}>
+            {isProcessing ? 'Processing...' : 'Continue'}
           </button>
         </form>
       </div>

@@ -27,14 +27,44 @@ export const showWarning = (message: string) =>
 // Alias for mobile - same as regular showError
 export const showMobileError = showError;
 
-// Simple API error handler
+// Enhanced API error handler
 export const showApiError = (error: any, fallbackMessage?: string) => {
   let message = fallbackMessage || 'An error occurred. Please try again.';
-  if (error?.response?.data?.message) {
-    message = error.response.data.message;
+  
+  // Handle different error structures
+  if (error?.response?.data) {
+    const errorData = error.response.data;
+    
+    // Check for various error message fields
+    if (errorData.message) {
+      message = errorData.message;
+    } else if (errorData.error) {
+      message = errorData.error;
+    } else if (errorData.detail) {
+      message = errorData.detail;
+    } else if (errorData.non_field_errors) {
+      message = Array.isArray(errorData.non_field_errors) 
+        ? errorData.non_field_errors.join(', ') 
+        : errorData.non_field_errors;
+    } else if (typeof errorData === 'object') {
+      // Handle field-specific errors
+      const fieldErrors = Object.entries(errorData)
+        .filter(([key, value]) => Array.isArray(value) && value.length > 0)
+        .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
+        .join('; ');
+      
+      if (fieldErrors) {
+        message = fieldErrors;
+      }
+    }
   } else if (error?.message) {
     message = error.message;
   }
+  
+  // Log the error for debugging
+  console.error('API Error:', error);
+  console.error('Displayed message:', message);
+  
   showError(message);
 };
 

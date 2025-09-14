@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Camera, ChevronDown } from 'lucide-react';
 import { createMenuItem } from '../api';
 import { showError, showSuccess, showApiError } from '../toast';
+import VariantManager, { MenuVariant } from '../components/VariantManager';
 
 const MobileAddMenu: React.FC = () => {
   const navigate = useNavigate();
@@ -13,7 +14,8 @@ const MobileAddMenu: React.FC = () => {
     category: '',
     optional_variation: '',
     price: '',
-    image: null as File | null
+    image: null as File | null,
+    variants: [] as MenuVariant[]
   });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
@@ -64,7 +66,8 @@ const MobileAddMenu: React.FC = () => {
         category: formData.category,
         quantity: 1, // Default quantity
         image: formData.image || undefined,
-        available_now: true
+        available_now: true,
+        variants: formData.variants
       });
       
       showSuccess('Menu item added successfully!');
@@ -379,6 +382,15 @@ const MobileAddMenu: React.FC = () => {
               transition: 'border-color 0.2s ease',
               boxSizing: 'border-box'
             }}
+          />
+        </div>
+
+        {/* Variant Manager */}
+        <div style={{ marginBottom: '24px' }}>
+          <VariantManager
+            variants={formData.variants}
+            onChange={(variants) => setFormData(prev => ({ ...prev, variants }))}
+            disabled={loading}
           />
         </div>
 

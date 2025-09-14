@@ -5,6 +5,8 @@ import { signupVendor, createMenuItem } from './api';
 import { useAuth } from './context/AuthContext';
 import { showError, showSuccess, showInfo, showApiError } from './toast';
 import { useImageUpload } from './hooks/useImageUpload';
+import VariantManager, { MenuVariant } from './components/VariantManager';
+import WhatsAppVerification from './components/WhatsAppVerification';
 
 const steps = [
   'Account',
@@ -24,6 +26,7 @@ type MenuItem = {
   available: boolean;
   item_description: string; // new
   quantity: string; // new (as string for form input)
+  variants: MenuVariant[]; // Add variants support
 };
 
 type VendorFormData = {
@@ -45,6 +48,7 @@ type VendorFormData = {
   closingHours: string; // NEW
   offersDelivery: boolean;
   menuItems: MenuItem[];
+  whatsappVerified: boolean; // NEW - WhatsApp verification status
 };
 
 const VendorSignUp = () => {
@@ -80,6 +84,7 @@ const VendorSignUp = () => {
       fullName: '', email: '', phone: '', password: '', confirmPassword: '',
       businessName: '', businessCategory: '', otherBusinessCategory: '', cacNumber: '', businessDescription: '', logo: '',
       businessAddress: '', deliveryRadius: '', serviceAreas: '', openingHours: '', closingHours: '', offersDelivery: false,
+      whatsappVerified: false,
       menuItems: [{
         dishName: '', price: '', category: '', otherCategory: '', image: undefined, available: true
       }]
@@ -146,6 +151,7 @@ const VendorSignUp = () => {
         available: true, // <-- add this line
         item_description: '',
         quantity: '',
+        variants: [], // Add variants property
       }]
     }));
   };
@@ -244,7 +250,14 @@ const VendorSignUp = () => {
         const res = await signupVendor(payload);
         
         if (res) {
-          // Store vendor data for profile pre-population
+          // Check if the response contains tokens (successful signup)
+          if (res.access && res.refresh) {
+            // Store tokens for immediate use
+            localStorage.setItem('access_token', res.access);
+            localStorage.setItem('refresh_token', res.refresh);
+            showSuccess('Registration successful! You can now add menu items.');
+          } else {
+            // Store vendor data for profile pre-population (pending approval case)
           const userData = {
             fullName: formData.fullName,
             phone: formData.phone,
@@ -261,7 +274,8 @@ const VendorSignUp = () => {
             ...userData
           }));
           
-          showSuccess('Registration successful! Setting up your vendor account...');
+            showSuccess('Registration successful! Your account is pending approval.');
+          }
         }
 
         // Create and store complete vendor profile from signup data
@@ -303,7 +317,26 @@ const VendorSignUp = () => {
         }
       }
     } catch (err: any) {
-      showApiError(err, 'Failed to create vendor account');
+      console.error('Vendor signup error:', err);
+      
+      // Provide more specific error messages based on the error
+      let fallbackMessage = 'Failed to create vendor account';
+      
+      if (err?.message?.includes('Email:')) {
+        fallbackMessage = 'There was an issue with your email address. Please check and try again.';
+      } else if (err?.message?.includes('Password:')) {
+        fallbackMessage = 'There was an issue with your password. Please check and try again.';
+      } else if (err?.message?.includes('Business Name:')) {
+        fallbackMessage = 'There was an issue with your business name. Please check and try again.';
+      } else if (err?.message?.includes('Phone:')) {
+        fallbackMessage = 'There was an issue with your phone number. Please check and try again.';
+      } else if (err?.message?.includes('already exists') || err?.message?.includes('already registered')) {
+        fallbackMessage = 'An account with this email already exists. Please use a different email or try logging in.';
+      } else if (err?.message?.includes('network') || err?.message?.includes('fetch')) {
+        fallbackMessage = 'Network error. Please check your internet connection and try again.';
+      }
+      
+      showApiError(err, fallbackMessage);
     } finally {
       setIsLoading(false);
     }
@@ -322,8 +355,8 @@ const VendorSignUp = () => {
 
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('vendor_token');
-      if (!token) throw new Error('No vendor token found. Please log in again.');
+      const token = localStorage.getItem('access_token');
+      if (!token) throw new Error('No authentication token found. Please complete the vendor registration first.');
 
         await createMenuItem(token, {
         dish_name: currentItem.dishName,
@@ -333,6 +366,7 @@ const VendorSignUp = () => {
         quantity: parseInt(currentItem.quantity, 10),
         image: currentItem.image,
         available_now: currentItem.available,
+        variants: currentItem.variants || [],
       });
 
       showSuccess('Menu item added successfully!');
@@ -343,19 +377,39 @@ const VendorSignUp = () => {
       // Reset form to empty state for adding another item
       setFormData(prev => ({
         ...prev,
-        menuItems: [{
-          dishName: '',
-          price: '',
-          category: '',
-          otherCategory: '',
-          image: undefined,
-          available: true,
-          item_description: '',
-          quantity: '',
-        }]
+      menuItems: [{
+        dishName: '',
+        price: '',
+        category: '',
+        otherCategory: '',
+        image: undefined,
+        available: true,
+        item_description: '',
+        quantity: '',
+        variants: [],
+      }]
       }));
     } catch (err: any) {
-      showApiError(err, 'Failed to add menu item');
+      console.error('Menu item creation error:', err);
+      
+      // Provide more specific error messages for menu item creation
+      let fallbackMessage = 'Failed to add menu item';
+      
+      if (err?.message?.includes('dish_name') || err?.message?.includes('Dish Name')) {
+        fallbackMessage = 'There was an issue with the dish name. Please check and try again.';
+      } else if (err?.message?.includes('price')) {
+        fallbackMessage = 'There was an issue with the price. Please enter a valid price and try again.';
+      } else if (err?.message?.includes('category')) {
+        fallbackMessage = 'There was an issue with the category. Please select a valid category and try again.';
+      } else if (err?.message?.includes('image')) {
+        fallbackMessage = 'There was an issue with the image upload. Please try uploading the image again.';
+      } else if (err?.message?.includes('network') || err?.message?.includes('fetch')) {
+        fallbackMessage = 'Network error. Please check your internet connection and try again.';
+      } else if (err?.message?.includes('token') || err?.message?.includes('authentication') || err?.message?.includes('No authentication token')) {
+        fallbackMessage = 'Please complete the vendor registration first before adding menu items.';
+      }
+      
+      showApiError(err, fallbackMessage);
     } finally {
       setIsLoading(false);
     }
@@ -365,7 +419,7 @@ const VendorSignUp = () => {
   const handleSkipMenuItems = () => {
     localStorage.removeItem('vendor_signup_data');
     localStorage.removeItem('vendor_signup_step');
-    navigate('/vendor/plan-selection'); // Navigate directly to plan selection page
+    navigate('/plans', { state: { userType: 'vendor' } }); // Navigate to plan selection page
   };
 
   return (
@@ -408,6 +462,28 @@ const VendorSignUp = () => {
               value={formData.phone}
               onChange={(e) => handleInputChange('phone', e.target.value)}
             />
+            
+            {/* WhatsApp Verification */}
+            {formData.phone.trim() && (
+              <div style={{ marginTop: '16px', marginBottom: '16px' }}>
+                <WhatsAppVerification
+                  phoneNumber={formData.phone}
+                  countryCode="+234"
+                  onVerificationComplete={(verified, phoneNumber) => {
+                    handleInputChange('whatsappVerified', verified);
+                    if (verified) {
+                      showSuccess('WhatsApp number verified successfully!');
+                    }
+                  }}
+                  onVerificationSkip={() => {
+                    handleInputChange('whatsappVerified', false);
+                    showInfo('WhatsApp verification skipped. You can verify later in your profile.');
+                  }}
+                  required={false}
+                />
+              </div>
+            )}
+            
             <label className="user-login__label">Password</label>
             <input 
               className="user-login__input" 
@@ -693,7 +769,7 @@ const VendorSignUp = () => {
                           // Show loading state
                           handleMenuChange(index, 'image', 'uploading...');
                           
-                          // Upload to Cloudinary
+                          // Upload to Cloudinary using the hook
                           const imageUrl = await uploadMenuItemImage(file, 'menu-item', index);
                           
                           if (!imageUrl) {
@@ -751,6 +827,15 @@ const VendorSignUp = () => {
                   <span className="slider"></span>
                 </label>
               </div>
+              
+              {/* Variant Manager */}
+              <div className="variant-section" style={{margin: '1.5rem 0'}}>
+                <VariantManager
+                  variants={item.variants || []}
+                  onChange={(variants) => handleMenuChange(index, 'variants', variants)}
+                  disabled={isLoading}
+                />
+              </div>
                 </div>
               ))}
               <div className="signup-btn-group--wide">
@@ -805,8 +890,9 @@ const VendorSignUp = () => {
                   fullName: '', email: '', phone: '', password: '', confirmPassword: '',
                   businessName: '', businessCategory: '', otherBusinessCategory: '', cacNumber: '', businessDescription: '', logo: '',
                   businessAddress: '', deliveryRadius: '', serviceAreas: '', openingHours: '', closingHours: '', offersDelivery: false,
+                  whatsappVerified: false,
                   menuItems: [{
-                    dishName: '', price: '', category: '', otherCategory: '', image: undefined, available: true, item_description: '', quantity: ''
+                    dishName: '', price: '', category: '', otherCategory: '', image: undefined, available: true, item_description: '', quantity: '', variants: []
                   }]
                 });
                 setStep(0);
