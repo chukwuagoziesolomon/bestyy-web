@@ -96,15 +96,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Check if user is logged in on initial load
   useEffect(() => {
     const checkAuth = async () => {
+      console.log('AuthContext - Starting auth check...');
       const token = localStorage.getItem('access_token');
+      console.log('AuthContext - Token found:', token ? 'Yes' : 'No');
+      
       if (!token) {
+        console.log('AuthContext - No token, setting loading to false');
         setLoading(false);
         return;
       }
 
       try {
+        console.log('AuthContext - Making API call to /api/user/me/');
         // Get fresh user data from the backend using the configured axios instance
         const { data } = await api.get('/api/user/me/');
+        console.log('AuthContext - API response:', data);
         
         // The user data structure from /api/user/me/ endpoint
         const userData = {
@@ -122,6 +128,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         localStorage.setItem('user', JSON.stringify(userData));
         setUser(userData);
+        console.log('AuthContext - User set successfully');
       } catch (err) {
         console.error('Auth check failed:', err);
         // Clear invalid token on error
@@ -129,6 +136,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         localStorage.removeItem('refresh_token');
         setUser(null);
       } finally {
+        console.log('AuthContext - Setting loading to false');
         setLoading(false);
       }
     };

@@ -1,95 +1,55 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import './explore.css';
+import './ExploreDesktop.css';
+import './ExploreMobile.css';
 import { recommendationsApi, VendorRecommendation, RecommendationsResponse } from './services/recommendationsApi';
 import { categoriesApi, Category } from './services/categoriesApi';
 import { specialOffersApi as oldSpecialOffersApi, SpecialOffer as OldSpecialOffer } from './services/specialOffersApi';
 import { specialOffersApiNew as specialOffersApi, SpecialOffer } from './services/specialOffersApiNew';
-import NotificationBell from './components/NotificationBell';
 
 const Explore: React.FC = () => {
-  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+  // State for recommendations
   const [recommendations, setRecommendations] = useState<VendorRecommendation[]>([]);
   const [recommendationsData, setRecommendationsData] = useState<RecommendationsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // State for categories
   const [categories, setCategories] = useState<Category[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+
+  // State for special offers
   const [specialOffers, setSpecialOffers] = useState<OldSpecialOffer[]>([]);
   const [specialOffersNew, setSpecialOffersNew] = useState<SpecialOffer[]>([]);
-  const [categoriesLoading, setCategoriesLoading] = useState(true);
-  const [offersLoading, setOffersLoading] = useState(true);
   const [specialOffersNewLoading, setSpecialOffersNewLoading] = useState(true);
   const [specialOffersNewError, setSpecialOffersNewError] = useState<string | null>(null);
+  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
 
-  // Use actual backend data instead of dynamic/localStorage data
-  const [selectedCategory, setSelectedCategory] = useState('Food');
-  const [userLocation, setUserLocation] = useState('Lagos'); // Will be fetched from backend
-  const [userProfile, setUserProfile] = useState(null); // Will be fetched from backend
+  // State for user location and profile
+  const [userLocation, setUserLocation] = useState('Enugu');
+  const [userProfile, setUserProfile] = useState<any>(null);
 
-  // Auto-rotate special offers every 5 seconds
-  useEffect(() => {
-    if (specialOffersNew.length === 0) return;
-    
-    const interval = setInterval(() => {
-      setCurrentBannerIndex((prevIndex) => 
-        prevIndex === specialOffersNew.length - 1 ? 0 : prevIndex + 1
-      );
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [specialOffersNew.length]);
-
-  const goToBanner = (index: number) => {
-    if (index >= 0 && index < specialOffersNew.length) {
-      setCurrentBannerIndex(index);
-    }
-  };
-
-  const nextBanner = () => {
-    if (specialOffersNew.length === 0) return;
-    setCurrentBannerIndex((prevIndex) => 
-      prevIndex === specialOffersNew.length - 1 ? 0 : prevIndex + 1
-    );
-  };
-
-  const prevBanner = () => {
-    if (specialOffersNew.length === 0) return;
-    setCurrentBannerIndex((prevIndex) => 
-      prevIndex === 0 ? specialOffersNew.length - 1 : prevIndex - 1
-    );
-  };
-
-  // Load recommendations from API
+  // Load recommendations
   const loadRecommendations = async (page: number = 1) => {
     try {
       setLoading(true);
       setError(null);
-      
-      const data = await recommendationsApi.getRecommendations({
-        category: selectedCategory,
-        page,
-        page_size: 20,
-        city: userLocation
-      });
-      
+      const data = await recommendationsApi.getRecommendations({ page });
+      setRecommendationsData(data);
       if (page === 1) {
         setRecommendations(data.recommendations);
       } else {
-        // Append for pagination
         setRecommendations(prev => [...prev, ...data.recommendations]);
       }
-      
-      setRecommendationsData(data);
     } catch (err) {
-      setError('Failed to load recommendations');
       console.error('Error loading recommendations:', err);
+      setError('Failed to load recommendations');
     } finally {
       setLoading(false);
     }
   };
 
-  // Load categories from API
+  // Load categories
   const loadCategories = async () => {
     try {
       setCategoriesLoading(true);
@@ -102,389 +62,325 @@ const Explore: React.FC = () => {
     }
   };
 
-  // Load special offers from API (legacy - keeping for compatibility)
+  // Load special offers (old API)
   const loadSpecialOffers = async () => {
     try {
-      setOffersLoading(true);
       const data = await oldSpecialOffersApi.getSpecialOffers();
       setSpecialOffers(data.offers);
     } catch (err) {
       console.error('Error loading special offers:', err);
-    } finally {
-      setOffersLoading(false);
     }
   };
 
-  // Load special offers from API
+  // Load special offers (new API)
   const loadSpecialOffersNew = async () => {
     try {
       setSpecialOffersNewLoading(true);
       setSpecialOffersNewError(null);
-      
-      const data = await specialOffersApi.getHomepageSpecialOffers(5);
-      
-      // Filter active special offers and sort by priority
-      const activeOffers = specialOffersApi.filterActiveSpecialOffers(data);
-      const sortedOffers = specialOffersApi.sortSpecialOffersByPriority(activeOffers);
-      
-      // Filter special offers based on user profile if available
-      const userType = userProfile?.user_type;
-      const isNewUser = userProfile?.created_at ? 
-        (new Date().getTime() - new Date(userProfile.created_at).getTime()) < (30 * 24 * 60 * 60 * 1000) : false;
-      
-      const filteredOffers = specialOffersApi.filterSpecialOffersForUser(sortedOffers, userType, isNewUser);
-      
-      setSpecialOffersNew(filteredOffers);
+      const data = await specialOffersApi.getSpecialOffers();
+      const activeOffers = data.filter(offer => offer.status === 'active');
+      setSpecialOffersNew(activeOffers);
     } catch (err) {
-      console.error('Error loading special offers:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load special offers';
-      setSpecialOffersNewError(errorMessage);
-      setSpecialOffersNew([]);
+      console.error('Error loading new special offers:', err);
+      setSpecialOffersNewError('Failed to load special offers');
+      // Fallback to old API
+      loadSpecialOffers();
     } finally {
       setSpecialOffersNewLoading(false);
     }
   };
 
-  // Load user profile and location from backend
-  const loadUserProfile = async () => {
-    try {
-      const token = localStorage.getItem('access_token');
-      if (!token) return;
-
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000'}/api/user/profile/`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const userData = await response.json();
-        setUserProfile(userData);
-        // Update location from user data if available
-        if (userData.location) {
-          setUserLocation(userData.location);
-        }
-      }
-    } catch (err) {
-      console.log('Could not load user profile:', err);
-    }
+  // Banner navigation
+  const nextBanner = () => {
+    setCurrentBannerIndex((prev) => (prev + 1) % specialOffersNew.length);
   };
 
-  // Load initial data
-  useEffect(() => {
-    loadRecommendations(1);
-    loadCategories();
-    loadSpecialOffers();
-    loadUserProfile();
-    loadSpecialOffersNew();
-  }, []);
+  const prevBanner = () => {
+    setCurrentBannerIndex((prev) => (prev - 1 + specialOffersNew.length) % specialOffersNew.length);
+  };
 
-  // Reload recommendations when category or location changes
-  useEffect(() => {
-    if (selectedCategory && userLocation) {
-      loadRecommendations(1);
-    }
-  }, [selectedCategory, userLocation]);
+  const goToBanner = (index: number) => {
+    setCurrentBannerIndex(index);
+  };
 
-  // Reload special offers when user profile changes (for target audience filtering)
-  useEffect(() => {
-    if (userProfile) {
-      loadSpecialOffersNew();
-    }
-  }, [userProfile]);
-
-  // Handle category selection
+  // Handle category click
   const handleCategoryClick = (categoryName: string) => {
-    setSelectedCategory(categoryName);
     // Reload recommendations for selected category
     loadRecommendations(1);
   };
 
+  useEffect(() => {
+    loadRecommendations(1);
+    loadCategories();
+    loadSpecialOffersNew();
+  }, []);
+
+  // Auto-rotate banners every 5 seconds
+  useEffect(() => {
+    if (specialOffersNew.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentBannerIndex((prev) => (prev + 1) % specialOffersNew.length);
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [specialOffersNew.length]);
+
   return (
-    <div className="explore">
-      {/* Mobile Header */}
-      <header className="mobile-header">
+    <div className="explore-page">
+      {/* Top Header */}
+      <header className="explore-header">
         <div className="header-left">
-          <div className="logo-container">
-            <div className="logo-circle">
-              <span className="logo-text">b</span>
-            </div>
-          </div>
-          <div className="location-info">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="location-pin">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-              <circle cx="12" cy="10" r="3"/>
-            </svg>
-            <span className="location-text">from {userLocation}, Nigeria</span>
+          <div className="logo-section">
+            <img src="/logo.png" alt="Bestyy Logo" className="header-logo" />
+            <span className="location-text">Enugu, Nigeria</span>
           </div>
         </div>
         
+        <div className="header-center">
+          <h1 className="main-title">Explore Bestyy</h1>
+        </div>
+        
         <div className="header-right">
-          <div className="profile-section">
+          <div className="header-controls">
+            <button className="control-btn">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+            </button>
+            <button className="control-btn">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+            </button>
             <div className="profile-picture">
               <img 
-                src={userProfile?.profile_image || userProfile?.avatar || "/profile-placeholder.jpg"} 
+                src={userProfile?.profile_image || userProfile?.avatar || "/user1.png"} 
                 alt="Profile" 
               />
             </div>
-            <button className="menu-button">
-              <div className="menu-icon">
-                <div className="menu-line"></div>
-                <div className="menu-line"></div>
-                <div className="menu-dots">
-                  <div className="dot"></div>
-                  <div className="dot"></div>
-                </div>
-              </div>
-            </button>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="mobile-main">
-        {/* Explore Bestyy Section */}
-        <section className="explore-section">
-          <h1 className="explore-title">Explore Bestyy</h1>
-          <div className="category-cards">
-            <div className="category-card food-card" onClick={() => handleCategoryClick('Food')}>
-              <div className="category-icon">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M3 2v7c0 1.1.9 2 2 2h4v11a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1V11h4c1.1 0 2-.9 2-2V2H3z"/>
-                  <path d="M8 11h8"/>
-                  <path d="M12 7v4"/>
-                </svg>
-              </div>
-              <span className="category-name">Food</span>
-            </div>
-            
-            <div className="category-card flights-card" onClick={() => handleCategoryClick('Flights')}>
-              <div className="category-icon">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
-                </svg>
-              </div>
-              <span className="category-name">Flights</span>
-            </div>
-            
-            <div className="category-card tickets-card" onClick={() => handleCategoryClick('Tickets')}>
-              <div className="category-icon">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v2z"/>
-                  <path d="M13 5v2"/>
-                  <path d="M13 17v2"/>
-                  <path d="M13 11v2"/>
-                </svg>
-              </div>
-              <span className="category-name">Tickets</span>
-            </div>
+      {/* Category Navigation */}
+<nav className="category-navigation">
+  <div className="category-list">
+    <div 
+      className="category-item active"
+      onClick={() => handleCategoryClick('Food')}
+    >
+      <div className="category-icon">
+        <img src="/food.png" alt="Food" className="category-image" />
+      </div>
+      <span className="category-name">Food</span>
+    </div>
+    
+    <div className="category-item coming-soon" onClick={() => handleCategoryClick('Flights')}>
+      <div className="category-icon">
+        <img src="/plane.png" alt="Flights" className="category-image" />
+        <span className="coming-soon-badge">Coming Soon</span>
+      </div>
+      <span className="category-name">Flights</span>
+    </div>
+    
+    <div className="category-item coming-soon" onClick={() => handleCategoryClick('Tickets')}>
+      <div className="category-icon">
+        <img src="/ticket.png" alt="Tickets" className="category-image" />
+        <span className="coming-soon-badge">Coming Soon</span>
+      </div>
+      <span className="category-name">Tickets</span>
+    </div>
+    
+    <div className="category-item coming-soon" onClick={() => handleCategoryClick('Shortlet')}>
+      <div className="category-icon">
+        <img src="/house.png" alt="Shortlet" className="category-image" />
+        <span className="coming-soon-badge">Coming Soon</span>
+      </div>
+      <span className="category-name">Shortlet</span>
+    </div>
+    
+    <div className="category-item coming-soon" onClick={() => handleCategoryClick('Hotels')}>
+      <div className="category-icon">
+        <img src="/house.png" alt="Hotels" className="category-image" />
+        <span className="coming-soon-badge">Coming Soon</span>
+      </div>
+      <span className="category-name">Hotels</span>
+    </div>
+    
+    <div className="category-item coming-soon" onClick={() => handleCategoryClick('Airbnb')}>
+      <div className="category-icon">
+        <img src="/Airbnb.png" alt="Airbnb" className="category-image" />
+        <span className="coming-soon-badge">Coming Soon</span>
+      </div>
+      <span className="category-name">Airbnb</span>
+    </div>
+    
+    <div className="category-item" onClick={() => handleCategoryClick('Services')}>
+      <div className="category-icon">
+        <img src="/food.png" alt="Services" className="category-image" />
+      </div>
+      <span className="category-name">Services</span>
+    </div>
+    
+    <div className="category-arrow">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <polyline points="9,18 15,12 9,6"/>
+      </svg>
+    </div>
+  </div>
+</nav>
+      {/* Promotional Banner Slideshow */}
+      <section className="promotional-banner">
+        {specialOffersNewLoading ? (
+          <div className="loading-state">
+            <p>Loading special offers...</p>
           </div>
-        </section>
-
-        {/* Hero Section */}
-        <section className="hero-section">
-          <div className="hero-header">
-            <h1>Explore Bestyy</h1>
-            <div className="menu-dots">
-              <span></span>
-              <span></span>
-              <span></span>
+        ) : specialOffersNewError ? (
+          <div className="error-state">
+            <div className="error-icon">⚠️</div>
+            <h3>Failed to Load Special Offers</h3>
+            <p>{specialOffersNewError}</p>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+              <button 
+                className="retry-button"
+                onClick={loadSpecialOffersNew}
+              >
+                Retry API
+              </button>
+              {specialOffers.length > 0 && (
+                <button 
+                  className="retry-button"
+                  onClick={() => {
+                    setSpecialOffersNewError(null);
+                    setSpecialOffersNew(specialOffers.map(offer => ({
+                      id: offer.id,
+                      title: offer.title,
+                      description: offer.subtitle,
+                      banner_image: offer.image,
+                      banner_type: 'homepage' as const,
+                      status: offer.isActive ? 'active' as const : 'inactive' as const,
+                      priority: 5,
+                      click_url: '',
+                      target_audience: ['all_users'],
+                      display_start_date: offer.startDate || new Date().toISOString(),
+                      display_end_date: offer.endDate || null,
+                      created_at: new Date().toISOString(),
+                      updated_at: new Date().toISOString(),
+                      is_active: offer.isActive
+                    })));
+                  }}
+                  style={{ background: '#059669' }}
+                >
+                  Use Fallback
+                </button>
+              )}
             </div>
-          </div>
-          
-          <div className="hero-description">
-            <p>
-              Craving something delicious? Explore our curated selection of top-rated restaurants and food vendors. From local favorites to international cuisine, satisfy your taste buds with the best food deals in town!
+            <p className="fallback-note">
+              <small>Backend server may not be running. Check console for details.</small>
             </p>
           </div>
-
-          {/* Categories */}
-          <div className="categories-section">
-            {categoriesLoading ? (
-              <div className="loading-state">
-                <p>Loading categories...</p>
-              </div>
-            ) : (
-              <div className="categories-scroll">
-                {categories.map((category) => (
-                  <div 
-                    key={category.id} 
-                    className={`category-item ${category.active ? 'active' : ''} ${!category.available ? 'coming-soon' : ''}`}
-                    style={{
-                      backgroundColor: category.bgColor,
-                      borderColor: category.active ? category.borderColor : 'transparent'
-                    }}
-                    onClick={() => handleCategoryClick(category.name)}
-                  >
-                    <div className="category-icon">
-                      <img src={category.icon} alt={category.name} className="category-icon-img" />
-                    </div>
-                    <span className="category-name">{category.name}</span>
-                    {category.itemCount && category.itemCount > 0 && (
-                      <span className="item-count">({category.itemCount})</span>
-                    )}
-                    {!category.available && (
-                      <div className="coming-soon-badge">Coming Soon</div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Special Offers Banner */}
-          <div className="special-offers-container">
-            {specialOffersNewLoading ? (
-              <div className="loading-state">
-                <p>Loading special offers...</p>
-              </div>
-            ) : specialOffersNewError ? (
-              <div className="error-state">
-                <div className="error-icon">⚠️</div>
-                <h3>Failed to Load Special Offers</h3>
-                <p>{specialOffersNewError}</p>
-                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-                  <button 
-                    className="retry-button"
-                    onClick={loadSpecialOffersNew}
-                  >
-                    Retry API
-                  </button>
-                  {specialOffers.length > 0 && (
-                    <button 
-                      className="retry-button"
-                      onClick={() => {
-                        setSpecialOffersNewError(null);
-                        // Use old special offers as fallback
-                        setSpecialOffersNew(specialOffers.map(offer => ({
-                          id: offer.id,
-                          title: offer.title,
-                          description: offer.subtitle,
-                          banner_image: offer.image,
-                          banner_type: 'homepage' as const,
-                          status: offer.isActive ? 'active' as const : 'inactive' as const,
-                          priority: 5,
-                          click_url: '',
-                          target_audience: ['all_users'],
-                          display_start_date: offer.startDate || new Date().toISOString(),
-                          display_end_date: offer.endDate || null,
-                          created_at: new Date().toISOString(),
-                          updated_at: new Date().toISOString(),
-                          is_active: offer.isActive
-                        })));
-                      }}
-                      style={{ background: '#059669' }}
-                    >
-                      Use Fallback
-                    </button>
-                  )}
-                </div>
-                <p className="fallback-note">
-                  <small>Backend server may not be running. Check console for details.</small>
-                </p>
-              </div>
-            ) : specialOffersNew.length > 0 && specialOffersNew[currentBannerIndex] ? (
-              <>
+        ) : specialOffersNew.length > 0 ? (
+          <div className="banner-slideshow">
+            <div className="banner-container">
+              {specialOffersNew.map((banner, index) => (
                 <div 
-                  className="weekend-banner full-image-banner"
+                  key={banner.id}
+                  className={`banner-slide ${index === currentBannerIndex ? 'active' : ''}`}
                   style={{
-                    backgroundImage: `url(${specialOffersNew[currentBannerIndex].banner_image})`,
+                    backgroundImage: `url(${banner.banner_image})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     backgroundRepeat: 'no-repeat'
                   }}
                   onClick={() => {
-                    if (specialOffersNew[currentBannerIndex].click_url) {
-                      window.open(specialOffersNew[currentBannerIndex].click_url, '_blank');
+                    if (banner.click_url) {
+                      window.open(banner.click_url, '_blank');
                     }
                   }}
                 >
                   <div className="banner-overlay"></div>
-                  <div className="banner-content">
-                    <h2>{specialOffersNew[currentBannerIndex].title}</h2>
-                    <p>{specialOffersNew[currentBannerIndex].description}</p>
-                    {specialOffersNew[currentBannerIndex].click_url && (
-                      <button className="view-offers-btn">View Details</button>
-                    )}
+                  <div className="banner-text">
+                    <h2>{banner.title}</h2>
+                    <p>{banner.description}</p>
+                    <button className="view-offers-btn">View Offers</button>
                   </div>
                 </div>
-
-                {specialOffersNew.length > 1 && (
-                  <div className="banner-controls">
-                    <button className="banner-nav-btn prev-btn" onClick={prevBanner}>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M15 18l-6-6 6-6"/>
-                      </svg>
-                    </button>
-                    
-                    <div className="banner-dots">
-                      {specialOffersNew.map((_, index) => (
-                        <button
-                          key={index}
-                          className={`banner-dot ${index === currentBannerIndex ? 'active' : ''}`}
-                          onClick={() => goToBanner(index)}
-                        />
-                      ))}
-                    </div>
-                    
-                    <button className="banner-nav-btn next-btn" onClick={nextBanner}>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M9 18l6-6-6-6"/>
-                      </svg>
-                    </button>
-                  </div>
-                )}
+              ))}
+            </div>
+            
+            {/* Navigation Controls */}
+            {specialOffersNew.length > 1 && (
+              <>
+                <button className="banner-nav prev-btn" onClick={prevBanner}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M15 18l-6-6 6-6"/>
+                  </svg>
+                </button>
+                <button className="banner-nav next-btn" onClick={nextBanner}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M9 18l6-6-6-6"/>
+                  </svg>
+                </button>
+                
+                {/* Dots Indicator */}
+                <div className="banner-dots">
+                  {specialOffersNew.map((_, index) => (
+                    <button
+                      key={index}
+                      className={`banner-dot ${index === currentBannerIndex ? 'active' : ''}`}
+                      onClick={() => goToBanner(index)}
+                    />
+                  ))}
+                </div>
               </>
-            ) : (
-              <div className="no-offers">
-                <p>No special offers available at the moment.</p>
-              </div>
             )}
           </div>
-        </section>
+        ) : (
+          <div className="banner-slideshow">
+            <div className="banner-container">
+              <div className="banner-slide active">
+                <div className="banner-overlay"></div>
+                <div className="banner-text">
+                  <h2>Weekend Getaway Special</h2>
+                  <p>Exclusive shortlet deals for your weekend</p>
+                  <button className="view-offers-btn">View Offers</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
 
         {/* Featured Section */}
         <section className="featured-section">
           <h2 className="featured-title">Featured</h2>
+        
           {loading && (
             <div className="loading-state">
               <p>Loading recommendations...</p>
             </div>
           )}
+        
           {error && (
             <div className="error-state">
               <p>{error}</p>
               <button onClick={() => loadRecommendations(1)}>Retry</button>
             </div>
           )}
+        
           {!loading && !error && (
             <>
               <div className="featured-grid">
-                {recommendations.map((vendor, index) => {
-                  // Check if this is the first non-featured vendor (to add separator)
-                  const isFirstNonFeatured = !vendor.is_featured && 
-                    (index === 0 || recommendations[index - 1].is_featured);
-                  
-                  return (
-                    <React.Fragment key={vendor.id}>
-                      {isFirstNonFeatured && (
-                        <div className="section-separator">
-                          <div className="separator-line"></div>
-                          <span className="separator-text">Other Recommendations</span>
-                          <div className="separator-line"></div>
-                        </div>
-                      )}
-                      <Link to={`/vendor/${vendor.id}`} className="featured-card-link">
-                        <div className="featured-card">
+              {recommendations.map((vendor, index) => (
+                <Link key={vendor.id} to={`/vendor/${vendor.id}`} className="featured-card">
                           {vendor.is_featured && <div className="featured-badge">FEATURED</div>}
                           <div className="card-image">
                             <img 
                               src={vendor.logo} 
                               alt={vendor.business_name}
                               onError={(e) => {
-                                // Fallback to thumbnail if main logo fails
                                 const target = e.target as HTMLImageElement;
                                 target.src = vendor.logo_thumbnail;
                               }}
@@ -500,27 +396,18 @@ const Explore: React.FC = () => {
                               <span className="delivery-time">{vendor.delivery_time}</span>
                             </div>
                             <div className="category-tag">
-                              <span className="tag-icon">▲</span>
                               <span className="tag-text">{vendor.business_category}</span>
                             </div>
                             <div className="price-section">
-                              <span className="price">₦ {vendor.is_featured ? '7000' : '5000'}</span>
-                              <button className="add-to-cart">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                  <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-                                  <line x1="3" y1="6" x2="21" y2="6"/>
-                                  <path d="M16 10a4 4 0 0 1-8 0"/>
-                                </svg>
-                              </button>
-                            </div>
+                      <span className="price">₦{vendor.is_featured ? '7000' : '5000'}</span>
                           </div>
                         </div>
                       </Link>
-                    </React.Fragment>
-                  );
-                })}
+              ))}
               </div>
+            
               {recommendationsData?.has_next && (
+              <div className="view-more-container">
                 <button 
                   className="view-more-btn"
                   onClick={() => loadRecommendations(recommendationsData.next_page || 1)}
@@ -528,35 +415,39 @@ const Explore: React.FC = () => {
                 >
                   {loading ? 'Loading...' : 'View more'}
                 </button>
+              </div>
               )}
             </>
           )}
         </section>
-      </main>
 
-      {/* Mobile Footer */}
-      <footer className="mobile-footer">
-        <div className="footer-links">
-          <a href="#home" className="footer-link">HOME⁴</a>
-          <a href="#how-it-works" className="footer-link">HOW IT WORKS²⁷</a>
-          <a href="#features" className="footer-link">FEATURES</a>
-          <a href="#faq" className="footer-link">FAQ'S</a>
+      {/* Footer */}
+      <footer className="explore-footer">
+        <div className="footer-content">
+          <div className="footer-section locations">
+            <h4>LOCATIONS <sup>4</sup></h4>
+            <ul>
+              <li>ENUGU 27</li>
+              <li>ABUJA</li>
+              <li>LAGOS</li>
+              <li>PORTHARCORT</li>
+            </ul>
         </div>
         
-        <div className="contact-info">
+          <div className="footer-section contact">
           <div className="contact-item">
-            <span className="contact-label">Whatsapp</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="external-link">
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-              <polyline points="15,3 21,3 21,9"/>
-              <line x1="10" y1="14" x2="21" y2="3"/>
-            </svg>
+              <span>+1 999 888-77-64</span>
           </div>
           <div className="contact-item">
-            <span className="contact-label">+1 999 888-77-64</span>
+              <span>hello@bestie.com</span>
           </div>
           <div className="contact-item">
-            <span className="contact-label">hello@bestie.com</span>
+              <span>Whatsapp</span>
+            </div>
+          </div>
+          
+          <div className="footer-section partners">
+            <a href="#" className="partners-link">Become Partners</a>
           </div>
         </div>
         
@@ -583,13 +474,13 @@ const Explore: React.FC = () => {
               </svg>
             </a>
           </div>
-          <div className="footer-bottom-links">
-            <a href="#privacy" className="footer-bottom-link">Privacy</a>
-            <span className="copyright">© 2025 - Copyright</span>
+          
+          <div className="footer-bottom-right">
+            <a href="#privacy" className="privacy-link">Privacy</a>
+            <span className="copyright">2025 - Copyright</span>
           </div>
         </div>
       </footer>
-
     </div>
   );
 };

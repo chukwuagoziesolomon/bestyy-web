@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react';
 export const useResponsive = () => {
   const [isClient, setIsClient] = useState(false);
   const [windowSize, setWindowSize] = useState({
-    width: 0,
-    height: 0,
+    width: typeof window !== 'undefined' ? window.innerWidth : 1024,
+    height: typeof window !== 'undefined' ? window.innerHeight : 768,
   });
 
   useEffect(() => {
@@ -28,10 +28,10 @@ export const useResponsive = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Screen sizes - default to mobile to prevent flash
-  const isMobile = isClient ? windowSize.width < 768 : true;
-  const isTablet = isClient ? windowSize.width >= 768 && windowSize.width < 1024 : false;
-  const isDesktop = isClient ? windowSize.width >= 1024 : false;
+  // Screen sizes - use actual window size instead of defaulting to mobile
+  const isMobile = isClient ? windowSize.width < 768 : windowSize.width < 768;
+  const isTablet = isClient ? windowSize.width >= 768 && windowSize.width < 1024 : windowSize.width >= 768 && windowSize.width < 1024;
+  const isDesktop = isClient ? windowSize.width >= 1024 : windowSize.width >= 1024;
   const isMobileOrTablet = isMobile || isTablet;
 
   // Function to redirect to desktop dashboard
