@@ -1,10 +1,11 @@
 /* Desktop Styles for Explore Page - Matching the Design */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700&display=swap');
 
 .explore-page {
   min-height: 100vh;
   background: #ffffff;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 700;
 }
 
 /* Header Styles */
@@ -459,7 +460,7 @@
   margin-top: 60px;
 }
 
-.footer-content {
+.explore-footer .footer-content {
   max-width: 1200px;
   margin: 0 auto;
   display: grid;
@@ -468,48 +469,48 @@
   margin-bottom: 40px;
 }
 
-.footer-section h4 {
+.explore-footer .footer-section h4 {
   font-size: 16px;
   font-weight: 700;
   color: #111827;
   margin: 0 0 16px 0;
 }
 
-.footer-section h4 sup {
+.explore-footer .footer-section h4 sup {
   font-size: 12px;
   color: #6b7280;
 }
 
-.footer-section ul {
+.explore-footer .footer-section ul {
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
-.footer-section li {
+.explore-footer .footer-section li {
   color: #6b7280;
   margin-bottom: 8px;
   font-size: 14px;
 }
 
-.contact-item {
+.explore-footer .contact-item {
   color: #6b7280;
   margin-bottom: 8px;
   font-size: 14px;
 }
 
-.partners-link {
+.explore-footer .partners-link {
   color: #10b981;
   text-decoration: none;
   font-weight: 600;
   font-size: 14px;
 }
 
-.partners-link:hover {
+.explore-footer .partners-link:hover {
   text-decoration: underline;
 }
 
-.footer-bottom {
+.explore-footer .footer-bottom {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -517,37 +518,37 @@
   border-top: 1px solid #e5e7eb;
 }
 
-.social-links {
+.explore-footer .social-links {
   display: flex;
   gap: 16px;
 }
 
-.social-link {
+.explore-footer .social-link {
   color: #6b7280;
   transition: color 0.2s ease;
 }
 
-.social-link:hover {
+.explore-footer .social-link:hover {
   color: #10b981;
 }
 
-.footer-bottom-right {
+.explore-footer .footer-bottom-right {
   display: flex;
   align-items: center;
   gap: 24px;
 }
 
-.privacy-link {
+.explore-footer .privacy-link {
   color: #6b7280;
   text-decoration: none;
   font-size: 14px;
 }
 
-.privacy-link:hover {
+.explore-footer .privacy-link:hover {
   color: #10b981;
 }
 
-.copyright {
+.explore-footer .copyright {
   color: #9ca3af;
   font-size: 14px;
 }
