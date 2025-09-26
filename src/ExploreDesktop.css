@@ -390,20 +390,22 @@
   margin: 0 0 8px 0;
 }
 
-.delivery-info {
+.rating-info {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   margin-bottom: 8px;
 }
 
-.clock-icon {
-  color: #6b7280;
+.stars {
+  color: #fbbf24;
+  font-size: 14px;
 }
 
-.delivery-time {
+.rating-text {
   font-size: 14px;
   color: #6b7280;
+  font-weight: 500;
 }
 
 .category-tag {

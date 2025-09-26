@@ -1,129 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import './ExploreDesktop.css';
 import './ExploreMobile.css';
-import { recommendationsApi, VendorRecommendation, RecommendationsResponse } from './services/recommendationsApi';
-import { categoriesApi, Category } from './services/categoriesApi';
-import { specialOffersApi as oldSpecialOffersApi, SpecialOffer as OldSpecialOffer } from './services/specialOffersApi';
-import { specialOffersApiNew as specialOffersApi, SpecialOffer } from './services/specialOffersApiNew';
 
 const Explore: React.FC = () => {
-  // State for recommendations
-  const [recommendations, setRecommendations] = useState<VendorRecommendation[]>([]);
-  const [recommendationsData, setRecommendationsData] = useState<RecommendationsResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // State for categories
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [categoriesLoading, setCategoriesLoading] = useState(true);
-
-  // State for special offers
-  const [specialOffers, setSpecialOffers] = useState<OldSpecialOffer[]>([]);
-  const [specialOffersNew, setSpecialOffersNew] = useState<SpecialOffer[]>([]);
-  const [specialOffersNewLoading, setSpecialOffersNewLoading] = useState(true);
-  const [specialOffersNewError, setSpecialOffersNewError] = useState<string | null>(null);
-  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
-
   // State for user location and profile
-  const [userLocation, setUserLocation] = useState('Enugu');
-  const [userProfile, setUserProfile] = useState<any>(null);
-
-  // Load recommendations
-  const loadRecommendations = async (page: number = 1) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await recommendationsApi.getRecommendations({ page });
-      setRecommendationsData(data);
-      if (page === 1) {
-        setRecommendations(data.recommendations);
-      } else {
-        setRecommendations(prev => [...prev, ...data.recommendations]);
-      }
-    } catch (err) {
-      console.error('Error loading recommendations:', err);
-      setError('Failed to load recommendations');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Load categories
-  const loadCategories = async () => {
-    try {
-      setCategoriesLoading(true);
-      const data = await categoriesApi.getCategories();
-      setCategories(data.categories);
-    } catch (err) {
-      console.error('Error loading categories:', err);
-    } finally {
-      setCategoriesLoading(false);
-    }
-  };
-
-  // Load special offers (old API)
-  const loadSpecialOffers = async () => {
-    try {
-      const data = await oldSpecialOffersApi.getSpecialOffers();
-      setSpecialOffers(data.offers);
-    } catch (err) {
-      console.error('Error loading special offers:', err);
-    }
-  };
-
-  // Load special offers (new API)
-  const loadSpecialOffersNew = async () => {
-    try {
-      setSpecialOffersNewLoading(true);
-      setSpecialOffersNewError(null);
-      const data = await specialOffersApi.getSpecialOffers();
-      const activeOffers = data.filter(offer => offer.status === 'active');
-      setSpecialOffersNew(activeOffers);
-    } catch (err) {
-      console.error('Error loading new special offers:', err);
-      setSpecialOffersNewError('Failed to load special offers');
-      // Fallback to old API
-      loadSpecialOffers();
-    } finally {
-      setSpecialOffersNewLoading(false);
-    }
-  };
-
-  // Banner navigation
-  const nextBanner = () => {
-    setCurrentBannerIndex((prev) => (prev + 1) % specialOffersNew.length);
-  };
-
-  const prevBanner = () => {
-    setCurrentBannerIndex((prev) => (prev - 1 + specialOffersNew.length) % specialOffersNew.length);
-  };
-
-  const goToBanner = (index: number) => {
-    setCurrentBannerIndex(index);
-  };
-
-  // Handle category click
-  const handleCategoryClick = (categoryName: string) => {
-    // Reload recommendations for selected category
-    loadRecommendations(1);
-  };
-
-  useEffect(() => {
-    loadRecommendations(1);
-    loadCategories();
-    loadSpecialOffersNew();
-  }, []);
-
-  // Auto-rotate banners every 5 seconds
-  useEffect(() => {
-    if (specialOffersNew.length > 1) {
-      const interval = setInterval(() => {
-        setCurrentBannerIndex((prev) => (prev + 1) % specialOffersNew.length);
-      }, 5000);
-      return () => clearInterval(interval);
-    }
-  }, [specialOffersNew.length]);
+  const userLocation = 'Enugu';
+  const userProfile = null;
 
   return (
     <div className="explore-page">
@@ -165,289 +48,285 @@ const Explore: React.FC = () => {
       </header>
 
       {/* Category Navigation */}
-<nav className="category-navigation">
-  <div className="category-list">
-    <div 
-      className="category-item active"
-      onClick={() => handleCategoryClick('Food')}
-    >
-      <div className="category-icon">
-        <img src="/food.png" alt="Food" className="category-image" />
-      </div>
-      <span className="category-name">Food</span>
-    </div>
-    
-    <div className="category-item coming-soon" onClick={() => handleCategoryClick('Flights')}>
-      <div className="category-icon">
-        <img src="/plane.png" alt="Flights" className="category-image" />
-        <span className="coming-soon-badge">Coming Soon</span>
-      </div>
-      <span className="category-name">Flights</span>
-    </div>
-    
-    <div className="category-item coming-soon" onClick={() => handleCategoryClick('Tickets')}>
-      <div className="category-icon">
-        <img src="/ticket.png" alt="Tickets" className="category-image" />
-        <span className="coming-soon-badge">Coming Soon</span>
-      </div>
-      <span className="category-name">Tickets</span>
-    </div>
-    
-    <div className="category-item coming-soon" onClick={() => handleCategoryClick('Shortlet')}>
-      <div className="category-icon">
-        <img src="/house.png" alt="Shortlet" className="category-image" />
-        <span className="coming-soon-badge">Coming Soon</span>
-      </div>
-      <span className="category-name">Shortlet</span>
-    </div>
-    
-    <div className="category-item coming-soon" onClick={() => handleCategoryClick('Hotels')}>
-      <div className="category-icon">
-        <img src="/house.png" alt="Hotels" className="category-image" />
-        <span className="coming-soon-badge">Coming Soon</span>
-      </div>
-      <span className="category-name">Hotels</span>
-    </div>
-    
-    <div className="category-item coming-soon" onClick={() => handleCategoryClick('Airbnb')}>
-      <div className="category-icon">
-        <img src="/Airbnb.png" alt="Airbnb" className="category-image" />
-        <span className="coming-soon-badge">Coming Soon</span>
-      </div>
-      <span className="category-name">Airbnb</span>
-    </div>
-    
-    <div className="category-item" onClick={() => handleCategoryClick('Services')}>
-      <div className="category-icon">
-        <img src="/food.png" alt="Services" className="category-image" />
-      </div>
-      <span className="category-name">Services</span>
-    </div>
-    
-    <div className="category-arrow">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <polyline points="9,18 15,12 9,6"/>
-      </svg>
-    </div>
-  </div>
-</nav>
-      {/* Promotional Banner Slideshow */}
+      <nav className="category-navigation">
+        <div className="category-list">
+          <div className="category-item active">
+            <div className="category-icon">
+              <img src="/food.png" alt="Food" className="category-image" />
+            </div>
+            <span className="category-name">Food</span>
+          </div>
+
+          <div className="category-item coming-soon">
+            <div className="category-icon">
+              <img src="/plane.png" alt="Flights" className="category-image" />
+              <span className="coming-soon-badge">Coming Soon</span>
+            </div>
+            <span className="category-name">Flights</span>
+          </div>
+
+          <div className="category-item coming-soon">
+            <div className="category-icon">
+              <img src="/ticket.png" alt="Tickets" className="category-image" />
+              <span className="coming-soon-badge">Coming Soon</span>
+            </div>
+            <span className="category-name">Tickets</span>
+          </div>
+
+          {/* Additional categories for desktop */}
+          <div className="category-item coming-soon desktop-only">
+            <div className="category-icon">
+              <img src="/house.png" alt="Shortlet" className="category-image" />
+              <span className="coming-soon-badge">Coming Soon</span>
+            </div>
+            <span className="category-name">Shortlet</span>
+          </div>
+
+          <div className="category-item coming-soon desktop-only">
+            <div className="category-icon">
+              <img src="/house.png" alt="Hotels" className="category-image" />
+              <span className="coming-soon-badge">Coming Soon</span>
+            </div>
+            <span className="category-name">Hotels</span>
+          </div>
+
+          <div className="category-item coming-soon desktop-only">
+            <div className="category-icon">
+              <img src="/Airbnb.png" alt="Airbnb" className="category-image" />
+              <span className="coming-soon-badge">Coming Soon</span>
+            </div>
+            <span className="category-name">Airbnb</span>
+          </div>
+
+          <div className="category-item desktop-only">
+            <div className="category-icon">
+              <img src="/food.png" alt="Services" className="category-image" />
+            </div>
+            <span className="category-name">Services</span>
+          </div>
+        </div>
+      </nav>
+
+      {/* Promotional Banner */}
       <section className="promotional-banner">
-        {specialOffersNewLoading ? (
-          <div className="loading-state">
-            <p>Loading special offers...</p>
-          </div>
-        ) : specialOffersNewError ? (
-          <div className="error-state">
-            <div className="error-icon">⚠️</div>
-            <h3>Failed to Load Special Offers</h3>
-            <p>{specialOffersNewError}</p>
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-              <button 
-                className="retry-button"
-                onClick={loadSpecialOffersNew}
-              >
-                Retry API
-              </button>
-              {specialOffers.length > 0 && (
-                <button 
-                  className="retry-button"
-                  onClick={() => {
-                    setSpecialOffersNewError(null);
-                    setSpecialOffersNew(specialOffers.map(offer => ({
-                      id: offer.id,
-                      title: offer.title,
-                      description: offer.subtitle,
-                      banner_image: offer.image,
-                      banner_type: 'homepage' as const,
-                      status: offer.isActive ? 'active' as const : 'inactive' as const,
-                      priority: 5,
-                      click_url: '',
-                      target_audience: ['all_users'],
-                      display_start_date: offer.startDate || new Date().toISOString(),
-                      display_end_date: offer.endDate || null,
-                      created_at: new Date().toISOString(),
-                      updated_at: new Date().toISOString(),
-                      is_active: offer.isActive
-                    })));
-                  }}
-                  style={{ background: '#059669' }}
-                >
-                  Use Fallback
-                </button>
-              )}
-            </div>
-            <p className="fallback-note">
-              <small>Backend server may not be running. Check console for details.</small>
-            </p>
-          </div>
-        ) : specialOffersNew.length > 0 ? (
-          <div className="banner-slideshow">
-            <div className="banner-container">
-              {specialOffersNew.map((banner, index) => (
-                <div 
-                  key={banner.id}
-                  className={`banner-slide ${index === currentBannerIndex ? 'active' : ''}`}
-                  style={{
-                    backgroundImage: `url(${banner.banner_image})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    backgroundRepeat: 'no-repeat'
-                  }}
-                  onClick={() => {
-                    if (banner.click_url) {
-                      window.open(banner.click_url, '_blank');
-                    }
-                  }}
-                >
-                  <div className="banner-overlay"></div>
-                  <div className="banner-text">
-                    <h2>{banner.title}</h2>
-                    <p>{banner.description}</p>
-                    <button className="view-offers-btn">View Offers</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            {/* Navigation Controls */}
-            {specialOffersNew.length > 1 && (
-              <>
-                <button className="banner-nav prev-btn" onClick={prevBanner}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M15 18l-6-6 6-6"/>
-                  </svg>
-                </button>
-                <button className="banner-nav next-btn" onClick={nextBanner}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M9 18l6-6-6-6"/>
-                  </svg>
-                </button>
-                
-                {/* Dots Indicator */}
-                <div className="banner-dots">
-                  {specialOffersNew.map((_, index) => (
-                    <button
-                      key={index}
-                      className={`banner-dot ${index === currentBannerIndex ? 'active' : ''}`}
-                      onClick={() => goToBanner(index)}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        ) : (
-          <div className="banner-slideshow">
-            <div className="banner-container">
-              <div className="banner-slide active">
-                <div className="banner-overlay"></div>
-                <div className="banner-text">
-                  <h2>Weekend Getaway Special</h2>
-                  <p>Exclusive shortlet deals for your weekend</p>
-                  <button className="view-offers-btn">View Offers</button>
-                </div>
+        <div className="banner-slideshow">
+          <div className="banner-container">
+            <div className="banner-slide active">
+              <div className="banner-overlay"></div>
+              <div className="banner-text">
+                <h2>Weekend Getaway Special</h2>
+                <p>Exclusive shortlet deals for your weekend</p>
+                <button className="view-offers-btn">View Offers</button>
               </div>
             </div>
           </div>
-        )}
+        </div>
       </section>
 
-        {/* Featured Section */}
-        <section className="featured-section">
-          <h2 className="featured-title">Featured</h2>
-        
-          {loading && (
-            <div className="loading-state">
-              <p>Loading recommendations...</p>
+      {/* Featured Section */}
+      <section className="featured-section">
+        <h2 className="featured-title">Featured</h2>
+
+        <div className="featured-grid">
+          <Link to="/vendor/1" className="featured-card">
+            <div className="featured-badge">FEATURED</div>
+            <div className="card-image">
+              <img src="/pizza1.jpg" alt="Galaxy Pizza Lagos" />
             </div>
-          )}
-        
-          {error && (
-            <div className="error-state">
-              <p>{error}</p>
-              <button onClick={() => loadRecommendations(1)}>Retry</button>
+            <div className="card-content">
+              <h3 className="vendor-name">Galaxy Pizza Lagos</h3>
+              <div className="rating-info">
+                <div className="stars">
+                  <span>⭐⭐⭐⭐⭐</span>
+                </div>
+                <span className="rating-text">5 Fast</span>
+              </div>
+              <div className="price-section">
+                <span className="price">₦ 7000</span>
+              </div>
             </div>
-          )}
-        
-          {!loading && !error && (
-            <>
-              <div className="featured-grid">
-              {recommendations.map((vendor, index) => (
-                <Link key={vendor.id} to={`/vendor/${vendor.id}`} className="featured-card">
-                          {vendor.is_featured && <div className="featured-badge">FEATURED</div>}
-                          <div className="card-image">
-                            <img 
-                              src={vendor.logo} 
-                              alt={vendor.business_name}
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.src = vendor.logo_thumbnail;
-                              }}
-                            />
-                          </div>
-                          <div className="card-content">
-                            <h3 className="vendor-name">{vendor.business_name}</h3>
-                            <div className="delivery-info">
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="clock-icon">
-                                <circle cx="12" cy="12" r="10"/>
-                                <polyline points="12,6 12,12 16,14"/>
-                              </svg>
-                              <span className="delivery-time">{vendor.delivery_time}</span>
-                            </div>
-                            <div className="category-tag">
-                              <span className="tag-text">{vendor.business_category}</span>
-                            </div>
-                            <div className="price-section">
-                      <span className="price">₦{vendor.is_featured ? '7000' : '5000'}</span>
-                          </div>
-                        </div>
-                      </Link>
-              ))}
+          </Link>
+
+          <Link to="/vendor/2" className="featured-card">
+            <div className="featured-badge">FEATURED</div>
+            <div className="card-image">
+              <img src="/pizza2.jpg" alt="Galaxy Pizza Lagos" />
+            </div>
+            <div className="card-content">
+              <h3 className="vendor-name">Galaxy Pizza Lagos</h3>
+              <div className="rating-info">
+                <div className="stars">
+                  <span>⭐⭐⭐⭐⭐</span>
+                </div>
+                <span className="rating-text">5 Fast</span>
               </div>
-            
-              {recommendationsData?.has_next && (
-              <div className="view-more-container">
-                <button 
-                  className="view-more-btn"
-                  onClick={() => loadRecommendations(recommendationsData.next_page || 1)}
-                  disabled={loading}
-                >
-                  {loading ? 'Loading...' : 'View more'}
-                </button>
+              <div className="price-section">
+                <span className="price">₦ 7000</span>
               </div>
-              )}
-            </>
-          )}
-        </section>
+            </div>
+          </Link>
+
+          <Link to="/vendor/3" className="featured-card">
+            <div className="featured-badge">FEATURED</div>
+            <div className="card-image">
+              <img src="/pizza3.jpg" alt="Galaxy Pizza Lagos" />
+            </div>
+            <div className="card-content">
+              <h3 className="vendor-name">Galaxy Pizza Lagos</h3>
+              <div className="rating-info">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="clock-icon">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12,6 12,12 16,14"/>
+                </svg>
+                <span className="rating-text">30-40 min</span>
+              </div>
+              <div className="category-tag">
+                <span className="tag-text">🍕 Pizza</span>
+              </div>
+              <div className="price-section">
+                <span className="price">₦ 7000</span>
+              </div>
+            </div>
+          </Link>
+
+          <Link to="/vendor/4" className="featured-card">
+            <div className="card-image">
+              <img src="/pizza4.jpg" alt="Galaxy Pizza Lagos" />
+            </div>
+            <div className="card-content">
+              <h3 className="vendor-name">Galaxy Pizza Lagos</h3>
+              <div className="rating-info">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="clock-icon">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12,6 12,12 16,14"/>
+                </svg>
+                <span className="rating-text">30-40 min</span>
+              </div>
+              <div className="category-tag">
+                <span className="tag-text">🍕 Pizza</span>
+              </div>
+              <div className="price-section">
+                <span className="price">₦ 7000</span>
+              </div>
+            </div>
+          </Link>
+
+          <Link to="/vendor/5" className="featured-card">
+            <div className="card-image">
+              <img src="/pizza5.jpg" alt="Galaxy Pizza Lagos" />
+            </div>
+            <div className="card-content">
+              <h3 className="vendor-name">Galaxy Pizza Lagos</h3>
+              <div className="rating-info">
+                <div className="stars">
+                  <span>⭐⭐⭐⭐⭐</span>
+                </div>
+                <span className="rating-text">5 Fast</span>
+              </div>
+              <div className="price-section">
+                <span className="price">₦ 7000</span>
+              </div>
+            </div>
+          </Link>
+
+          <Link to="/vendor/6" className="featured-card">
+            <div className="card-image">
+              <img src="/pizza6.jpg" alt="Galaxy Pizza Lagos" />
+            </div>
+            <div className="card-content">
+              <h3 className="vendor-name">Galaxy Pizza Lagos</h3>
+              <div className="rating-info">
+                <div className="stars">
+                  <span>⭐⭐⭐⭐⭐</span>
+                </div>
+                <span className="rating-text">5 Fast</span>
+              </div>
+              <div className="price-section">
+                <span className="price">₦ 7000</span>
+              </div>
+            </div>
+          </Link>
+
+          <Link to="/vendor/7" className="featured-card">
+            <div className="card-image">
+              <img src="/pizza7.jpg" alt="Galaxy Pizza Lagos" />
+            </div>
+            <div className="card-content">
+              <h3 className="vendor-name">Galaxy Pizza Lagos</h3>
+              <div className="rating-info">
+                <div className="stars">
+                  <span>⭐⭐⭐⭐⭐</span>
+                </div>
+                <span className="rating-text">5 Fast</span>
+              </div>
+              <div className="price-section">
+                <span className="price">₦ 7000</span>
+              </div>
+            </div>
+          </Link>
+
+          <Link to="/vendor/8" className="featured-card">
+            <div className="card-image">
+              <img src="/pizza8.jpg" alt="Galaxy Pizza Lagos" />
+            </div>
+            <div className="card-content">
+              <h3 className="vendor-name">Galaxy Pizza Lagos</h3>
+              <div className="rating-info">
+                <div className="stars">
+                  <span>⭐⭐⭐⭐⭐</span>
+                </div>
+                <span className="rating-text">5 Fast</span>
+              </div>
+              <div className="price-section">
+                <span className="price">₦ 7000</span>
+              </div>
+            </div>
+          </Link>
+
+          <Link to="/vendor/9" className="featured-card">
+            <div className="card-image">
+              <img src="/pizza9.jpg" alt="Galaxy Pizza Lagos" />
+            </div>
+            <div className="card-content">
+              <h3 className="vendor-name">Galaxy Pizza Lagos</h3>
+              <div className="rating-info">
+                <div className="stars">
+                  <span>⭐⭐⭐⭐⭐</span>
+                </div>
+                <span className="rating-text">5 Fast</span>
+              </div>
+              <div className="price-section">
+                <span className="price">₦ 7000</span>
+              </div>
+            </div>
+          </Link>
+        </div>
+
+        <div className="view-more-container">
+          <button className="view-more-btn">View more</button>
+        </div>
+      </section>
 
       {/* Footer */}
       <footer className="explore-footer">
-        <div className="footer-content">
-          <div className="footer-section locations">
-            <h4>LOCATIONS <sup>4</sup></h4>
-            <ul>
-              <li>ENUGU 27</li>
-              <li>ABUJA</li>
-              <li>LAGOS</li>
-              <li>PORTHARCORT</li>
-            </ul>
+        <div className="footer-navigation">
+          <div className="footer-nav-links">
+            <a href="#" className="footer-nav-link">HOME</a>
+            <a href="#" className="footer-nav-link">HOW IT WORKS</a>
+            <a href="#" className="footer-nav-link">FEATURES</a>
+            <a href="#" className="footer-nav-link">FAQ'S</a>
+          </div>
         </div>
-        
-          <div className="footer-section contact">
+
+        <div className="footer-contact">
           <div className="contact-item">
-              <span>+1 999 888-77-64</span>
+            <span>Whatsapp</span>
           </div>
           <div className="contact-item">
-              <span>hello@bestie.com</span>
+            <span>+1 999 888-77-64</span>
           </div>
           <div className="contact-item">
-              <span>Whatsapp</span>
-            </div>
-          </div>
-          
-          <div className="footer-section partners">
-            <a href="#" className="partners-link">Become Partners</a>
+            <span>hello@bestie.com</span>
           </div>
         </div>
         
@@ -477,7 +356,36 @@ const Explore: React.FC = () => {
           
           <div className="footer-bottom-right">
             <a href="#privacy" className="privacy-link">Privacy</a>
-            <span className="copyright">2025 - Copyright</span>
+            <span className="copyright">© 2025 — Copyright</span>
+          </div>
+        </div>
+
+        {/* Desktop footer content */}
+        <div className="footer-content desktop-only">
+          <div className="footer-section locations">
+            <h4>LOCATIONS <sup>4</sup></h4>
+            <ul>
+              <li>ENUGU 27</li>
+              <li>ABUJA</li>
+              <li>LAGOS</li>
+              <li>PORTHARCOURT</li>
+            </ul>
+          </div>
+          
+          <div className="footer-section contact">
+            <div className="contact-item">
+              <span>+1 999 888-77-64</span>
+            </div>
+            <div className="contact-item">
+              <span>hello@bestie.com</span>
+            </div>
+            <div className="contact-item">
+              <span>Whatsapp</span>
+            </div>
+          </div>
+          
+          <div className="footer-section partners">
+            <a href="#" className="partners-link">Become Partners</a>
           </div>
         </div>
       </footer>
