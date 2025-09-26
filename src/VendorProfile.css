@@ -187,14 +187,14 @@
 }
 
 /* Main Content Layout */
-.main-content {
+.vendor-profile .main-content {
   display: grid;
   grid-template-columns: 1fr 360px;
   gap: 40px;
 }
 
 /* Subtle vertical divider to mirror mock */
-.main-content::after {
+.vendor-profile .main-content::after {
   content: '';
   position: absolute;
   right: 400px; /* 360px sidebar + 40px gap */
@@ -926,7 +926,7 @@
     padding: 0 20px;
   }
 
-  .main-content {
+  .vendor-profile .main-content {
     grid-template-columns: 1fr;
     gap: 32px;
   }
@@ -1119,7 +1119,7 @@
     padding: 0 30px;
   }
 
-  .main-content {
+  .vendor-profile .main-content {
     grid-template-columns: 1fr 280px;
     gap: 32px;
   }
