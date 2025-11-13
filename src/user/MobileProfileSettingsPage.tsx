@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit2, Camera, Save } from 'lucide-react';
 import MobileHeader from '../components/MobileHeader';
@@ -85,7 +85,7 @@ const MobileProfileSettingsPage: React.FC = () => {
   const isUser = userRole === 'user';
 
   // Smart data population function
-  const populateFormFromAPI = async () => {
+  const populateFormFromAPI = useCallback(async () => {
     try {
       const token = localStorage.getItem('access_token');
       if (!token) {
@@ -119,7 +119,7 @@ const MobileProfileSettingsPage: React.FC = () => {
       console.error('Failed to load profile from API:', error);
       return populateFormFromLocalStorage(); // Fallback to localStorage
     }
-  };
+  }, [isVendor, isCourier, isUser]);
 
   const populateFormFromLocalStorage = () => {
     // 1. First priority: vendor_profile (most complete data)
