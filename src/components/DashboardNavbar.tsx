@@ -6,7 +6,7 @@ import NotificationBell from './NotificationBell';
 interface DashboardNavbarProps {
   searchValue?: string;
   onSearchChange?: (value: string) => void;
-  profileImageSrc: string;
+  profileImageSrc?: string;
   showSearchBar?: boolean;
   showDarkMode?: boolean;
   showNotification?: boolean;
@@ -14,6 +14,7 @@ interface DashboardNavbarProps {
   initials?: string; // Add initials prop
   userId?: number; // Add userId for notifications
   userType?: string; // Add userType for notifications
+  businessName?: string; // Add business name for welcome message
 }
 
 const DashboardNavbar: React.FC<DashboardNavbarProps> = ({
@@ -27,6 +28,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({
   initials, // Add initials prop
   userId,
   userType,
+  businessName,
 }) => (
   <div style={{
     width: '100%',
@@ -68,7 +70,22 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({
           <Search size={20} />
         </span>
       </div>
-    ) : <div />}
+    ) : (
+      <div style={{ flex: 1, paddingLeft: '2rem' }}>
+        {businessName && (
+          <div style={{
+            fontSize: '18px',
+            fontWeight: '600',
+            color: '#1f2937',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            Welcome back, {businessName}
+          </div>
+        )}
+      </div>
+    )}
     <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
       {showDarkMode && (
         <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 4px rgba(16,24,40,0.04)', cursor: 'pointer' }}>
@@ -89,7 +106,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({
         )
       )}
       {showProfileImage && (
-        <ProfileImage src={profileImageSrc} size={40} initials={initials} />
+        <ProfileImage src={profileImageSrc || ""} size={40} initials={initials} />
       )}
     </div>
   </div>

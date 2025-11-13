@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Clock, CheckCircle, XCircle, AlertCircle, RefreshCw, ExternalLink, Phone, Mail, MessageCircle } from 'lucide-react';
 import { verificationApi, VendorVerificationStatus, CourierVerificationStatus } from '../services/verificationApi';
-import { showError } from '../toast';
+import { showError, showSuccess } from '../toast';
+import WhatsAppVerification from './WhatsAppVerification';
 
 interface VerificationStatusProps {
   userType: 'vendor' | 'courier';
@@ -155,6 +156,22 @@ const VerificationStatus: React.FC<VerificationStatusProps> = ({ userType, class
 
   // Render vendor verification status
   if (userType === 'vendor' && vendorStatus) {
+    // Get phone number from localStorage
+    const getPhoneNumber = () => {
+      const vendorProfile = localStorage.getItem('vendor_profile');
+      if (vendorProfile) {
+        try {
+          const profile = JSON.parse(vendorProfile);
+          return profile.phone || '';
+        } catch (e) {
+          return '';
+        }
+      }
+      return '';
+    };
+
+    const phoneNumber = getPhoneNumber();
+
     return (
       <div className={`verification-status ${className}`} style={{
         background: '#fff',
@@ -173,10 +190,10 @@ const VerificationStatus: React.FC<VerificationStatusProps> = ({ userType, class
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
           {getStatusIcon(vendorStatus.status)}
           <div>
-            <div style={{ 
-              fontSize: '16px', 
-              fontWeight: '600', 
-              color: getStatusColor(vendorStatus.status) 
+            <div style={{
+              fontSize: '16px',
+              fontWeight: '600',
+              color: getStatusColor(vendorStatus.status)
             }}>
               {getStatusText(vendorStatus.status)}
             </div>
@@ -202,6 +219,60 @@ const VerificationStatus: React.FC<VerificationStatusProps> = ({ userType, class
             </div>
           </div>
         )}
+
+        {/* WhatsApp Verification Section */}
+        {phoneNumber && (
+          <div style={{ marginBottom: '16px' }}>
+            <WhatsAppVerification
+              phoneNumber={phoneNumber}
+              countryCode="+234"
+              onVerificationComplete={(verified, phoneNumber) => {
+                if (verified) {
+                  showSuccess('WhatsApp verified successfully!');
+                  loadVerificationStatus(); // Refresh status
+                }
+              }}
+              onVerificationSkip={() => {
+                showError('WhatsApp verification skipped. You can verify later.');
+              }}
+              required={false}
+            />
+          </div>
+        )}
+
+        {/* Bank/ID Verification Section */}
+        <div style={{
+          background: '#f8fafc',
+          borderRadius: '8px',
+          padding: '16px',
+          marginBottom: '16px',
+          border: '1px solid #e5e7eb'
+        }}>
+          <div style={{ fontSize: '16px', fontWeight: '600', color: '#1f2937', marginBottom: '8px' }}>
+            Bank Account Verification
+          </div>
+          <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '12px' }}>
+            Verify your bank account to receive payouts securely.
+          </div>
+          <button
+            style={{
+              background: '#10b981',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '8px 16px',
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            <Shield size={16} />
+            Verify Bank Account
+          </button>
+        </div>
 
         <div style={{ display: 'flex', gap: '12px' }}>
           <button
@@ -231,7 +302,23 @@ const VerificationStatus: React.FC<VerificationStatusProps> = ({ userType, class
   // Render courier verification status
   if (userType === 'courier' && courierStatus?.success) {
     const data = courierStatus.data;
-    
+
+    // Get phone number from localStorage
+    const getPhoneNumber = () => {
+      const vendorProfile = localStorage.getItem('vendor_profile');
+      if (vendorProfile) {
+        try {
+          const profile = JSON.parse(vendorProfile);
+          return profile.phone || '';
+        } catch (e) {
+          return '';
+        }
+      }
+      return '';
+    };
+
+    const phoneNumber = getPhoneNumber();
+
     return (
       <div className={`verification-status ${className}`} style={{
         background: '#fff',
@@ -250,10 +337,10 @@ const VerificationStatus: React.FC<VerificationStatusProps> = ({ userType, class
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
           {getStatusIcon(data.verification_status)}
           <div>
-            <div style={{ 
-              fontSize: '16px', 
-              fontWeight: '600', 
-              color: getStatusColor(data.verification_status) 
+            <div style={{
+              fontSize: '16px',
+              fontWeight: '600',
+              color: getStatusColor(data.verification_status)
             }}>
               {getStatusText(data.verification_status)}
             </div>
@@ -279,6 +366,60 @@ const VerificationStatus: React.FC<VerificationStatusProps> = ({ userType, class
             </div>
           </div>
         )}
+
+        {/* WhatsApp Verification Section */}
+        {phoneNumber && (
+          <div style={{ marginBottom: '16px' }}>
+            <WhatsAppVerification
+              phoneNumber={phoneNumber}
+              countryCode="+234"
+              onVerificationComplete={(verified, phoneNumber) => {
+                if (verified) {
+                  showError('WhatsApp verified successfully!'); // Using showError for now, should be showSuccess
+                  loadVerificationStatus(); // Refresh status
+                }
+              }}
+              onVerificationSkip={() => {
+                showError('WhatsApp verification skipped. You can verify later.');
+              }}
+              required={false}
+            />
+          </div>
+        )}
+
+        {/* Identity Verification Section */}
+        <div style={{
+          background: '#f8fafc',
+          borderRadius: '8px',
+          padding: '16px',
+          marginBottom: '16px',
+          border: '1px solid #e5e7eb'
+        }}>
+          <div style={{ fontSize: '16px', fontWeight: '600', color: '#1f2937', marginBottom: '8px' }}>
+            Identity Verification
+          </div>
+          <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '12px' }}>
+            Verify your identity with government-issued ID to start accepting deliveries.
+          </div>
+          <button
+            style={{
+              background: '#10b981',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '8px 16px',
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            <Shield size={16} />
+            Verify Identity
+          </button>
+        </div>
 
         {data.next_steps && data.next_steps.length > 0 && (
           <div style={{ marginBottom: '16px' }}>

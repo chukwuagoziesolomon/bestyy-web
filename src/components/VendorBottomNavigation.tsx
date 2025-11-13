@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, List, Utensils, Layers } from 'lucide-react';
+import { Home, List, Utensils, Layers, CreditCard } from 'lucide-react';
 
 interface VendorBottomNavigationProps {
   currentPath?: string;
@@ -36,6 +36,11 @@ const VendorBottomNavigation: React.FC<VendorBottomNavigationProps> = ({ current
       path: '/vendor/stock',
       icon: <Layers size={20} />,
       label: 'Menu Stock'
+    },
+    {
+      path: '/plans',
+      icon: <CreditCard size={20} />,
+      label: 'Subscription'
     }
   ];
 

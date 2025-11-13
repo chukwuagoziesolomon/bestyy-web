@@ -4,6 +4,8 @@ import { Home, List, Utensils, Archive, BarChart2, CreditCard, User, Table } fro
 import DashboardNavbar from '../components/DashboardNavbar';
 import { useResponsive } from '../hooks/useResponsive';
 import { getThumbnailUrl } from '../services/cloudinaryService';
+import { useAuth } from '../context/AuthContext';
+import ChatWithBestie from '../components/ChatWithBestie';
 
 interface VendorDashboardLayoutProps {
   children?: ReactNode;
@@ -24,6 +26,7 @@ const mainLinks: LinkItem[] = [
 ];
 
 const bottomLinks = [
+  { label: 'Subscription', path: '/plans', icon: <CreditCard size={20} /> },
   { label: 'Payouts', path: '/vendor/payouts', icon: <CreditCard size={20} /> },
   { label: 'Profile Settings', path: '/vendor/profile', icon: <User size={20} /> },
 ];
@@ -31,6 +34,7 @@ const bottomLinks = [
 const VendorDashboardLayout: React.FC<VendorDashboardLayoutProps> = ({ children }) => {
   const location = useLocation();
   const { isMobile, isTablet } = useResponsive();
+  const { user } = useAuth();
 
   // Get business logo and name from localStorage vendor_profile
   let businessLogo = '';
@@ -61,7 +65,7 @@ const VendorDashboardLayout: React.FC<VendorDashboardLayoutProps> = ({ children 
 
   // Desktop view with sidebar
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc', position: 'relative' }}>
       <aside style={{ width: 240, background: '#fff', borderRight: '1px solid #eee', padding: '2rem 1.2rem 1.2rem 1.2rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
         <div>
           <div style={{ fontWeight: 900, fontSize: 24, marginBottom: 32, letterSpacing: 1 }}>
@@ -105,9 +109,14 @@ const VendorDashboardLayout: React.FC<VendorDashboardLayoutProps> = ({ children 
         <DashboardNavbar
           profileImageSrc={businessLogo ? getThumbnailUrl(businessLogo, 40) : ""}
           initials={businessName ? businessName[0] : 'V'}
+          userId={user?.id}
+          userType={user?.role}
+          businessName={businessName}
         />
         <Outlet />
       </main>
+      {/* Floating Chat button */}
+      <ChatWithBestie />
     </div>
   );
 }

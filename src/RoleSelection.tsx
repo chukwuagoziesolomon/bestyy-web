@@ -26,13 +26,9 @@ const RoleSelection = () => {
   const navigate = useNavigate();
 
   const handleNext = () => {
-    if (selected === 0) {
-      navigate('/signup/user');
-    } else if (selected === 1) {
-      navigate('/signup/vendor', { state: { userType: 'vendor' } });
-    } else if (selected === 2) {
-      navigate('/signup/courier', { state: { userType: 'courier' } });
-    }
+    // Navigate to unified signup with pre-selected role
+    const roleMap = ['user', 'vendor', 'courier'];
+    navigate('/signup', { state: { preSelectedRole: roleMap[selected] } });
   };
 
   return (

@@ -79,7 +79,7 @@ const MobileVendorOrders: React.FC = () => {
       minHeight: '100vh',
       paddingBottom: '80px'
     }}>
-      <VendorHeader title="Orders" />
+      <VendorHeader />
       
       <div style={{ padding: '16px' }}>
         {/* Filter Section */}

@@ -280,7 +280,7 @@ const MobileCourierAnalytics: React.FC = () => {
         `}
       </style>
       {/* Header */}
-      <CourierHeader title="Analytics" />
+      <CourierHeader />
 
       {/* Loading State */}
       {loading && (

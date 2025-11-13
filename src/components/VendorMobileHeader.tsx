@@ -288,6 +288,49 @@ const VendorMobileHeader: React.FC<VendorMobileHeaderProps> = ({
                 <div style={{ padding: '12px 8px' }}>
                   <button
                     onClick={() => {
+                      navigate('/plans');
+                      setIsMenuOpen(false);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '14px 16px',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '15px',
+                      fontWeight: '500',
+                      color: '#374151',
+                      textAlign: 'left',
+                      width: '100%',
+                      borderRadius: '10px',
+                      transition: 'all 0.2s ease',
+                      marginBottom: '4px'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#f0fdf4';
+                      e.currentTarget.style.color = '#10b981';
+                      e.currentTarget.style.transform = 'translateX(4px)';
+                      // Update icon color to green
+                      const icon = e.currentTarget.querySelector('svg');
+                      if (icon) icon.style.color = '#10b981';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = '#374151';
+                      e.currentTarget.style.transform = 'translateX(0)';
+                      // Reset icon color to gray
+                      const icon = e.currentTarget.querySelector('svg');
+                      if (icon) icon.style.color = '#6b7280';
+                    }}
+                  >
+                    <DollarSign size={16} color="#6b7280" />
+                    Subscription
+                  </button>
+
+                  <button
+                    onClick={() => {
                       navigate('/vendor/payouts');
                       setIsMenuOpen(false);
                     }}

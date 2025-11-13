@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Edit, Trash2, Star, Eye, EyeOff } from 'lucide-react';
-import { fetchVendorMenuItems, deleteMenuItem } from '../api';
+import { fetchVendorMenuItems, deleteMenuItem, API_URL } from '../api';
+import { getMenuItemImageUrl, getFallbackImageUrl } from '../utils/imageUtils';
 import { showError, showSuccess, showApiError } from '../toast';
 import { useResponsive } from '../hooks/useResponsive';
 import VendorHeader from '../components/VendorHeader';
@@ -14,6 +15,13 @@ interface MenuItem {
   price: string;
   category: string;
   image?: string;
+  image_url?: string;
+  image_urls?: {
+    thumbnail?: string;
+    medium?: string;
+    large?: string;
+    original?: string;
+  };
   available: boolean;
   description?: string;
 }
@@ -100,269 +108,9 @@ const MenuPage: React.FC = () => {
     return stars;
   };
 
+  // Mobile and Tablet views - use separate MobileMenu component
   if (isMobile || isTablet) {
     return <MobileMenu />;
-  }
-
-  // Keep the old mobile implementation as fallback (commented out)
-  if (false) {
-  return (
-      <div style={{
-        fontFamily: 'Nunito Sans, sans-serif',
-        background: '#f8fafc',
-        minHeight: '100vh',
-        paddingBottom: '80px'
-      }}>
-        <VendorHeader title="Menu Management" />
-        
-        <div style={{ padding: '16px' }}>
-          {/* Add Item Button */}
-          <button
-            onClick={() => navigate('/vendor/menu/add')}
-            style={{
-              width: '100%',
-              padding: '16px',
-              background: '#10b981',
-              color: 'white',
-              border: 'none',
-              borderRadius: '12px',
-              fontSize: '16px',
-              fontWeight: '600',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              marginBottom: '20px',
-              cursor: 'pointer'
-            }}
-          >
-            <Plus size={20} />
-            Add New Item
-          </button>
-
-          {/* Category Filter */}
-          <div style={{ marginBottom: '20px' }}>
-            <div style={{
-              display: 'flex',
-              gap: '8px',
-              overflowX: 'auto',
-              paddingBottom: '8px'
-            }}>
-              {categories.map(category => (
-                <button
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '20px',
-                    border: 'none',
-                    background: selectedCategory === category ? '#10b981' : '#e5e7eb',
-                    color: selectedCategory === category ? 'white' : '#374151',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    whiteSpace: 'nowrap',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {category.charAt(0).toUpperCase() + category.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Menu Items */}
-          {loading ? (
-            <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              height: '200px',
-              fontSize: '16px',
-              color: '#666'
-            }}>
-              Loading menu items...
-            </div>
-          ) : filteredItems.length === 0 ? (
-            <div style={{
-              textAlign: 'center',
-              padding: '40px 20px',
-              color: '#666'
-            }}>
-              <p style={{ fontSize: '16px', marginBottom: '16px' }}>No menu items found</p>
-        <button
-                onClick={() => navigate('/vendor/menu/add')}
-          style={{
-                  padding: '12px 24px',
-                  background: '#10b981',
-                  color: 'white',
-            border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  cursor: 'pointer'
-                }}
-              >
-                Add Your First Item
-        </button>
-      </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {filteredItems.map(item => (
-                <div
-                  key={item.id}
-                  style={{
-                    background: 'white',
-                    borderRadius: '12px',
-                    padding: '16px',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-                  }}
-                >
-                  <div style={{ display: 'flex', gap: '12px' }}>
-                    {/* Item Image */}
-                    <div style={{
-                      width: '80px',
-                      height: '80px',
-                      borderRadius: '8px',
-                      background: '#f3f4f6',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      overflow: 'hidden'
-                    }}>
-                      {item.image ? (
-                        <img
-                          src={item.image}
-                          alt={item.dish_name}
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'cover'
-                          }}
-                        />
-                      ) : (
-                        <div style={{ color: '#9ca3af', fontSize: '12px' }}>No Image</div>
-                      )}
-                    </div>
-
-                    {/* Item Details */}
-                    <div style={{ flex: 1 }}>
-                      <div style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'flex-start',
-                        marginBottom: '8px'
-                      }}>
-                        <h3 style={{
-                          fontSize: '16px',
-                          fontWeight: '600',
-                          color: '#1f2937',
-                          margin: 0
-                        }}>
-                          {item.dish_name}
-                        </h3>
-                        <span style={{
-                          padding: '4px 8px',
-                          borderRadius: '4px',
-                          fontSize: '12px',
-                          fontWeight: '500',
-                          background: item.available ? '#dcfce7' : '#fee2e2',
-                          color: item.available ? '#166534' : '#dc2626'
-                        }}>
-                          {item.available ? 'Available' : 'Unavailable'}
-                        </span>
-                      </div>
-
-                      <p style={{
-                        fontSize: '14px',
-                        color: '#6b7280',
-                        margin: '0 0 8px 0'
-                      }}>
-                        {item.category}
-                      </p>
-
-                      <p style={{
-                        fontSize: '16px',
-                        fontWeight: '600',
-                        color: '#1f2937',
-                        margin: 0
-                      }}>
-                        ₦{item.price}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div style={{
-                    display: 'flex',
-                    gap: '8px',
-                    marginTop: '12px',
-                    justifyContent: 'flex-end'
-                  }}>
-                    <button
-                      onClick={() => toggleAvailability(item.id, item.available)}
-                      style={{
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        border: 'none',
-                        background: item.available ? '#fef3c7' : '#dcfce7',
-                        color: item.available ? '#d97706' : '#166534',
-                        fontSize: '12px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                      }}
-                    >
-                      {item.available ? <EyeOff size={14} /> : <Eye size={14} />}
-                      {item.available ? 'Hide' : 'Show'}
-                    </button>
-
-                    <button
-                      onClick={() => navigate(`/vendor/menu/edit/${item.id}`)}
-                      style={{
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        border: 'none',
-                        background: '#dbeafe',
-                        color: '#1d4ed8',
-                        fontSize: '12px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                      }}
-                    >
-                      <Edit size={14} />
-                      Edit
-                    </button>
-
-                    <button
-                      onClick={() => handleDelete(item.id)}
-                      style={{
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        border: 'none',
-                        background: '#fee2e2',
-                        color: '#dc2626',
-                        fontSize: '12px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                      }}
-                    >
-                      <Trash2 size={14} />
-                      Delete
-                  </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <VendorBottomNavigation currentPath="/vendor/menu" />
-      </div>
-    );
   }
 
   // Desktop version
@@ -372,7 +120,7 @@ const MenuPage: React.FC = () => {
       background: '#f8fafc',
       minHeight: '100vh'
     }}>
-      <VendorHeader title="Menu Management" />
+      <VendorHeader />
       
       <div style={{ padding: '24px' }}>
         {/* Header Actions */}
@@ -496,19 +244,35 @@ const MenuPage: React.FC = () => {
                   justifyContent: 'center',
                   overflow: 'hidden'
                 }}>
-                  {item.image ? (
+                  {(() => {
+                    const imageUrl = getMenuItemImageUrl(item);
+
+                    return imageUrl ? (
                     <img
-                      src={item.image}
+                        src={imageUrl}
                       alt={item.dish_name}
                       style={{
                         width: '100%',
                         height: '100%',
                         objectFit: 'cover'
                       }}
+                        onError={(e) => {
+                          console.log('Image failed to load:', imageUrl);
+                          // Try fallback to original URL without transformations
+                          const fallbackUrl = getFallbackImageUrl(imageUrl);
+                          if (fallbackUrl && e.currentTarget.src !== fallbackUrl) {
+                            e.currentTarget.src = fallbackUrl;
+                          } else {
+                            // Fallback to no image if URL fails to load
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.parentElement!.innerHTML = '<div style="color: #9ca3af; font-size: 16px;">No Image</div>';
+                          }
+                        }}
                     />
                   ) : (
                     <div style={{ color: '#9ca3af', fontSize: '16px' }}>No Image</div>
-                  )}
+                    );
+                  })()}
                 </div>
 
                 {/* Item Details */}

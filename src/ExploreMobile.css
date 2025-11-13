@@ -8,35 +8,68 @@
   }
 
   .explore-header {
-    padding: 16px 20px;
-    flex-direction: row;
+    padding: 18px 20px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .header-left {
+    display: flex;
     align-items: center;
     justify-content: space-between;
+    width: 100%;
   }
 
   .header-left .logo-section {
-    justify-content: flex-start;
+    display: flex;
+    align-items: center;
+    gap: 12px;
   }
 
   .header-logo {
-    width: 32px;
-    height: 32px;
+    width: 52px;
+    height: 52px;
   }
 
   .location-text {
-    font-size: 14px;
-    color: #6b7280;
+    font-size: 16px;
+    color: #4b5563;
+    font-weight: 600;
   }
 
   .header-center {
-    display: none;
+    order: 1;
+    width: 100%;
+  }
+
+  .header-center .search-container {
+    width: 100%;
+  }
+
+  .header-center .search-input-wrapper {
+    width: 100%;
+  }
+
+  .header-center .search-icon {
+    left: 16px;
+  }
+
+  .header-center .search-input {
+    padding: 12px 16px 12px 48px;
+    font-size: 15px;
+    border-radius: 12px;
   }
 
   .header-right {
+    display: flex;
     justify-content: flex-end;
+    width: 100%;
   }
 
   .header-controls {
+    display: flex;
+    align-items: center;
     gap: 12px;
   }
 
@@ -45,8 +78,8 @@
   }
 
   .profile-picture {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
   }
 }
 
@@ -177,8 +210,12 @@
   }
 
   .vendor-name {
-    font-size: 18px;
-    font-weight: 600;
+    font-family: 'Nunito', sans-serif;
+    font-size: 17.02px;
+    font-weight: 700;
+    font-style: normal;
+    line-height: 22.7px;
+    letter-spacing: 0.09px;
     margin-bottom: 8px;
     color: #111827;
   }
@@ -299,11 +336,19 @@
 /* Extra Small Mobile Devices */
 @media (max-width: 480px) {
   .explore-header {
-    padding: 12px 16px;
+    padding: 14px 16px;
+    gap: 14px;
   }
 
-  .header-center .main-title {
-    font-size: 20px;
+  .header-center .search-input {
+    font-size: 14px;
+    padding: 12px 14px 12px 44px;
+  }
+
+  .header-center .search-icon {
+    left: 14px;
+    width: 18px;
+    height: 18px;
   }
 
   .category-navigation {
@@ -380,7 +425,12 @@
   }
 
   .vendor-name {
-    font-size: 15px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 17.02px;
+    font-weight: 700;
+    font-style: normal;
+    line-height: 22.7px;
+    letter-spacing: 0.09px;
   }
 
   .price {
@@ -445,21 +495,100 @@
   }
 }
 
-/* Loading and Error States - Mobile */
+/* Loading State - Mobile */
 @media (max-width: 768px) {
-  .loading-state,
-  .error-state {
-    padding: 20px;
+  .loading-state {
+    padding: 40px 20px;
+  }
+
+  .loading-spinner {
+    width: 32px;
+    height: 32px;
+    border-width: 3px;
+  }
+
+  .loading-content p {
     font-size: 14px;
   }
+}
 
-  .retry-button {
-    padding: 8px 12px;
-    font-size: 13px;
+/* Error State - Mobile */
+@media (max-width: 768px) {
+  .error-state {
+    padding: 40px 20px;
   }
 
-  .fallback-note {
-    font-size: 11px;
+  .error-content {
+    max-width: none;
+  }
+
+  .error-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .error-content h3 {
+    font-size: 18px;
+  }
+
+  .error-content p {
+    font-size: 13px;
+  }
+}
+
+/* Empty State - Mobile */
+@media (max-width: 768px) {
+  .empty-state {
+    padding: 40px 20px;
+  }
+
+  .empty-content {
+    max-width: none;
+  }
+
+  .empty-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .empty-content h3 {
+    font-size: 18px;
+  }
+
+  .empty-content p {
+    font-size: 13px;
+  }
+}
+
+/* No Results State - Mobile */
+@media (max-width: 768px) {
+  .no-results-state {
+    padding: 40px 20px;
+  }
+
+  .no-results-content {
+    max-width: none;
+  }
+
+  .no-results-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .no-results-content h3 {
+    font-size: 18px;
+  }
+
+  .no-results-content p {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 768px) {
+  .retry-button {
+    padding: 10px 20px;
+    font-size: 13px;
+    min-height: 44px;
   }
 }
 
@@ -517,8 +646,9 @@
     order: 0;
   }
 
-  .header-center .main-title {
-    font-size: 20px;
+  .header-center .search-input {
+    font-size: 14px;
+    padding: 8px 12px 8px 40px;
   }
 
   .promotional-banner {

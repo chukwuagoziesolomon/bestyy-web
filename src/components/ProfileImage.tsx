@@ -1,5 +1,6 @@
 import React from 'react';
 import { getThumbnailUrl } from '../services/cloudinaryService';
+import { getFallbackImageUrl } from '../utils/imageUtils';
 
 interface ProfileImageProps {
   src: string;
@@ -32,7 +33,10 @@ const ProfileImage: React.FC<ProfileImageProps> = ({ src, alt = 'Profile', size 
       }}
       onError={(e) => {
         // Fallback to original URL if optimized URL fails
-        if (e.currentTarget.src !== src) {
+        const fallbackUrl = getFallbackImageUrl(src);
+        if (fallbackUrl && e.currentTarget.src !== fallbackUrl) {
+          e.currentTarget.src = fallbackUrl;
+        } else if (e.currentTarget.src !== src) {
           e.currentTarget.src = src;
         }
       }}

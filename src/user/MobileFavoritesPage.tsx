@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Heart, Filter, Calendar, ChevronDown, MessageCircle, Star, Utensils, Building2, Trash2 } from 'lucide-react';
-import MobileHeader from '../components/MobileHeader';
+import UserHeader from '../components/UserHeader';
+import UserBottomNavigation from '../components/UserBottomNavigation';
 import { useResponsive } from '../hooks/useResponsive';
 import { fetchUserFavorites, removeFavorite } from '../api';
 
@@ -125,13 +126,7 @@ const MobileFavoritesPage: React.FC = () => {
       position: 'relative',
       paddingBottom: '80px'
     }}>
-             <MobileHeader 
-         title="Favorites"
-         subtitle="Your favorite food items and restaurants"
-         variant="default"
-         profileImageSize="medium"
-         showProfileImage={true}
-       />
+      <UserHeader />
 
       {/* Description */}
       <div style={{
@@ -384,6 +379,9 @@ const MobileFavoritesPage: React.FC = () => {
         </div>
         )}
       </div>
+      
+      {/* Bottom Navigation */}
+      <UserBottomNavigation currentPath="/user/favorites" />
     </div>
   );
 };

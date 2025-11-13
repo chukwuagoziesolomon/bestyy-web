@@ -1168,3 +1168,35 @@
   box-shadow: 0 0 0 1px #ef444422;
   background: #fff8f8;
 }
+
+/* Slide animations for signup steps */
+.step-content {
+  width: 100%;
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.step-content.animating.slide-in-right {
+  opacity: 0;
+  transform: translateX(100%);
+}
+
+.step-content.animating.slide-in-left {
+  opacity: 0;
+  transform: translateX(-100%);
+}
+
+.step-content:not(.animating) {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Form label styles */
+.form-label {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 6px;
+}

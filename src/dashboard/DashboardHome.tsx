@@ -121,6 +121,147 @@ const DashboardHome = () => {
 
   return (
   <div style={{ fontFamily: 'Nunito Sans, sans-serif' }}>
+      {/* Verification Banners */}
+      <div style={{ marginBottom: 24 }}>
+        {/* Bank Verification Banner */}
+        <div style={{
+          background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+          border: '2px solid #f59e0b',
+          borderRadius: '16px',
+          padding: '20px',
+          marginBottom: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          boxShadow: '0 8px 32px rgba(245, 158, 11, 0.15)',
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          <div style={{
+            position: 'absolute',
+            top: '-20px',
+            right: '-20px',
+            width: '80px',
+            height: '80px',
+            borderRadius: '50%',
+            background: 'rgba(245, 158, 11, 0.1)',
+            zIndex: 1
+          }}></div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', zIndex: 2, position: 'relative' }}>
+            <div style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '16px',
+              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontSize: '24px',
+              boxShadow: '0 4px 16px rgba(245, 158, 11, 0.3)'
+            }}>
+              🏦
+            </div>
+            <div>
+              <div style={{ fontWeight: '700', color: '#92400e', marginBottom: '6px', fontSize: '16px' }}>
+                ⚠️ Bank Account Verification Required
+              </div>
+              <div style={{ color: '#a16207', fontSize: '14px', lineHeight: '1.4', maxWidth: '400px' }}>
+                <strong>Important:</strong> Verify your bank account to receive payouts. Without verification, you won't receive any order payments. Complete this now to start earning.
+              </div>
+            </div>
+          </div>
+          <button style={{
+            background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '12px',
+            padding: '12px 20px',
+            fontSize: '14px',
+            fontWeight: '700',
+            cursor: 'pointer',
+            boxShadow: '0 4px 16px rgba(245, 158, 11, 0.3)',
+            transition: 'all 0.3s ease',
+            zIndex: 2,
+            position: 'relative'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+          >
+            Verify Bank Account →
+          </button>
+        </div>
+
+        {/* WhatsApp Verification Banner */}
+        <div style={{
+          background: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)',
+          border: '2px solid #22c55e',
+          borderRadius: '16px',
+          padding: '20px',
+          marginBottom: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          boxShadow: '0 8px 32px rgba(34, 197, 94, 0.15)',
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          <div style={{
+            position: 'absolute',
+            top: '-20px',
+            right: '-20px',
+            width: '80px',
+            height: '80px',
+            borderRadius: '50%',
+            background: 'rgba(34, 197, 94, 0.1)',
+            zIndex: 1
+          }}></div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', zIndex: 2, position: 'relative' }}>
+            <div style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '16px',
+              background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontSize: '24px',
+              boxShadow: '0 4px 16px rgba(34, 197, 94, 0.3)'
+            }}>
+              📱
+            </div>
+            <div>
+              <div style={{ fontWeight: '700', color: '#166534', marginBottom: '6px', fontSize: '16px' }}>
+                📱 WhatsApp Verification Required
+              </div>
+              <div style={{ color: '#15803d', fontSize: '14px', lineHeight: '1.4', maxWidth: '400px' }}>
+                <strong>Important:</strong> Verify your WhatsApp number to receive order notifications. Without verification, you won't receive any orders and miss earning opportunities.
+              </div>
+            </div>
+          </div>
+          <button style={{
+            background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '12px',
+            padding: '12px 20px',
+            fontSize: '14px',
+            fontWeight: '700',
+            cursor: 'pointer',
+            boxShadow: '0 4px 16px rgba(34, 197, 94, 0.3)',
+            transition: 'all 0.3s ease',
+            zIndex: 2,
+            position: 'relative'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+          >
+            Verify WhatsApp →
+          </button>
+        </div>
+      </div>
+
       <div style={{ marginBottom: 24 }}>
         <h2 style={{ fontWeight: 600, fontSize: 28, margin: 0 }}>Welcome Back, {businessName}!</h2>
       </div>

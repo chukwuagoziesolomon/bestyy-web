@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit2, Camera, Save } from 'lucide-react';
 import MobileHeader from '../components/MobileHeader';
 import { useResponsive } from '../hooks/useResponsive';
+import { useImageUpload } from '../hooks/useImageUpload';
+import { fetchUserProfile, updateUserProfile, fetchVendorProfile, updateVendorProfile, fetchCourierProfile, updateCourierProfile } from '../api';
 
 import { showError, showSuccess } from '../toast';
 
@@ -11,10 +13,28 @@ const MobileProfileSettingsPage: React.FC = () => {
   const navigate = useNavigate();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // Image upload hook for profile pictures
+  const { uploadImage: uploadProfileImage, isUploading: isUploadingImage, error: imageUploadError, clearError: clearImageError } = useImageUpload({
+    onSuccess: (file) => {
+      if (file instanceof File) {
+        const objectUrl = URL.createObjectURL(file);
+        setFormData(prev => ({
+          ...prev,
+          profilePicture: objectUrl,
+          previewPicture: objectUrl
+        }));
+      }
+      showSuccess('Profile picture uploaded successfully!');
+    },
+    onError: (error) => {
+      showError(error);
+    }
+  });
   
   // Form state
   const [formData, setFormData] = useState({
@@ -29,7 +49,78 @@ const MobileProfileSettingsPage: React.FC = () => {
     previewPicture: null as string | null
   });
 
+  // Get user role from localStorage
+  const getUserRole = () => {
+    const user = localStorage.getItem('user');
+    if (user) {
+      try {
+        const userData = JSON.parse(user);
+        return userData.role || 'user';
+      } catch (e) {
+        console.error('Error parsing user data:', e);
+      }
+    }
+
+    // Check if vendor_profile exists (indicates vendor/courier)
+    const vendorProfile = localStorage.getItem('vendor_profile');
+    if (vendorProfile) {
+      try {
+        const vendorData = JSON.parse(vendorProfile);
+        // Check if it's a courier profile
+        if (vendorData.vehicle_type || vendorData.has_bike !== undefined) {
+          return 'courier';
+        }
+        return 'vendor';
+      } catch (e) {
+        console.error('Error parsing vendor profile:', e);
+      }
+    }
+
+    return 'user';
+  };
+
+  const userRole = getUserRole();
+  const isVendor = userRole === 'vendor';
+  const isCourier = userRole === 'courier';
+  const isUser = userRole === 'user';
+
   // Smart data population function
+  const populateFormFromAPI = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        return populateFormFromLocalStorage(); // Fallback to localStorage
+      }
+
+      let profileData;
+      if (isVendor) {
+        profileData = await fetchVendorProfile(token);
+      } else if (isCourier) {
+        profileData = await fetchCourierProfile(token);
+      } else {
+        profileData = await fetchUserProfile(token);
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        fullName: profileData.business_name || profileData.user?.first_name + ' ' + profileData.user?.last_name || profileData.first_name + ' ' + profileData.last_name || '',
+        nickName: profileData.user?.first_name || profileData.first_name || '',
+        email: profileData.user?.email || profileData.email || '',
+        phone: profileData.phone || profileData.user?.phone || '',
+        profilePicture: profileData.logo || profileData.profile_picture || null,
+        language: profileData.language || 'English',
+        emailNotifications: profileData.email_notifications || true,
+        pushNotifications: profileData.push_notifications || true
+      }));
+
+      console.log('Profile fields populated from API data');
+      return true;
+    } catch (error) {
+      console.error('Failed to load profile from API:', error);
+      return populateFormFromLocalStorage(); // Fallback to localStorage
+    }
+  };
+
   const populateFormFromLocalStorage = () => {
     // 1. First priority: vendor_profile (most complete data)
     const savedVendor = localStorage.getItem('vendor_profile');
@@ -99,16 +190,18 @@ const MobileProfileSettingsPage: React.FC = () => {
   };
 
   useEffect(() => {
-    // Only populate from localStorage - no API calls
-    const hasLocalData = populateFormFromLocalStorage();
-    
-    if (hasLocalData) {
+    const loadProfile = async () => {
+      const hasData = await populateFormFromAPI();
       setLoading(false);
-      console.log('Profile loaded from localStorage successfully');
-    } else {
-      setLoading(false);
-      console.log('No local data found, showing empty form');
-    }
+
+      if (hasData) {
+        console.log('Profile loaded successfully');
+      } else {
+        console.log('No profile data found, showing empty form');
+      }
+    };
+
+    loadProfile();
   }, []);
 
   const handleInputChange = (field: string, value: string | boolean) => {
@@ -121,22 +214,54 @@ const MobileProfileSettingsPage: React.FC = () => {
   const handlePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const result = event.target?.result as string;
-        setFormData(prev => ({
-          ...prev,
-          previewPicture: result
-        }));
-      };
-      reader.readAsDataURL(file);
+      // Upload to Cloudinary instead of just showing preview
+      uploadProfileImage(file, 'profile-image');
     }
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Update the vendor_profile in localStorage with the new data
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      let updateData;
+      if (isVendor) {
+        updateData = {
+          business_name: formData.fullName,
+          phone: formData.phone,
+          email: formData.email,
+          first_name: formData.nickName,
+          language: formData.language,
+          email_notifications: formData.emailNotifications,
+          push_notifications: formData.pushNotifications
+        };
+        await updateVendorProfile(token, updateData);
+      } else if (isCourier) {
+        updateData = {
+          phone: formData.phone,
+          email: formData.email,
+          first_name: formData.nickName,
+          language: formData.language,
+          email_notifications: formData.emailNotifications,
+          push_notifications: formData.pushNotifications
+        };
+        await updateCourierProfile(token, updateData);
+      } else {
+        updateData = {
+          first_name: formData.nickName,
+          last_name: formData.fullName.split(' ').slice(1).join(' ') || '',
+          phone: formData.phone,
+          language: formData.language,
+          email_notifications: formData.emailNotifications,
+          push_notifications: formData.pushNotifications
+        };
+        await updateUserProfile(token, updateData);
+      }
+
+      // Update localStorage as backup
       const currentVendorProfile = JSON.parse(localStorage.getItem('vendor_profile') || '{}');
       const updatedVendorProfile = {
         ...currentVendorProfile,
@@ -149,16 +274,16 @@ const MobileProfileSettingsPage: React.FC = () => {
       };
       localStorage.setItem('vendor_profile', JSON.stringify(updatedVendorProfile));
 
-      // Update local state
+      // Update local state - profilePicture is already updated by the upload hook
       setFormData(prev => ({
         ...prev,
-        profilePicture: formData.previewPicture || formData.profilePicture,
         previewPicture: null
       }));
-      
+
       showSuccess('Profile updated successfully!');
     } catch (error: any) {
-      showError('Failed to update profile');
+      console.error('Failed to update profile:', error);
+      showError(error.message || 'Failed to update profile');
     } finally {
       setSaving(false);
     }
@@ -237,6 +362,7 @@ const MobileProfileSettingsPage: React.FC = () => {
               )}
               <button
                 onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingImage}
                 style={{
                   position: 'absolute',
                   bottom: '-2px',
@@ -244,15 +370,16 @@ const MobileProfileSettingsPage: React.FC = () => {
                   width: '24px',
                   height: '24px',
                   borderRadius: '50%',
-                  backgroundColor: '#10b981',
+                  backgroundColor: isUploadingImage ? '#9ca3af' : '#10b981',
                   border: '2px solid white',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  cursor: 'pointer'
+                  cursor: isUploadingImage ? 'not-allowed' : 'pointer',
+                  opacity: isUploadingImage ? 0.7 : 1
                 }}
               >
-                <Edit2 size={12} color="white" />
+                {isUploadingImage ? <div style={{ width: 8, height: 8, border: '1px solid white', borderTop: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div> : <Edit2 size={12} color="white" />}
               </button>
               <input
                 type="file"
@@ -260,6 +387,7 @@ const MobileProfileSettingsPage: React.FC = () => {
                 ref={fileInputRef}
                 style={{ display: 'none' }}
                 onChange={handlePictureChange}
+                disabled={isUploadingImage}
               />
             </div>
             <div>

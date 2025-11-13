@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { CartProvider } from './context/CartContext';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './toast.css'; // Custom toast styling
@@ -12,8 +13,7 @@ import Footer from './Footer';
 // Auth Components
 import UserLogin from './UserLogin';
 import ProtectedRoute from './components/auth/ProtectedRoute';
-import VendorSignUp from './VendorSignUp';
-import CourierSignUp from './CourierSignUp';
+import UnifiedSignUp from './UnifiedSignUp';
 
 // Public Pages
 import HeroSection from './HeroSection';
@@ -27,8 +27,9 @@ import PaymentPage from './PaymentPage';
 import SuccessPage from './SuccessPage';
 import VendorSuccessPage from './VendorSuccessPage';
 import Profile from './pages/Profile';
-import UserSignup from './pages/UserSignup';
 import NotificationsWrapper from './components/NotificationsWrapper';
+import WhatsAppVerificationPage from './pages/WhatsAppVerificationPage';
+import BankVerificationPage from './pages/BankVerificationPage';
 
 // Vendor Components
 import VendorDashboardLayout from './dashboard/VendorDashboardLayout';
@@ -51,6 +52,8 @@ import CourierPayout from './dashboard/CourierPayout';
 import ResponsiveCourierProfile from './dashboard/ResponsiveCourierProfile';
 import Explore from './explore';
 import VendorProfile from './VendorProfile';
+import Checkout from './Checkout';
+import OrderConfirmation from './OrderConfirmation';
 
 // User Components
 import UserDashboardLayout from './dashboard/UserDashboardLayout';
@@ -95,15 +98,15 @@ const UserRoute: React.FC = () => {
 // Public route component that redirects authenticated users
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
-  
+
   if (user) {
     // Redirect based on user role
-    const redirectPath = user.role === 'vendor' ? '/vendor/dashboard' : 
-                        user.role === 'courier' ? '/courier/deliveries' : 
-                        '/user/dashboard';
+    const redirectPath = user.role === 'vendor' ? '/vendor/dashboard' :
+                       user.role === 'courier' ? '/courier/dashboard' :
+                       '/user/dashboard';
     return <Navigate to={redirectPath} replace />;
   }
-  
+
   return <>{children}</>;
 };
 
@@ -138,7 +141,8 @@ function App() {
         closeButton={false}
       />
       <AuthProvider>
-        <div className="app-container">
+        <CartProvider>
+          <div className="app-container">
           <Routes>
             {/* Public routes */}
             <Route path="/" element={
@@ -156,39 +160,44 @@ function App() {
                           <Route index element={
                 <>
                   <HeroSection />
-                  <HowItWorks />
                   <Testimonials />
                   <FAQ />
                 </>
             } />
             <Route path="role-selection" element={<RoleSelection />} />
-            <Route path="plans" element={<PlanSelection />} />
             <Route path="terms" element={<TermsAndConditions />} />
           </Route>
+
+          {/* Plans route accessible to all users */}
+          <Route path="/plans" element={
+            <main>
+              <PlanSelection />
+            </main>
+          } />
           
           {/* Signup routes without navbar and footer */}
-          <Route path="/signup/user" element={
+          <Route path="/signup" element={
             <PublicRoute>
               <main>
-                <UserSignup />
+                <UnifiedSignUp />
               </main>
             </PublicRoute>
           } />
-          <Route path="/signup/vendor" element={
+          <Route path="/bank-verification" element={
             <PublicRoute>
               <main>
-                <VendorSignUp />
+                <BankVerificationPage />
               </main>
             </PublicRoute>
           } />
-          <Route path="/signup/courier" element={
+          <Route path="/whatsapp-verification" element={
             <PublicRoute>
               <main>
-                <CourierSignUp />
+                <WhatsAppVerificationPage />
               </main>
             </PublicRoute>
           } />
-          <Route path="/user-dashboard" element={
+          <Route path="/recommendations" element={
             <PublicRoute>
               <main>
                 <Explore />
@@ -202,6 +211,7 @@ function App() {
               </main>
             </PublicRoute>
           } />
+          
           
           {/* Login route without navbar */}
           <Route path="/login" element={
@@ -266,6 +276,24 @@ function App() {
           </Route>
 
           {/* Other routes */}
+          <Route path="/checkout/:vendorId" element={
+            <>
+              <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+              <main className="main-content">
+                <Checkout />
+              </main>
+              <Footer />
+            </>
+          } />
+          <Route path="/order-confirmation/:orderId" element={
+            <>
+              <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+              <main className="main-content">
+                <OrderConfirmation />
+              </main>
+              <Footer />
+            </>
+          } />
           <Route path="/success" element={<SuccessPage />} />
           <Route path="/vendor/success" element={<VendorSuccessPage />} />
           <Route path="/notifications" element={<NotificationsWrapper />} />
@@ -285,8 +313,9 @@ function App() {
             </div>
           } />
         </Routes>
-      </div>
-    </AuthProvider>
+        </div>
+        </CartProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

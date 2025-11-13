@@ -31,7 +31,7 @@ const HeroSection: React.FC = () => {
         <span className="hero__gradient-text">Bestyy</span>
       </h1>
       <p className="hero__text">Book with ease using Bestyy's AI chat, fast,<br />affordable and convenient.</p>
-      <Link to="/user-dashboard" className="hero__cta">Get Started</Link>
+      <Link to="/recommendations" className="hero__cta">Get Started</Link>
     </div>
     <div className="hero__image">
       <img src="/image1.png" alt="Phone Mockup" className="hero__phone-mockup" />

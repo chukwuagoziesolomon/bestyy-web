@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Edit, Trash2, Search, Filter, RefreshCw } from 'lucide-react';
 import { useResponsive } from '../hooks/useResponsive';
 import { fetchVendorStockItems, toggleStockItemAvailability, fetchStockSummary } from '../api';
+import { getMenuItemImageUrl, getFallbackImageUrl } from '../utils/imageUtils';
 import MobileVendorStock from './MobileVendorStock';
 
 // Interface for stock item data from API
@@ -603,7 +604,7 @@ const StockPage: React.FC = () => {
                         background: '#f3f4f6'
                       }}>
                         <img
-                          src={item.image_urls?.thumbnail || item.image_url || item.image}
+                          src={getMenuItemImageUrl(item)}
                           alt={item.dish_name}
                           style={{
                             width: '100%',
@@ -611,7 +612,13 @@ const StockPage: React.FC = () => {
                             objectFit: 'cover'
                           }}
                           onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/60x60?text=No+Image';
+                            console.log('Stock page image failed to load:', getMenuItemImageUrl(item));
+                            const fallbackUrl = getFallbackImageUrl(getMenuItemImageUrl(item) || '');
+                            if (fallbackUrl && e.currentTarget.src !== fallbackUrl) {
+                              e.currentTarget.src = fallbackUrl;
+                            } else {
+                              e.currentTarget.src = 'https://via.placeholder.com/60x60?text=No+Image';
+                            }
                           }}
                         />
                       </div>

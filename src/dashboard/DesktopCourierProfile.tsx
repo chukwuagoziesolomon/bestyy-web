@@ -14,8 +14,12 @@ const DesktopCourierProfile: React.FC = () => {
   
   // Image upload hook
   const { uploadImage, isUploading: isUploadingImage } = useImageUpload({
-    onSuccess: (url) => {
-      setPreviewPicture(url);
+    onSuccess: (file) => {
+      // Create object URL for display
+      if (file instanceof File) {
+        const objectUrl = URL.createObjectURL(file);
+        setPreviewPicture(objectUrl);
+      }
       showSuccess('Profile image uploaded successfully!');
     },
     onError: (error) => {

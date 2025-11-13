@@ -36,12 +36,50 @@
   font-weight: 500;
 }
 
-.header-center .main-title {
-  font-size: 32px;
-  font-weight: 700;
+.header-center .search-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  max-width: 500px;
+}
+
+.header-center .search-input-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+}
+
+.header-center .search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b7280;
+  z-index: 2;
+}
+
+.header-center .search-input {
+  width: 100%;
+  padding: 12px 16px 12px 48px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 16px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 500;
   color: #111827;
-  margin: 0;
-  text-align: center;
+  background: #ffffff;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.header-center .search-input:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.header-center .search-input::placeholder {
+  color: #9ca3af;
 }
 
 .header-right .header-controls {
@@ -385,8 +423,12 @@
 }
 
 .vendor-name {
-  font-size: 18px;
-  font-weight: 600;
+  font-family: 'Nunito', sans-serif;
+  font-size: 17.02px;
+  font-weight: 700;
+  font-style: normal;
+  line-height: 22.7px;
+  letter-spacing: 0.09px;
   color: #111827;
   margin: 0 0 8px 0;
 }
@@ -553,35 +595,164 @@
   font-size: 14px;
 }
 
-/* Loading and Error States */
-.loading-state, .error-state {
+/* Loading State */
+.loading-state {
   text-align: center;
-  padding: 40px;
+  padding: 60px 40px;
   color: #6b7280;
 }
 
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f4f6;
+  border-top: 4px solid #10b981;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-content p {
+  margin: 0;
+  font-size: 16px;
+  color: #6b7280;
+}
+
+/* Error State */
 .error-state {
+  text-align: center;
+  padding: 60px 40px;
+  color: #6b7280;
+}
+
+.error-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.error-icon {
   color: #dc2626;
+  width: 48px;
+  height: 48px;
+}
+
+.error-content h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.error-content p {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 60px 40px;
+  color: #6b7280;
+}
+
+.empty-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.empty-icon {
+  color: #9ca3af;
+  width: 64px;
+  height: 64px;
+}
+
+.empty-content h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.empty-content p {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+/* No Results State */
+.no-results-state {
+  text-align: center;
+  padding: 60px 40px;
+  color: #6b7280;
+}
+
+.no-results-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.no-results-icon {
+  color: #f59e0b;
+  width: 48px;
+  height: 48px;
+}
+
+.no-results-content h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.no-results-content p {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.5;
 }
 
 .retry-button {
-  background: #dc2626;
+  background: #10b981;
   color: white;
   border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
   cursor: pointer;
-  margin-top: 12px;
+  margin-top: 8px;
+  transition: all 0.2s ease;
+  font-size: 14px;
 }
 
 .retry-button:hover {
-  background: #b91c1c;
-}
-
-.fallback-note {
-  color: #6b7280;
-  font-size: 12px;
-  margin-top: 12px;
+  background: #059669;
+  transform: translateY(-1px);
 }
 
 .category-item.coming-soon {

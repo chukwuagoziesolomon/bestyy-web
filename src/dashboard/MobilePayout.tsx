@@ -56,7 +56,7 @@ const MobilePayout: React.FC = () => {
       minHeight: '100vh',
       paddingBottom: '80px'
     }}>
-      <VendorHeader title="Payout" />
+      <VendorHeader />
 
       {/* Payout Content */}
       <div style={{ padding: '24px 16px' }}>

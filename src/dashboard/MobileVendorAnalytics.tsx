@@ -211,7 +211,7 @@ const MobileVendorAnalytics: React.FC = () => {
       minHeight: '100vh',
       paddingBottom: '80px'
     }}>
-      <VendorHeader title="Analytics" />
+      <VendorHeader />
 
       {/* Analytics Content */}
       <div style={{ padding: '16px' }}>

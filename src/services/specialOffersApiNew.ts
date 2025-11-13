@@ -61,7 +61,7 @@ class SpecialOffersApi {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+    this.baseUrl = process.env.REACT_APP_API_URL;
   }
 
   // Get special offers with optional filtering

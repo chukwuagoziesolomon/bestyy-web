@@ -338,9 +338,9 @@ function extractErrorMessage(errorData: any): string | null {
 
 export async function loginUser(email: string, password: string) {
   const payload = { email, password };
-  console.log('Login endpoint:', `${API_URL}/api/user/login/`);
+  console.log('Login endpoint:', `${API_URL}/api/auth/login/`);
   console.log('Login payload:', payload);
-  const response = await fetch(`${API_URL}/api/user/login/`, {
+  const response = await fetch(`${API_URL}/api/auth/login/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -572,6 +572,44 @@ export async function fetchOrderDetails(token: string, orderId: string) {
     } catch {}
     throw new Error(errorMsg);
   }
+  return response.json();
+}
+
+// Fetch order confirmation payload (supports optional session cookies)
+export async function fetchOrderConfirmation(
+  token: string,
+  orderId: string,
+  useSession: boolean = false,
+  signal?: AbortSignal,
+) {
+  const url = `${API_URL}/api/user/orders/${orderId}/confirmation/`;
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers,
+    ...(useSession ? { credentials: 'include' as RequestCredentials } : {}),
+    signal,
+  });
+
+  if (!response.ok) {
+    let errorMsg = 'Failed to fetch order confirmation';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorData?.detail || errorMsg;
+    } catch {
+      // ignore parse errors
+    }
+    throw new Error(errorMsg);
+  }
+
   return response.json();
 }
 
@@ -849,7 +887,7 @@ export async function fetchUserProfile(token: string) {
 }
 
 export async function updateUserProfile(token: string, profileData: any) {
-  const response = await fetch(`${API_URL}/api/user/profile/update/`, {
+  const response = await fetch(`${API_URL}/api/user/profile/`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -859,6 +897,87 @@ export async function updateUserProfile(token: string, profileData: any) {
   });
   if (!response.ok) {
     let errorMsg = 'Failed to update profile';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
+// Vendor Profile API Functions
+export async function fetchVendorProfile(token: string) {
+  const response = await fetch(`${API_URL}/api/user/vendors/me/`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    let errorMsg = 'Failed to fetch vendor profile';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
+export async function updateVendorProfile(token: string, profileData: any, options: { method?: 'PATCH' | 'PUT' } = {}) {
+  const method = options.method || 'PATCH';
+  const response = await fetch(`${API_URL}/api/user/vendors/me/`, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(profileData),
+  });
+  if (!response.ok) {
+    let errorMsg = 'Failed to update vendor profile';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
+// Courier Profile API Functions
+export async function fetchCourierProfile(token: string) {
+  const response = await fetch(`${API_URL}/api/user/couriers/me/`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    let errorMsg = 'Failed to fetch courier profile';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
+export async function updateCourierProfile(token: string, profileData: any) {
+  const response = await fetch(`${API_URL}/api/user/couriers/me/`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(profileData),
+  });
+  if (!response.ok) {
+    let errorMsg = 'Failed to update courier profile';
     try {
       const errorData = await response.json();
       errorMsg = errorData?.message || errorMsg;
@@ -929,30 +1048,60 @@ export async function getMenuItem(token: string, id: string) {
 }
 
 export async function updateMenuItem(token: string, id: string, item: any) {
-  const formData = new FormData();
-  formData.append('dish_name', item.dish_name);
-  formData.append('item_description', item.item_description);
-  formData.append('price', item.price);
-  formData.append('category', item.category);
-  formData.append('available_now', item.available_now ? 'true' : 'false');
-  
-  // Handle image upload - append the file if it's a new File upload
-  if (item.image && item.image instanceof File) {
-    formData.append('image', item.image);
+  // Check if we have a File object that needs multipart/form-data
+  const hasFile = item.image instanceof File;
+
+  let response: Response;
+  if (hasFile) {
+    // Use FormData for file uploads
+    const formData = new FormData();
+    formData.append('dish_name', item.dish_name);
+    formData.append('item_description', item.item_description);
+    formData.append('price', item.price);
+    formData.append('category', item.category);
+    formData.append('available_now', item.available_now ? 'true' : 'false');
+
+    if (item.image instanceof File) {
+      formData.append('image', item.image);
+    }
+
+    response = await fetch(`${API_URL}/api/user/vendors/menu/${id}/`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
+  } else {
+    // Use JSON for URL-only updates
+    const payload: any = {
+      dish_name: item.dish_name,
+      item_description: item.item_description,
+      price: item.price,
+      category: item.category,
+      available_now: item.available_now,
+    };
+
+    // Add image URL if provided (string URL)
+    if (item.image) {
+      payload.image = item.image;
+    }
+
+    response = await fetch(`${API_URL}/api/user/vendors/menu/${id}/`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
   }
 
-  const response = await fetch(`${API_URL}/api/user/vendors/menu/${id}/`, {
-    method: 'PATCH',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
-    body: formData,
-  });
   if (!response.ok) {
     let errorMsg = 'Failed to update menu item';
     try {
       const errorData = await response.json();
-      errorMsg = errorData?.message || errorMsg;
+      errorMsg = errorData?.message || errorData.detail || errorMsg;
     } catch {}
     throw new Error(errorMsg);
   }
@@ -1215,7 +1364,7 @@ export async function createMenuItem(token: string, menuData: {
   item_description: string;
   price: string;
   category: string;
-  image?: File;
+  image?: File | string; // Accept either File or URL string
   available_now?: boolean;
   quantity?: number;
   variants?: Array<{
@@ -1227,43 +1376,79 @@ export async function createMenuItem(token: string, menuData: {
     sort_order?: number;
   }>;
 }) {
-  const formData = new FormData();
-  
-  // Add text fields
-  formData.append('dish_name', menuData.dish_name);
-  formData.append('item_description', menuData.item_description);
-  formData.append('price', menuData.price);
-  formData.append('category', menuData.category);
-  
-  // Add optional fields
-  if (menuData.available_now !== undefined) {
-    formData.append('available_now', menuData.available_now.toString());
-  }
-  if (menuData.quantity !== undefined) {
-    formData.append('quantity', menuData.quantity.toString());
-  }
-  
-  // Add variants if provided
-  if (menuData.variants && menuData.variants.length > 0) {
-    formData.append('variants', JSON.stringify(menuData.variants));
-  }
-  
-  // Add image file if provided
-  if (menuData.image) {
-    formData.append('image', menuData.image);
-  }
+  // Check if we have a File object that needs multipart/form-data
+  const hasFile = menuData.image instanceof File;
 
-  const response = await fetch(`${API_URL}/api/user/vendors/menu/`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`
-    },
-    body: formData
-  });
+  let response: Response;
+  if (hasFile) {
+    // Use FormData for file uploads
+    const formData = new FormData();
+    formData.append('dish_name', menuData.dish_name);
+    formData.append('item_description', menuData.item_description);
+    formData.append('price', menuData.price);
+    formData.append('category', menuData.category);
+
+    // Add optional fields
+    if (menuData.available_now !== undefined) {
+      formData.append('available_now', menuData.available_now ? 'true' : 'false');
+    }
+    if (menuData.quantity !== undefined) {
+      formData.append('quantity', menuData.quantity.toString());
+    }
+    if (menuData.image instanceof File) {
+      formData.append('image', menuData.image);
+    }
+
+    // Add variants if provided
+    if (menuData.variants && menuData.variants.length > 0) {
+      formData.append('variants', JSON.stringify(menuData.variants));
+    }
+
+    response = await fetch(`${API_URL}/api/user/vendors/menu/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+  } else {
+    // Use JSON for URL-only data
+    const payload: any = {
+      dish_name: menuData.dish_name,
+      item_description: menuData.item_description,
+      price: menuData.price,
+      category: menuData.category,
+    };
+
+    // Add optional fields
+    if (menuData.available_now !== undefined) {
+      payload.available_now = menuData.available_now;
+    }
+    if (menuData.quantity !== undefined) {
+      payload.quantity = menuData.quantity;
+    }
+    if (menuData.image) {
+      payload.image = menuData.image; // Send URL as string
+    }
+
+    // Add variants if provided
+    if (menuData.variants && menuData.variants.length > 0) {
+      payload.variants = menuData.variants;
+    }
+
+    response = await fetch(`${API_URL}/api/user/vendors/menu/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+  }
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || `Failed to create menu item: ${response.statusText}`);
+    throw new Error(errorData.detail || errorData.message || `Failed to create menu item: ${response.statusText}`);
   }
 
   return response.json();
@@ -1549,5 +1734,531 @@ export async function getGuestOrderStatus(orderId: string, phone: string) {
     throw new Error(errorMsg);
   }
 
+  return response.json();
+}
+
+// Unified Multi-Role Signup API
+export async function registerMultiRole(data: {
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  password: string;
+  confirm_password: string;
+  roles: string[];
+  // Vendor-specific fields (optional)
+  business_name?: string;
+  business_category?: string;
+  business_address?: string;
+  delivery_radius?: number;
+  service_areas?: string;
+  logo?: File | string; // Can be File or URL string
+  // Courier-specific fields (optional)
+  vehicle_type?: string;
+  license_number?: string;
+  vehicle_registration?: string;
+  availability_status?: string;
+  // Business details
+  cac_number?: string;
+  tin_number?: string;
+  opening_hours?: string;
+  closing_hours?: string;
+  cover_photo?: File | string; // Can be File or URL string
+}) {
+  // Check if we have any File objects that need multipart/form-data
+  const hasFiles = !!(data.logo instanceof File || data.cover_photo instanceof File);
+
+  let response: Response;
+  if (hasFiles) {
+    // Use FormData for file uploads
+    const formData = new FormData();
+
+    // Add basic fields
+    formData.append('email', data.email);
+    formData.append('first_name', data.first_name);
+    formData.append('last_name', data.last_name);
+    formData.append('phone', data.phone);
+    formData.append('password', data.password);
+    formData.append('confirm_password', data.confirm_password);
+
+    // Add roles as individual form fields (not JSON string)
+    data.roles.forEach(role => {
+      formData.append('roles', role);
+    });
+
+    // Add optional vendor fields
+    if (data.business_name) formData.append('business_name', data.business_name);
+    if (data.business_category) formData.append('business_category', data.business_category);
+    if (data.business_address) formData.append('business_address', data.business_address);
+    if (data.delivery_radius !== undefined) formData.append('delivery_radius', data.delivery_radius.toString());
+    if (data.service_areas) formData.append('service_areas', data.service_areas);
+
+    // Add logo (File or URL)
+    if (data.logo instanceof File) {
+      formData.append('logo', data.logo);
+    } else if (data.logo) {
+      formData.append('logo', data.logo);
+    }
+
+    // Add optional courier fields
+    if (data.vehicle_type) formData.append('vehicle_type', data.vehicle_type);
+    if (data.license_number) formData.append('license_number', data.license_number);
+    if (data.vehicle_registration) formData.append('vehicle_registration', data.vehicle_registration);
+    if (data.availability_status) formData.append('availability_status', data.availability_status);
+
+    // Add business details
+    if (data.cac_number) formData.append('cac_number', data.cac_number);
+    if (data.tin_number) formData.append('tin_number', data.tin_number);
+    if (data.opening_hours) formData.append('opening_hours', data.opening_hours);
+    if (data.closing_hours) formData.append('closing_hours', data.closing_hours);
+
+    // Add cover photo (File or URL)
+    if (data.cover_photo instanceof File) {
+      formData.append('cover_photo', data.cover_photo);
+    } else if (data.cover_photo) {
+      formData.append('cover_photo', data.cover_photo);
+    }
+
+    response = await fetch(`${API_URL}/api/user/register/multi-role/`, {
+      method: 'POST',
+      body: formData,
+    });
+  } else {
+    // Use JSON for URL-only data
+    const jsonData = {
+      email: data.email,
+      first_name: data.first_name,
+      last_name: data.last_name,
+      phone: data.phone,
+      password: data.password,
+      confirm_password: data.confirm_password,
+      roles: data.roles,
+      ...(data.business_name && { business_name: data.business_name }),
+      ...(data.business_category && { business_category: data.business_category }),
+      ...(data.business_address && { business_address: data.business_address }),
+      ...(data.delivery_radius !== undefined && { delivery_radius: data.delivery_radius }),
+      ...(data.service_areas && { service_areas: data.service_areas }),
+      ...(data.logo && { logo: data.logo }),
+      ...(data.vehicle_type && { vehicle_type: data.vehicle_type }),
+      ...(data.license_number && { license_number: data.license_number }),
+      ...(data.vehicle_registration && { vehicle_registration: data.vehicle_registration }),
+      ...(data.availability_status && { availability_status: data.availability_status }),
+      ...(data.cac_number && { cac_number: data.cac_number }),
+      ...(data.tin_number && { tin_number: data.tin_number }),
+      ...(data.opening_hours && { opening_hours: data.opening_hours }),
+      ...(data.closing_hours && { closing_hours: data.closing_hours }),
+      ...(data.cover_photo && { cover_photo: data.cover_photo }),
+    };
+
+    response = await fetch(`${API_URL}/api/user/register/multi-role/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(jsonData),
+    });
+  }
+
+  if (!response.ok) {
+    let errorMsg = 'Registration failed';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  const result = await response.json();
+  console.log('registerMultiRole response:', result);
+  return result;
+}
+
+// Verification APIs
+export async function sendEmailVerification(email: string) {
+  const response = await fetch(`${API_URL}/api/user/verification/send-email-signup/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  if (!response.ok) {
+    let errorMsg = 'Failed to send email verification';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
+export async function verifyEmail(email: string, code: string) {
+  const response = await fetch(`${API_URL}/api/user/verification/verify-email-signup/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, code }),
+  });
+  if (!response.ok) {
+    let errorMsg = 'Email verification failed';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
+export async function initiateWhatsAppSignup(userData: {
+  user_type: string;
+  email: string;
+  password: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  business_name?: string;
+  business_category?: string;
+  business_address?: string;
+  delivery_radius?: string;
+  service_areas?: string;
+  bank_name?: string;
+  account_number?: string;
+  account_name?: string;
+  bank_code?: string;
+}) {
+  const response = await fetch(`${API_URL}/api/user/verification/initiate-whatsapp-signup/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(userData),
+  });
+  if (!response.ok) {
+    let errorMsg = 'Failed to initiate WhatsApp signup';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.error || errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
+export async function getVerificationStatus(pendingUserId: string) {
+  const response = await fetch(`${API_URL}/api/user/verification/verification-status/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pending_user_id: pendingUserId }),
+  });
+  if (!response.ok) {
+    let errorMsg = 'Failed to get verification status';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.error || errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
+export async function checkVerificationComplete(pendingUserId: string) {
+  const response = await fetch(`${API_URL}/api/user/verification/check-complete/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pending_user_id: pendingUserId }),
+  });
+  if (!response.ok) {
+    let errorMsg = 'Failed to check verification status';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.error || errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
+export async function verifyPhone(phone: string, code: string) {
+  const response = await fetch(`${API_URL}/api/user/verification/verify-phone-signup/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone, code }),
+  });
+  if (!response.ok) {
+    let errorMsg = 'WhatsApp verification failed';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.error || errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
+export async function fetchSupportedBanks(token?: string) {
+  const headers: any = {
+    'Content-Type': 'application/json',
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_URL}/api/user/verification/supported-banks/`, {
+    method: 'GET',
+    headers,
+  });
+  if (!response.ok) {
+    let errorMsg = 'Failed to fetch supported banks';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
+export async function verifyBankAccount(bankData: {
+  account_number: string;
+  account_name: string;
+  bank_code: string;
+  bank_name: string;
+}, token?: string) {
+  const headers: any = {
+    'Content-Type': 'application/json',
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_URL}/api/user/verification/verify-bank/`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(bankData),
+  });
+  if (!response.ok) {
+    let errorMsg = 'Bank verification failed';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.error || errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
+export async function completeSignupVerification(userId: string) {
+  const response = await fetch(`${API_URL}/api/user/verification/complete-signup/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user_id: userId }),
+  });
+  if (!response.ok) {
+    let errorMsg = 'Failed to complete signup';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
+export async function resendVerificationCode(phone: string) {
+  const response = await fetch(`${API_URL}/api/auth/resend-verification-code/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone }),
+  });
+  if (!response.ok) {
+    let errorMsg = 'Failed to resend verification code';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.error || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
+export async function checkVerificationStatus(phone: string) {
+  const response = await fetch(`${API_URL}/api/auth/verification-status/?phone=${encodeURIComponent(phone)}`, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!response.ok) {
+    let errorMsg = 'Failed to check verification status';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.error || errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
+export async function verifyWhatsAppSignup(phone: string, code: string) {
+  const response = await fetch(`${API_URL}/api/auth/verify-whatsapp-signup/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone, code }),
+  });
+  if (!response.ok) {
+    let errorMsg = 'Failed to verify WhatsApp signup';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.error || errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
+// User Profile Info API Functions
+export async function getUserProfileInfo(token: string) {
+  const response = await fetch(`${API_URL}/api/user/profile/info/`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    let errorMsg = 'Failed to fetch user profile info';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
+export async function updateUserProfileInfo(token: string, profileData: {
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  nick_name?: string;
+  address?: string;
+  language?: string;
+  email_notifications?: boolean;
+  push_notifications?: boolean;
+  profile_picture?: File | string; // File for upload or URL string
+}, method: 'PUT' | 'PATCH' = 'PUT') {
+  // Check if we have a File object that needs multipart/form-data
+  const hasFile = profileData.profile_picture instanceof File;
+
+  let response: Response;
+  if (hasFile) {
+    // Use FormData for file uploads
+    const formData = new FormData();
+
+    // Add all non-file fields
+    Object.entries(profileData).forEach(([key, value]) => {
+      if (key !== 'profile_picture' && value !== undefined) {
+        if (typeof value === 'boolean') {
+          formData.append(key, value ? 'true' : 'false');
+        } else {
+          formData.append(key, String(value));
+        }
+      }
+    });
+
+    // Add the file
+    if (profileData.profile_picture instanceof File) {
+      formData.append('profile_picture', profileData.profile_picture);
+    }
+
+    response = await fetch(`${API_URL}/api/user/profile/info/`, {
+      method,
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
+  } else {
+    // Use JSON for non-file updates
+    const payload: any = { ...profileData };
+    // Remove profile_picture if it's not a file (URL strings are handled by backend)
+    if (typeof payload.profile_picture === 'string') {
+      // Keep it as is - backend handles URL updates
+    }
+
+    response = await fetch(`${API_URL}/api/user/profile/info/`, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+  }
+
+  if (!response.ok) {
+    let errorMsg = 'Failed to update user profile info';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
+// Subscription API Functions
+export async function checkSubscriptionStatus(token: string) {
+  const response = await fetch(`${API_URL}/api/user/subscription/status/`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    let errorMsg = 'Failed to check subscription status';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
+export async function initializeSubscription(token: string) {
+  const response = await fetch(`${API_URL}/api/user/subscription/initialize/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    let errorMsg = 'Failed to initialize subscription';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
+export async function verifySubscriptionPayment(token: string, reference: string, subscriptionCode?: string) {
+  const response = await fetch(`${API_URL}/api/user/subscription/verify/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      reference,
+      subscription_code: subscriptionCode
+    }),
+  });
+  if (!response.ok) {
+    let errorMsg = 'Failed to verify subscription payment';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
   return response.json();
 }

@@ -1,10 +1,11 @@
 import React, { useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
-import BottomNav from '../components/BottomNav';
+import UserBottomNavigation from '../components/UserBottomNavigation';
 import MobileDashboardHome from '../user/MobileDashboardHome';
 import MobileOrdersPage from '../user/MobileOrdersPage';
 import { useResponsive } from '../hooks/useResponsive';
+import ChatWithBestie from '../components/ChatWithBestie';
 
 const UserDashboardLayout: React.FC = () => {
   const { isMobile, isTablet, windowSize } = useResponsive();
@@ -40,8 +41,7 @@ const UserDashboardLayout: React.FC = () => {
       }}>
         {/* Use Outlet for nested routes */}
         <Outlet context={{ isMobile, isTablet }} />
-        {/* Add BottomNav for mobile */}
-        <BottomNav />
+        {/* Add UserBottomNavigation for mobile - only if not already added by child component */}
       </div>
     );
   }
@@ -51,7 +51,8 @@ const UserDashboardLayout: React.FC = () => {
     <div style={{
       display: 'flex',
       minHeight: '100vh',
-      backgroundColor: '#f8fafc'
+      backgroundColor: '#f8fafc',
+      position: 'relative'
     }}>
       <Sidebar />
       <main style={{ 
@@ -83,6 +84,7 @@ const UserDashboardLayout: React.FC = () => {
           <Outlet context={{ isMobile }} />
         </div>
       </main>
+      <ChatWithBestie />
     </div>
   );
 };

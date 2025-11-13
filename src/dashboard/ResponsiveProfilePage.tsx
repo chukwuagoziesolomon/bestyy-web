@@ -1,17 +1,8 @@
 import React from 'react';
-import { useResponsive } from '../hooks/useResponsive';
-import MobileVendorProfile from './MobileVendorProfile';
 import ProfilePage from './ProfilePage';
 
 const ResponsiveProfilePage: React.FC = () => {
-  const { isMobile, isTablet } = useResponsive();
-  
-  // Use mobile component for mobile and tablet views
-  if (isMobile || isTablet) {
-    return <MobileVendorProfile />;
-  }
-  
-  // Use desktop component for desktop view
+  // Use a single responsive profile component for all devices
   return <ProfilePage />;
 };
 

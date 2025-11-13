@@ -1,27 +1,23 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { showError, showSuccess } from '../toast';
 import { Edit2, Camera, Building2, Bell, Shield, Clock, MapPin, Truck, User, Mail, Phone } from 'lucide-react';
-import VerificationStatus from '../components/VerificationStatus';
-import VerificationHistory from '../components/VerificationHistory';
-import VerificationStatusBadge from '../components/VerificationStatusBadge';
-import VerificationNotificationPopup from '../components/VerificationNotificationPopup';
-import { websocketService, VerificationNotificationData } from '../services/websocketService';
+import { fetchUserProfile, updateUserProfile, fetchVendorProfile, updateVendorProfile, fetchCourierProfile, updateCourierProfile } from '../api';
 
 const ProfilePage = () => {
 
-  const [profile, setProfile] = useState<any>(null);
+  const [profileData, setProfileData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
   // Editable fields - expanded to include all vendor signup data
   const [fullName, setFullName] = useState('');
-  const [nickName, setNickName] = useState('');
-  const [language, setLanguage] = useState('en');
+  // Removed nickName and language as they're not in the endpoint response
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [businessAddress, setBusinessAddress] = useState('');
   const [businessCategory, setBusinessCategory] = useState('');
   const [businessDescription, setBusinessDescription] = useState('');
+  const [bio, setBio] = useState('');
   const [deliveryRadius, setDeliveryRadius] = useState('');
   const [serviceAreas, setServiceAreas] = useState('');
   const [openingHours, setOpeningHours] = useState('');
@@ -30,12 +26,15 @@ const ProfilePage = () => {
   const [emailNotifications, setEmailNotifications] = useState(false);
   const [pushNotifications, setPushNotifications] = useState(false);
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
+  const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
   const [previewPicture, setPreviewPicture] = useState<string | null>(null);
+  const [previewCoverPhoto, setPreviewCoverPhoto] = useState<string | null>(null);
+  const [selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null);
+  const [selectedCoverFile, setSelectedCoverFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const coverPhotoInputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   
-  // WebSocket notification state
-  const [notification, setNotification] = useState<VerificationNotificationData | null>(null);
-  const [showNotification, setShowNotification] = useState(false);
 
   // Get user role from localStorage
   const getUserRole = () => {
@@ -87,18 +86,19 @@ const ProfilePage = () => {
 
         // Populate all fields from signup data
         setFullName(vendor.business_name || vendor.user?.full_name || '');
-        setNickName(vendor.user?.first_name || '');
         setEmail(vendor.user?.email || vendor.email || '');
         setPhone(vendor.phone || '');
         setBusinessAddress(vendor.business_address || '');
         setBusinessCategory(vendor.business_category || '');
         setBusinessDescription(vendor.business_description || '');
+        setBio(vendor.bio || '');
         setDeliveryRadius(vendor.delivery_radius || '');
         setServiceAreas(vendor.service_areas || '');
         setOpeningHours(vendor.opening_hours?.replace(':00', '') || '');
         setClosingHours(vendor.closing_hours?.replace(':00', '') || '');
         setOffersDelivery(vendor.offers_delivery || false);
         setProfilePicture(vendor.logo || null);
+        setCoverPhoto(vendor.cover_photo || vendor.cover_image || null);
 
         console.log('✅ Profile fields populated from vendor_profile data');
         return true; // Successfully populated
@@ -117,7 +117,6 @@ const ProfilePage = () => {
         console.log('✅ Loading user data:', user);
 
         setFullName(user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || '');
-        setNickName(user.first_name || '');
         setEmail(user.email || '');
         setPhone(user.phone || '');
 
@@ -155,69 +154,85 @@ const ProfilePage = () => {
   };
 
   useEffect(() => {
-    // Only populate from localStorage - no API calls
-    const hasLocalData = populateFormFromLocalStorage();
-    
-    // Always set profile to true so the form is always shown
-    // Users can fill out the form even if there's no existing data
-    setProfile(true);
-    setLoading(false);
-    
-    if (hasLocalData) {
-      console.log('Profile loaded from localStorage successfully');
-    } else {
-      console.log('No local data found, showing empty form for user input');
-    }
+    const loadProfile = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem('access_token');
 
-    // Setup WebSocket for verification notifications
-    setupWebSocketNotifications();
-    
-    // Cleanup WebSocket on unmount
-    return () => {
-      websocketService.disconnectAll();
+        if (token) {
+          let apiProfileData;
+          if (isVendor) {
+            apiProfileData = await fetchVendorProfile(token);
+          } else if (isCourier) {
+            apiProfileData = await fetchCourierProfile(token);
+          } else {
+            apiProfileData = await fetchUserProfile(token);
+          }
+
+          // Store API data
+          setProfileData(apiProfileData);
+
+          // Populate form fields from API response
+          const fullName = apiProfileData.business_name || '';
+          const email = apiProfileData.email || '';
+          const phone = apiProfileData.phone || '';
+          const businessAddress = apiProfileData.business_address || '';
+          const businessCategory = apiProfileData.business_category || '';
+          const businessDescription = apiProfileData.business_description || '';
+          const bio = apiProfileData.bio || '';
+          const deliveryRadius = apiProfileData.delivery_radius || '';
+          const serviceAreas = apiProfileData.service_areas || [];
+          const openingHours = apiProfileData.opening_hours || '';
+          const closingHours = apiProfileData.closing_hours || '';
+          const offersDelivery = apiProfileData.offers_delivery || false;
+          const emailNotifications = apiProfileData.email_notifications || false;
+          const pushNotifications = apiProfileData.push_notifications || false;
+          const profilePicture = apiProfileData.logo || null;
+          const coverPhoto = apiProfileData.cover_photo || apiProfileData.cover_image || null;
+
+          // Update state variables
+          setFullName(fullName);
+          setEmail(email);
+          setPhone(phone);
+          setBusinessAddress(businessAddress);
+          setBusinessCategory(businessCategory);
+          setBusinessDescription(businessDescription);
+          setBio(bio);
+          setDeliveryRadius(deliveryRadius);
+          setServiceAreas(Array.isArray(serviceAreas) ? serviceAreas.join(', ') : serviceAreas);
+          setOpeningHours(openingHours);
+          setClosingHours(closingHours);
+          setOffersDelivery(offersDelivery);
+          setEmailNotifications(emailNotifications);
+          setPushNotifications(pushNotifications);
+          setProfilePicture(profilePicture);
+          setCoverPhoto(coverPhoto);
+          setSelectedLogoFile(null);
+          setSelectedCoverFile(null);
+
+        } else {
+          // Fallback to localStorage if no token
+          const hasLocalData = populateFormFromLocalStorage();
+          setProfileData(true);
+        }
+      } catch (error) {
+        console.error('Failed to load profile:', error);
+        // Fallback to localStorage
+        const hasLocalData = populateFormFromLocalStorage();
+        setProfileData(true);
+      } finally {
+        setLoading(false);
+      }
     };
-  }, []);
 
-  // Setup WebSocket notifications
-  const setupWebSocketNotifications = () => {
-    // Set up notification callback
-    websocketService.setVerificationNotificationCallback((data: VerificationNotificationData) => {
-      setNotification(data);
-      setShowNotification(true);
-    });
+    loadProfile();
+  }, [isVendor, isCourier, isUser]);
 
-    // Connect to appropriate WebSocket based on user type
-    if (isVendor) {
-      websocketService.connectVendorWebSocket();
-    } else if (isCourier) {
-      websocketService.connectCourierWebSocket();
-    }
-  };
-
-  // Handle notification actions
-  const handleViewStatus = () => {
-    setShowNotification(false);
-    // Scroll to verification status section
-    const verificationSection = document.querySelector('.verification-status');
-    if (verificationSection) {
-      verificationSection.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  const handleResubmit = () => {
-    setShowNotification(false);
-    // Navigate to application form or show resubmit modal
-    console.log('Resubmit application');
-  };
-
-  const handleCloseNotification = () => {
-    setShowNotification(false);
-    setNotification(null);
-  };
 
   const handlePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files && e.target.files[0];
     if (file) {
+      setSelectedLogoFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreviewPicture(reader.result as string);
@@ -226,11 +241,108 @@ const ProfilePage = () => {
     }
   };
 
+  const handleCoverPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files && e.target.files[0];
+    if (file) {
+      setSelectedCoverFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewCoverPhoto(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
-      // Update the vendor_profile in localStorage with the new data
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      let updateData;
+      let updatedProfile;
+      let logoUrl: string = profilePicture || '';
+      let coverPhotoUrl: string = coverPhoto || '';
+
+      if (isVendor) {
+        // Handle image uploads to Cloudinary first
+
+        if (selectedLogoFile) {
+          try {
+            const { uploadMenuItemImage } = await import('../services/cloudinaryService');
+            logoUrl = await uploadMenuItemImage(selectedLogoFile);
+          } catch (error) {
+            console.error('Failed to upload logo:', error);
+            throw new Error('Failed to upload logo image');
+          }
+        }
+
+        if (selectedCoverFile) {
+          try {
+            const { uploadMenuItemImage } = await import('../services/cloudinaryService');
+            coverPhotoUrl = await uploadMenuItemImage(selectedCoverFile);
+          } catch (error) {
+            console.error('Failed to upload cover photo:', error);
+            throw new Error('Failed to upload cover photo image');
+          }
+        }
+
+        const toTime = (val: string) => {
+          if (!val) return '';
+          // If already HH:mm:ss, keep as is; if HH:mm, append :00
+          return /^\d{2}:\d{2}:\d{2}$/.test(val) ? val : /\d{2}:\d{2}/.test(val) ? `${val}:00` : val;
+        };
+
+        updateData = {
+          business_name: fullName,
+          business_category: businessCategory,
+          business_description: businessDescription,
+          bio: bio,
+          logo: logoUrl,
+          cover_image: coverPhotoUrl,
+          cover_photo: coverPhotoUrl,
+          phone: phone,
+          business_address: businessAddress,
+          delivery_radius: deliveryRadius,
+          service_areas: serviceAreas,
+          opening_hours: toTime(openingHours),
+          closing_hours: toTime(closingHours),
+          offers_delivery: offersDelivery
+        };
+        updatedProfile = await updateVendorProfile(token, updateData, { method: 'PATCH' });
+      } else if (isCourier) {
+        updateData = {
+          phone: phone,
+          business_address: businessAddress,
+          business_category: businessCategory,
+          business_description: businessDescription,
+          delivery_radius: deliveryRadius,
+          service_areas: serviceAreas,
+          opening_hours: openingHours ? `${openingHours}:00` : '',
+          closing_hours: closingHours ? `${closingHours}:00` : '',
+          offers_delivery: offersDelivery,
+          profile_picture: previewPicture || profilePicture,
+          email_notifications: emailNotifications,
+          push_notifications: pushNotifications
+        };
+        updatedProfile = await updateCourierProfile(token, updateData);
+      } else {
+        updateData = {
+          first_name: fullName.split(' ')[0] || '',
+          last_name: fullName.split(' ').slice(1).join(' ') || '',
+          phone: phone,
+          address: businessAddress,
+          email_notifications: emailNotifications,
+          push_notifications: pushNotifications,
+          profile_picture: previewPicture || profilePicture
+        };
+        updatedProfile = await updateUserProfile(token, updateData);
+      }
+
+      // Update localStorage as backup
       const currentVendorProfile = JSON.parse(localStorage.getItem('vendor_profile') || '{}');
       const updatedVendorProfile = {
         ...currentVendorProfile,
@@ -239,30 +351,44 @@ const ProfilePage = () => {
         business_address: businessAddress,
         business_category: businessCategory,
         business_description: businessDescription,
+        bio: bio,
         delivery_radius: deliveryRadius,
         service_areas: serviceAreas,
         opening_hours: openingHours ? `${openingHours}:00` : '',
         closing_hours: closingHours ? `${closingHours}:00` : '',
         offers_delivery: offersDelivery,
-        logo: previewPicture || profilePicture,
+        logo: logoUrl || profilePicture,
+        cover_photo: coverPhotoUrl || coverPhoto,
+        cover_image: coverPhotoUrl || coverPhoto,
         user: {
           ...currentVendorProfile.user,
           email: email,
-          first_name: nickName,
           full_name: fullName
         }
       };
+
+      // Update state with uploaded URLs
+      setProfilePicture(logoUrl || profilePicture);
+      setCoverPhoto(coverPhotoUrl || coverPhoto);
+      setPreviewPicture(null);
+      setPreviewCoverPhoto(null);
+      setSelectedLogoFile(null);
+      setSelectedCoverFile(null);
+      localStorage.setItem('vendor_profile', JSON.stringify(updatedVendorProfile));
       localStorage.setItem('vendor_profile', JSON.stringify(updatedVendorProfile));
 
       // Update local state
       setProfilePicture(previewPicture || profilePicture);
+      setCoverPhoto(previewCoverPhoto || coverPhoto);
       setPreviewPicture(null);
-      setProfile(updatedVendorProfile);
+      setPreviewCoverPhoto(null);
+      setProfileData(updatedProfile);
 
       showSuccess('Profile updated successfully!');
       setEditMode(false);
     } catch (error: any) {
-      showError('Failed to update profile');
+      console.error('Failed to update profile:', error);
+      showError(error.message || 'Failed to update profile');
     }
   };
 
@@ -286,136 +412,135 @@ const ProfilePage = () => {
         </div>
       </div>
       
-      {/* Role-specific help text */}
-      {isVendor && (
-        <div style={{
-          background: '#f0fdf4',
-          border: '1px solid #bbf7d0',
-          borderRadius: '8px',
-          padding: '16px',
-          marginBottom: '24px',
-          color: '#166534'
-        }}>
-          <div style={{ fontWeight: '600', marginBottom: '4px' }}>Business Profile</div>
-          <div style={{ fontSize: '14px' }}>Complete your business information to help customers find and order from you.</div>
-        </div>
-      )}
-      
-      {isCourier && (
-        <div style={{
-          background: '#fffbeb',
-          border: '1px solid #fed7aa',
-          borderRadius: '8px',
-          padding: '16px',
-          marginBottom: '24px',
-          color: '#92400e'
-        }}>
-          <div style={{ fontWeight: '600', marginBottom: '4px' }}>Delivery Partner Profile</div>
-          <div style={{ fontSize: '14px' }}>Set up your delivery preferences and service areas to receive delivery requests.</div>
-        </div>
-      )}
-      
-      {isUser && (
-        <div style={{
-          background: '#eff6ff',
-          border: '1px solid #bfdbfe',
-          borderRadius: '8px',
-          padding: '16px',
-          marginBottom: '24px',
-          color: '#1e40af'
-        }}>
-          <div style={{ fontWeight: '600', marginBottom: '4px' }}>Customer Profile</div>
-          <div style={{ fontSize: '14px' }}>Customize your preferences to get the best delivery experience.</div>
-        </div>
-      )}
-
-      {/* Verification Status Section - Only for Vendors and Couriers */}
-      {(isVendor || isCourier) && (
-        <VerificationStatus 
-          userType={isVendor ? 'vendor' : 'courier'} 
-          className="verification-status"
-        />
-      )}
-
-      {/* Verification History Section - Only for Couriers */}
-      {isCourier && (
-        <VerificationHistory className="verification-history" />
-      )}
+      {/* Removed verification and helper banners for a cleaner profile UI */}
       
       {loading ? (
         <div style={{ color: '#888', fontSize: 18 }}>Loading profile...</div>
       ) : error ? (
         <div style={{ color: '#ef4444', fontSize: 18 }}>{error}</div>
-      ) : profile ? (
-        <form onSubmit={handleSave}>
-          {/* Profile Card */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 32 }}>
-            <div style={{ position: 'relative', width: 80, height: 80 }}>
-              {previewPicture ? (
-                <img src={previewPicture} alt="Profile Preview" style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover' }} />
-              ) : profilePicture ? (
-                <img src={profilePicture} alt="Profile" style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover' }} />
-              ) : (
-                <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, fontWeight: 700, color: '#10b981' }}>{(nickName || fullName || 'U')[0]}</div>
-              )}
-              {editMode && (
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  style={{
-                    position: 'absolute',
-                    bottom: 0,
-                    right: 0,
-                    background: '#10b981',
-                    border: 'none',
-                    borderRadius: '50%',
-                    width: 32,
-                    height: 32,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                  }}
-                  aria-label="Change profile picture"
-                >
-                  <Camera size={18} color="#fff" />
-                </button>
-              )}
-              <input
-                type="file"
-                accept="image/*"
-                ref={fileInputRef}
-                style={{ display: 'none' }}
-                onChange={handlePictureChange}
-                disabled={!editMode}
-              />
+      ) : profileData ? (
+        <form onSubmit={handleSave} ref={formRef}>
+          {/* Cover Photo Section */}
+          {isVendor && (
+            <div style={{ marginBottom: 32 }}>
+              <div style={{ position: 'relative', width: '100%', height: 200, background: '#f3f4f6', borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
+                {previewCoverPhoto ? (
+                  <img src={previewCoverPhoto} alt="Cover Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : coverPhoto ? (
+                  <img src={coverPhoto} alt="Cover Photo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #10b981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ textAlign: 'center', color: 'white' }}>
+                      <Camera size={48} />
+                      <div style={{ marginTop: 8, fontSize: 18, fontWeight: 600 }}>Add Cover Photo</div>
+                      <div style={{ fontSize: 14, opacity: 0.9 }}>Showcase your business</div>
+                    </div>
+                  </div>
+                )}
+                {editMode && (
+                  <button
+                    type="button"
+                    onClick={() => coverPhotoInputRef.current?.click()}
+                    style={{
+                      position: 'absolute',
+                      top: 16,
+                      right: 16,
+                      background: 'rgba(0,0,0,0.6)',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: 48,
+                      height: 48,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                      color: 'white'
+                    }}
+                    aria-label="Change cover photo"
+                  >
+                    <Camera size={24} />
+                  </button>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={coverPhotoInputRef}
+                  style={{ display: 'none' }}
+                  onChange={handleCoverPhotoChange}
+                  disabled={!editMode}
+                />
+              </div>
             </div>
+          )}
+    
+          {/* Profile Card */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 32 }}>
+                <div style={{ position: 'relative', width: 80, height: 80 }}>
+                  {previewPicture ? (
+                    <img src={previewPicture} alt="Profile Preview" style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover' }} />
+                  ) : profilePicture ? (
+                    <img src={profilePicture} alt="Profile" style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover' }} />
+                  ) : (
+                    <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, fontWeight: 700, color: '#10b981' }}>{(fullName || 'U')[0]}</div>
+                  )}
+                  {editMode && (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        right: 0,
+                        background: '#10b981',
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: 32,
+                        height: 32,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      }}
+                      aria-label="Change profile picture"
+                    >
+                      <Camera size={18} color="#fff" />
+                    </button>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    ref={fileInputRef}
+                    style={{ display: 'none' }}
+                    onChange={handlePictureChange}
+                    disabled={!editMode}
+                  />
+                </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, fontSize: 22 }}>{nickName || fullName || 'User'}</div>
+              <div style={{ fontWeight: 700, fontSize: 22 }}>{fullName || 'User'}</div>
               <div style={{ color: '#888', fontSize: 16 }}>{email}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '8px' }}>
                 <div style={{ color: '#10b981', fontSize: 14, fontWeight: '600', textTransform: 'capitalize' }}>
                   {userRole === 'user' ? 'Customer' : userRole === 'vendor' ? 'Business Owner' : 'Delivery Partner'}
                 </div>
-                {/* Verification Status Badge - Only for Vendors and Couriers */}
-                {(isVendor || isCourier) && (
-                  <VerificationStatusBadge 
-                    userType={isVendor ? 'vendor' : 'courier'} 
-                    size="medium"
-                    onClick={() => {
-                      const verificationSection = document.querySelector('.verification-status');
-                      if (verificationSection) {
-                        verificationSection.scrollIntoView({ behavior: 'smooth' });
-                      }
-                    }}
-                  />
-                )}
+                {/* Verification badge removed */}
               </div>
         </div>
-            <button type="button" onClick={() => setEditMode(!editMode)} style={{ background: '#10b981', color: '#fff', fontWeight: 700, fontSize: 16, border: 'none', borderRadius: 8, padding: '10px 28px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+            {!editMode ? (
+              <button type="button" onClick={() => setEditMode(true)} style={{ background: '#10b981', color: '#fff', fontWeight: 700, fontSize: 16, border: 'none', borderRadius: 8, padding: '10px 28px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
               <Edit2 size={18} /> Edit
+              </button>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button type="button" onClick={() => setEditMode(false)} style={{ background: '#6b7280', color: '#fff', fontWeight: 700, fontSize: 16, border: 'none', borderRadius: 8, padding: '10px 20px', cursor: 'pointer' }}>
+                  Cancel
+                </button>
+                <button type="button" onClick={() => formRef.current?.requestSubmit()} style={{ background: '#10b981', color: '#fff', fontWeight: 700, fontSize: 16, border: 'none', borderRadius: 8, padding: '10px 24px', cursor: 'pointer' }}>
+                  Save
             </button>
+              </div>
+            )}
       </div>
       {/* Profile Form */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 32 }}>
@@ -424,22 +549,6 @@ const ProfilePage = () => {
               <User size={16} color="#10b981" /> Full Name
             </label>
               <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Full Name" style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6 }} disabled={!editMode} />
-        </div>
-        <div>
-            <label style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <User size={16} color="#10b981" /> Nick Name
-            </label>
-              <input type="text" value={nickName} onChange={e => setNickName(e.target.value)} placeholder="Nick Name" style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6 }} disabled={!editMode} />
-        </div>
-        <div>
-            <label style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Clock size={16} color="#10b981" /> Language
-            </label>
-              <select value={language} onChange={e => setLanguage(e.target.value)} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6 }} disabled={!editMode}>
-                <option value="en">English</option>
-                <option value="fr">French</option>
-                <option value="es">Spanish</option>
-          </select>
         </div>
         <div>
             <label style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -510,6 +619,21 @@ const ProfilePage = () => {
                 disabled={!editMode}
               />
             </div>
+            {isVendor && (
+              <div style={{ marginBottom: 24 }}>
+                <label style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <User size={16} color="#10b981" /> Bio
+                </label>
+                <textarea
+                  value={bio}
+                  onChange={e => setBio(e.target.value)}
+                  placeholder="Tell customers about yourself..."
+                  rows={2}
+                  style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6, resize: 'vertical' }}
+                  disabled={!editMode}
+                />
+              </div>
+            )}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
               <div>
                 <label style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -579,6 +703,7 @@ const ProfilePage = () => {
             </div>
           </div>
           )}
+
 
           {/* Courier-Specific Section */}
           {isCourier && (
@@ -712,15 +837,6 @@ const ProfilePage = () => {
         <div style={{ color: '#888', fontSize: 18 }}>No profile data found.</div>
       )}
 
-      {/* WebSocket Notification Popup */}
-      {showNotification && notification && (
-        <VerificationNotificationPopup
-          notification={notification}
-          onClose={handleCloseNotification}
-          onViewStatus={handleViewStatus}
-          onResubmit={handleResubmit}
-        />
-      )}
     </div>
   );
 };

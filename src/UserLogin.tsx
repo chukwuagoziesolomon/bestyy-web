@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './UserLogin.css';
+import './styles/loading-spinner.css';
 import { showError } from './toast';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
@@ -76,17 +77,46 @@ const UserLogin: React.FC<UserLoginProps> = ({ isSignUp = false }) => {
               className="user-login__input" 
             />
           </div>
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className="user-login__submit"
             disabled={isLoading}
           >
-            {isLoading ? 'Logging in...' : 'Login'}
+            {isLoading ? (
+              <div className="logo-loading-container">
+                <div className="logo-loading-spinner">
+                  <img src="/logo.png" alt="Bestyy Logo" />
+                </div>
+                <div className="logo-loading-text">Logging in...</div>
+              </div>
+            ) : (
+              'Login'
+            )}
           </button>
         </form>
 
         <p className="user-login__signup">
-          Don't have an account? <a href="/role-selection">Sign up</a>
+          Don't have an account? <a href="/role-selection" className="signup-link" style={{
+            display: 'inline-block', 
+            marginLeft: '0.5rem',
+            color: '#10b981',
+            fontWeight: '700',
+            fontSize: '1.15rem',
+            textDecoration: 'none',
+            borderBottom: '2px solid #10b981',
+            paddingBottom: '2px',
+            transition: 'all 0.2s',
+            cursor: 'pointer'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = '#059669';
+            e.currentTarget.style.borderBottomColor = '#059669';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = '#10b981';
+            e.currentTarget.style.borderBottomColor = '#10b981';
+          }}
+          >Sign Up</a>
         </p>
       </div>
     </div>

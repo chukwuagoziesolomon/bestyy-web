@@ -17,7 +17,7 @@ const CourierBottomNavigation: React.FC<CourierBottomNavigationProps> = ({ curre
     {
       path: '/courier/dashboard',
       icon: <Home size={20} />,
-      label: 'Dashboard'
+      label: 'Overview'
     },
     {
       path: '/courier/deliveries',
@@ -30,9 +30,9 @@ const CourierBottomNavigation: React.FC<CourierBottomNavigationProps> = ({ curre
       label: 'Analytics'
     },
     {
-      path: '/courier/profile',
+      path: '/courier/payouts',
       icon: <CreditCard size={20} />,
-      label: 'Profile'
+      label: 'Payouts'
     }
   ];
 
@@ -43,39 +43,51 @@ const CourierBottomNavigation: React.FC<CourierBottomNavigationProps> = ({ curre
       left: 0,
       right: 0,
       background: '#fff',
-      borderTop: '1px solid #e5e7eb',
+      borderTop: '2px solid #10b981',
       padding: '12px 16px',
       display: 'flex',
       justifyContent: 'space-around',
       alignItems: 'center',
-      zIndex: 50
+      zIndex: 9999,
+      boxShadow: '0 -4px 20px rgba(0,0,0,0.15)',
+      visibility: 'visible',
+      opacity: 1,
+      minHeight: '70px'
     }}>
       {navItems.map((item) => {
         const isActive = activePath === item.path;
+        
         return (
           <button
             key={item.path}
             onClick={() => navigate(item.path)}
             style={{
-              background: isActive ? '#f0f9ff' : 'none',
-              border: 'none',
-              cursor: 'pointer',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               gap: '4px',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
               padding: '8px',
-              borderRadius: '8px',
-              transition: 'all 0.2s ease'
+              transition: 'all 0.2s ease',
+              flex: 1,
+              minWidth: 0
             }}
           >
-            <div style={{ color: isActive ? '#0ea5e9' : '#9ca3af' }}>
+            <div style={{
+              color: isActive ? '#10b981' : '#6b7280',
+              transition: 'color 0.2s ease'
+            }}>
               {item.icon}
             </div>
-            <span style={{ 
-              fontSize: '12px', 
-              color: isActive ? '#0ea5e9' : '#9ca3af', 
-              fontWeight: isActive ? '600' : '500' 
+            <span style={{
+              fontSize: '10px',
+              fontWeight: isActive ? '700' : '500',
+              color: isActive ? '#10b981' : '#6b7280',
+              transition: 'all 0.2s ease',
+              textAlign: 'center',
+              lineHeight: '1.2'
             }}>
               {item.label}
             </span>

@@ -5,6 +5,7 @@ import { fetchVendorOrders } from '../api';
 import { showError } from '../toast';
 import VendorHeader from '../components/VendorHeader';
 import VendorBottomNavigation from '../components/VendorBottomNavigation';
+import '../styles/loading-spinner.css';
 
 interface Order {
   id: string;
@@ -156,7 +157,7 @@ const MobileOrdersList: React.FC = () => {
       minHeight: '100vh',
       paddingBottom: '80px'
     }}>
-      <VendorHeader title="Orders List" />
+      <VendorHeader />
 
 
       {/* Filters */}
@@ -507,7 +508,12 @@ const MobileOrdersList: React.FC = () => {
             padding: '40px',
             color: '#6b7280'
           }}>
-            Loading orders...
+            <div className="logo-loading-container">
+              <div className="logo-loading-spinner">
+                <img src="/logo.png" alt="Bestyy Logo" />
+              </div>
+              <div className="logo-loading-text">Loading orders...</div>
+            </div>
           </div>
         ) : displayOrders.length === 0 ? (
           <div style={{

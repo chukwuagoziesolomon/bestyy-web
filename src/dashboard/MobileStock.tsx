@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, List, Utensils, Table, Menu, X, BarChart3, CreditCard, HelpCircle, Settings } from 'lucide-react';
 import { listMenuItems, updateMenuItem, API_URL } from '../api';
+import { getMenuItemImageUrl } from '../utils/imageUtils';
 import { showError, showSuccess } from '../toast';
 import VendorHeader from '../components/VendorHeader';
 import VendorBottomNavigation from '../components/VendorBottomNavigation';
@@ -11,8 +12,17 @@ interface MenuItem {
   dish_name: string;
   price: string;
   image?: string;
+  image_url?: string;
+  image_urls?: {
+    thumbnail: string;
+    medium: string;
+    large: string;
+    original: string;
+  };
   available?: boolean;
+  available_now?: boolean;
   item_description?: string;
+  quantity?: number;
 }
 
 const MobileStock: React.FC = () => {
@@ -52,17 +62,8 @@ const MobileStock: React.FC = () => {
 
   const displayItems = menuItems.length > 0 ? menuItems : sampleMenuItems;
 
-  const getCorrectImageUrl = (imagePath?: string) => {
-    if (!imagePath) {
-      return null; // No image, will show gradient background
-    }
-    if (imagePath.startsWith('http')) {
-      return imagePath;
-    }
-    if (imagePath.startsWith('/')) {
-      return `${API_URL}${imagePath}`;
-    }
-    return null;
+  const getCorrectImageUrl = (item: MenuItem) => {
+    return getMenuItemImageUrl(item);
   };
 
   const handleToggleAvailability = async (item: MenuItem) => {
@@ -73,17 +74,17 @@ const MobileStock: React.FC = () => {
 
     setUpdatingId(item.id);
     try {
-      const newAvailability = !item.available;
+      const newAvailability = !(item.available_now ?? item.available);
       await updateMenuItem(token, item.id.toString(), {
-        available: newAvailability
+        available_now: newAvailability
       });
-      
-      setMenuItems(items => 
-        items.map(i => 
-          i.id === item.id ? { ...i, available: newAvailability } : i
+
+      setMenuItems(items =>
+        items.map(i =>
+          i.id === item.id ? { ...i, available_now: newAvailability, available: newAvailability } : i
         )
       );
-      
+
       showSuccess(`${item.dish_name} ${newAvailability ? 'enabled' : 'disabled'}`);
     } catch (err: any) {
       showError(err.message || 'Failed to update item availability');
@@ -99,7 +100,7 @@ const MobileStock: React.FC = () => {
       minHeight: '100vh',
       paddingBottom: '80px'
     }}>
-      <VendorHeader title="Menu Availability" />
+      <VendorHeader />
 
 
       {/* Menu Items List */}
@@ -127,7 +128,7 @@ const MobileStock: React.FC = () => {
                   width: '70px',
                   height: '70px',
                   borderRadius: '50%',
-                  background: getCorrectImageUrl(item.image) ? `url(${getCorrectImageUrl(item.image)})` : 'linear-gradient(135deg, #fed7aa 0%, #f97316 50%, #ea580c 100%)',
+                  background: getCorrectImageUrl(item) ? `url(${getCorrectImageUrl(item)})` : 'linear-gradient(135deg, #fed7aa 0%, #f97316 50%, #ea580c 100%)',
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                   position: 'relative',
@@ -136,7 +137,7 @@ const MobileStock: React.FC = () => {
                   marginRight: '4px'
                 }}>
                   {/* If no image, show a detailed jollof rice pattern */}
-                  {!getCorrectImageUrl(item.image) && (
+                  {!getCorrectImageUrl(item) && (
                     <div style={{
                       position: 'absolute',
                       inset: 0
@@ -248,7 +249,7 @@ const MobileStock: React.FC = () => {
                     width: '52px',
                     height: '28px',
                     borderRadius: '14px',
-                    background: item.available ? '#10b981' : '#d1d5db',
+                    background: (item.available_now ?? item.available) ? '#10b981' : '#d1d5db',
                     position: 'relative',
                     cursor: updatingId === item.id ? 'not-allowed' : 'pointer',
                     transition: 'background-color 0.2s ease',
@@ -263,7 +264,7 @@ const MobileStock: React.FC = () => {
                     background: '#fff',
                     position: 'absolute',
                     top: '2px',
-                    left: item.available ? '26px' : '2px',
+                    left: (item.available_now ?? item.available) ? '26px' : '2px',
                     transition: 'left 0.2s ease',
                     boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
                   }} />

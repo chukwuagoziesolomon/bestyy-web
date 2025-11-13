@@ -167,7 +167,7 @@ const MobileCourierPayout: React.FC = () => {
       minHeight: '100vh',
       paddingBottom: '80px'
     }}>
-        <CourierHeader title="Payout" />
+        <CourierHeader />
       <div style={{
         display: 'flex',
           justifyContent: 'center',
@@ -192,7 +192,7 @@ const MobileCourierPayout: React.FC = () => {
         minHeight: '100vh',
         paddingBottom: '80px'
       }}>
-        <CourierHeader title="Payout" />
+        <CourierHeader />
         <div style={{
           display: 'flex',
           justifyContent: 'center',

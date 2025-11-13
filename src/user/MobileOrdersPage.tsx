@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown, X, Check, Loader2, Clock } from 'lucide-react';
-import MobileHeader from '../components/MobileHeader';
+import UserHeader from '../components/UserHeader';
+import UserBottomNavigation from '../components/UserBottomNavigation';
 import { useResponsive } from '../hooks/useResponsive';
 import { fetchUserOrders } from '../api';
 
@@ -161,13 +162,7 @@ const MobileOrdersPage = () => {
       margin: '0 auto'
     }}>
       {/* Header */}
-        <MobileHeader 
-          title="My Orders"
-          subtitle="Track your food delivery orders"
-          variant="default"
-          profileImageSize="medium"
-          showProfileImage={true}
-        />
+        <UserHeader />
 
       {/* Main Content */}
         <div style={{ 
@@ -495,7 +490,8 @@ const MobileOrdersPage = () => {
         </div>
       </div>
 
-      {/* Bottom Navigation is now handled by UserDashboardLayout */}
+      {/* Bottom Navigation */}
+      <UserBottomNavigation currentPath="/user/orders" />
     </div>
   );
 };

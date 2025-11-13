@@ -38,7 +38,7 @@ export interface WhatsAppStatusResponse {
 }
 
 class WhatsAppVerificationService {
-  private baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+  private baseUrl = process.env.REACT_APP_API_URL;
 
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const config: RequestInit = {

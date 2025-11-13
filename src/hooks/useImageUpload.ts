@@ -1,15 +1,14 @@
 import { useState, useCallback } from 'react';
-import { uploadVendorLogo, uploadMenuItemImage, uploadProfileImage } from '../services/cloudinaryService';
 
-export type ImageUploadType = 'vendor-logo' | 'menu-item' | 'profile-image';
+export type ImageUploadType = 'vendor-logo' | 'menu-item' | 'profile-image' | 'cover-photo' | 'bank-statement';
 
 interface UseImageUploadOptions {
-  onSuccess?: (url: string, ...args: any[]) => void;
+  onSuccess?: (file: File | string, ...args: any[]) => void;
   onError?: (error: string) => void;
 }
 
 interface UseImageUploadReturn {
-  uploadImage: (file: File, type: ImageUploadType, ...args: any[]) => Promise<string | null>;
+  uploadImage: (file: File, type: ImageUploadType, ...args: any[]) => Promise<File | null>;
   isUploading: boolean;
   error: string | null;
   clearError: () => void;
@@ -23,7 +22,7 @@ export const useImageUpload = (options?: UseImageUploadOptions): UseImageUploadR
     setError(null);
   }, []);
 
-  const uploadImage = useCallback(async (file: File, type: ImageUploadType, ...args: any[]): Promise<string | null> => {
+  const uploadImage = useCallback(async (file: File, type: ImageUploadType, ...args: any[]): Promise<File | null> => {
     setIsUploading(true);
     setError(null);
 
@@ -39,52 +38,28 @@ export const useImageUpload = (options?: UseImageUploadOptions): UseImageUploadR
         throw new Error('Image size must be less than 10MB');
       }
 
-      console.log('Starting image upload:', { fileName: file.name, fileSize: file.size, type });
+      console.log('Image validation successful:', { fileName: file.name, fileSize: file.size, type });
 
-      let uploadFunction;
-      switch (type) {
-        case 'vendor-logo':
-          uploadFunction = uploadVendorLogo;
-          break;
-        case 'menu-item':
-          uploadFunction = uploadMenuItemImage;
-          break;
-        case 'profile-image':
-          uploadFunction = uploadProfileImage;
-          break;
-        default:
-          throw new Error('Invalid upload type');
-      }
-
-      const imageUrl = await uploadFunction(file);
-      
-      console.log('Image upload successful:', imageUrl);
-      
+      // Return the file directly for backend upload
       if (options?.onSuccess) {
-        options.onSuccess(imageUrl, ...args);
+        options.onSuccess(file, ...args);
       }
 
-      return imageUrl;
+      return file;
     } catch (err) {
-      console.error('Image upload error:', err);
-      
+      console.error('Image validation error:', err);
+
       let errorMessage = 'Upload failed';
       if (err instanceof Error) {
-        if (err.message.includes('not properly configured')) {
-          errorMessage = 'Image upload is not configured. Please contact support.';
-        } else if (err.message.includes('network') || err.message.includes('fetch')) {
-          errorMessage = 'Network error. Please check your internet connection and try again.';
-        } else {
-          errorMessage = err.message;
-        }
+        errorMessage = err.message;
       }
-      
+
       setError(errorMessage);
-      
+
       if (options?.onError) {
         options.onError(errorMessage);
       }
-      
+
       return null;
     } finally {
       setIsUploading(false);

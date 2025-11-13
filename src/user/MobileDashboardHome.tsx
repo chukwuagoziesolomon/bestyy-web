@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import MobileHeader from '../components/MobileHeader';
+import UserHeader from '../components/UserHeader';
+import UserBottomNavigation from '../components/UserBottomNavigation';
 import { ChevronRight, Clock, Loader2 } from 'lucide-react';
 import { useResponsive } from '../hooks/useResponsive';
 import { fetchUserOrders } from '../api';
@@ -133,12 +134,7 @@ const MobileDashboardHome: React.FC = () => {
         `}
       </style>
       {/* Header */}
-        <MobileHeader 
-          title="Dashboard"
-          variant="elevated"
-          profileImageSize="large"
-          showProfileImage={true}
-        />
+        <UserHeader />
 
       {/* Welcome Section */}
       <div style={{ 
@@ -425,7 +421,7 @@ const MobileDashboardHome: React.FC = () => {
 
 
       {/* Bottom Navigation */}
-      {/* The BottomNav component was removed from imports, so it's removed from here */}
+      <UserBottomNavigation currentPath="/user/dashboard" />
     </div>
   );
 };

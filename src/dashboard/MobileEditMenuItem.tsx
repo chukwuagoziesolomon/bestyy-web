@@ -43,7 +43,7 @@ const MobileEditMenuItem: React.FC<MobileEditMenuItemProps> = ({
       minHeight: '100vh',
       paddingBottom: '80px'
     }}>
-      <VendorHeader title="Edit Menu Item" />
+      <VendorHeader />
       
       <div style={{ padding: '16px' }}>
         <div style={{

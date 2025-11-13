@@ -147,7 +147,7 @@ export class CloudinaryService {
    * Check if URL is a Cloudinary URL
    */
   public isCloudinaryUrl(url: string): boolean {
-    return url.includes('cloudinary.com');
+    return url && typeof url === 'string' && url.includes('cloudinary.com');
   }
 }
 

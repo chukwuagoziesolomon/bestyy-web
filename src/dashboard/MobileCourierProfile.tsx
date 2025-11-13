@@ -1,13 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, List, BarChart3, CreditCard, Menu, X, HelpCircle, Settings, Camera, Eye, EyeOff, Clock } from 'lucide-react';
-import VerificationBadge from '../components/VerificationBadge';
 import CourierHeader from '../components/CourierHeader';
-import VerificationStatus from '../components/VerificationStatus';
-import VerificationHistory from '../components/VerificationHistory';
-import VerificationStatusBadge from '../components/VerificationStatusBadge';
-import VerificationNotificationPopup from '../components/VerificationNotificationPopup';
-import { websocketService, VerificationNotificationData } from '../services/websocketService';
+import { fetchCourierProfile, updateCourierProfile } from '../api';
 
 const MobileCourierProfile: React.FC = () => {
   const navigate = useNavigate();
@@ -28,13 +23,40 @@ const MobileCourierProfile: React.FC = () => {
   const [previewPicture, setPreviewPicture] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // WebSocket notification state
-  const [notification, setNotification] = useState<VerificationNotificationData | null>(null);
-  const [showNotification, setShowNotification] = useState(false);
 
-  // Auto-populate profile data from localStorage on component mount
+  // Auto-populate profile data from API on component mount
   useEffect(() => {
-    const populateProfileData = () => {
+    const loadProfileData = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        if (token) {
+          const profileData = await fetchCourierProfile(token);
+          console.log('Loaded courier profile data:', profileData);
+
+          // Populate from API response
+          setFullName(profileData.user?.first_name + ' ' + profileData.user?.last_name || profileData.first_name + ' ' + profileData.last_name || 'Courier Partner');
+          setEmail(profileData.user?.email || profileData.email || 'Enter your email');
+          setPhoneNumber(profileData.phone || 'Enter your phone number');
+          setDeliveryRadius(profileData.delivery_radius || '');
+          setOpeningTime(profileData.opening_hours || '08:00');
+          setClosingTime(profileData.closing_hours || '18:00');
+          setVehicleType(profileData.vehicle_type || 'Motorcycle');
+          setHasBike(profileData.has_bike !== undefined ? profileData.has_bike : true);
+          setServiceAreas(profileData.service_areas || []);
+          setVerificationStatus(profileData.verification_status || 'pending');
+          setProfilePicture(profileData.profile_picture || null);
+        } else {
+          // Fallback to localStorage
+          populateFromLocalStorage();
+        }
+      } catch (error) {
+        console.log('Error loading profile from API:', error);
+        // Fallback to localStorage
+        populateFromLocalStorage();
+      }
+    };
+
+    const populateFromLocalStorage = () => {
       try {
         // Get user data from localStorage - check multiple possible sources
         const storedFirstName = localStorage.getItem('first_name') || localStorage.getItem('user_first_name');
@@ -43,7 +65,7 @@ const MobileCourierProfile: React.FC = () => {
         const storedPhone = localStorage.getItem('phone_number') || localStorage.getItem('user_phone') || localStorage.getItem('phone');
         const storedProfileImage = localStorage.getItem('profile_image') || localStorage.getItem('user_profile_image');
         const storedCourierProfile = localStorage.getItem('courier_profile');
-        
+
         // Also check for signup data that might be stored
         const signupData = localStorage.getItem('pending_profile_data');
         let signupInfo = null;
@@ -55,7 +77,7 @@ const MobileCourierProfile: React.FC = () => {
             console.log('Error parsing signup data:', e);
           }
         }
-        
+
         // Set full name - prioritize stored data, then signup data
         if (storedFirstName && storedLastName) {
           setFullName(`${storedFirstName} ${storedLastName}`);
@@ -64,26 +86,26 @@ const MobileCourierProfile: React.FC = () => {
         } else if (signupInfo?.fullName) {
           setFullName(signupInfo.fullName);
         }
-        
+
         // Set email - prioritize stored data, then signup data
         if (storedEmail) {
           setEmail(storedEmail);
         } else if (signupInfo?.email) {
           setEmail(signupInfo.email);
         }
-        
+
         // Set phone number - prioritize stored data, then signup data
         if (storedPhone) {
           setPhoneNumber(storedPhone);
         } else if (signupInfo?.phone) {
           setPhoneNumber(signupInfo.phone);
         }
-        
+
         // Set profile picture
         if (storedProfileImage) {
           setProfilePicture(storedProfileImage);
         }
-        
+
         // Set courier-specific data if available
         if (storedCourierProfile) {
           try {
@@ -99,7 +121,7 @@ const MobileCourierProfile: React.FC = () => {
             console.log('Error parsing courier profile data:', error);
           }
         }
-        
+
         // Also check signup data for courier-specific fields
         if (signupInfo) {
           if (signupInfo.serviceAreas && signupInfo.serviceAreas.length > 0) {
@@ -109,7 +131,7 @@ const MobileCourierProfile: React.FC = () => {
             setVehicleType(signupInfo.vehicleType);
           }
         }
-        
+
         // Set default values if no data found - use more realistic defaults
         if (!fullName) {
           setFullName('Courier Partner');
@@ -123,7 +145,7 @@ const MobileCourierProfile: React.FC = () => {
         if (serviceAreas.length === 0) {
           setServiceAreas([]); // Empty array instead of fake areas
         }
-        
+
       } catch (error) {
         console.log('Error populating profile data:', error);
         // Set realistic fallback values
@@ -134,49 +156,9 @@ const MobileCourierProfile: React.FC = () => {
       }
     };
 
-    populateProfileData();
-    
-    // Setup WebSocket notifications
-    setupWebSocketNotifications();
-    
-    // Cleanup WebSocket on unmount
-    return () => {
-      websocketService.disconnectAll();
-    };
+    loadProfileData();
   }, []);
 
-  // Setup WebSocket notifications
-  const setupWebSocketNotifications = () => {
-    // Set up notification callback
-    websocketService.setVerificationNotificationCallback((data: VerificationNotificationData) => {
-      setNotification(data);
-      setShowNotification(true);
-    });
-
-    // Connect to courier WebSocket
-    websocketService.connectCourierWebSocket();
-  };
-
-  // Handle notification actions
-  const handleViewStatus = () => {
-    setShowNotification(false);
-    // Scroll to verification status section
-    const verificationSection = document.querySelector('.verification-status');
-    if (verificationSection) {
-      verificationSection.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  const handleResubmit = () => {
-    setShowNotification(false);
-    // Navigate to application form or show resubmit modal
-    console.log('Resubmit application');
-  };
-
-  const handleCloseNotification = () => {
-    setShowNotification(false);
-    setNotification(null);
-  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -189,17 +171,35 @@ const MobileCourierProfile: React.FC = () => {
     }
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
-      // Save profile data to localStorage
+      const token = localStorage.getItem('access_token');
+      if (token) {
+        const updateData = {
+          first_name: fullName.split(' ')[0] || '',
+          last_name: fullName.split(' ').slice(1).join(' ') || '',
+          phone: phoneNumber,
+          delivery_radius: deliveryRadius,
+          opening_hours: openingTime,
+          closing_hours: closingTime,
+          vehicle_type: vehicleType,
+          has_bike: hasBike,
+          service_areas: serviceAreas,
+          profile_picture: previewPicture || profilePicture
+        };
+
+        await updateCourierProfile(token, updateData);
+      }
+
+      // Save profile data to localStorage as backup
       if (previewPicture) {
         setProfilePicture(previewPicture);
         setPreviewPicture(null);
         localStorage.setItem('profile_image', previewPicture);
       }
-      
+
       // Save courier-specific data
       const courierData = {
         delivery_radius: deliveryRadius,
@@ -210,9 +210,9 @@ const MobileCourierProfile: React.FC = () => {
         service_areas: serviceAreas,
         verification_status: verificationStatus
       };
-      
+
       localStorage.setItem('courier_profile', JSON.stringify(courierData));
-      
+
       // Save basic profile data
       if (fullName) {
         const nameParts = fullName.split(' ');
@@ -223,19 +223,19 @@ const MobileCourierProfile: React.FC = () => {
           localStorage.setItem('first_name', fullName);
         }
       }
-      
+
       if (email) {
         localStorage.setItem('email', email);
       }
-      
+
       if (phoneNumber) {
         localStorage.setItem('phone_number', phoneNumber);
       }
-      
+
       setEditMode(false);
       // Show success message
-      alert('Profile updated successfully and saved to local storage!');
-      
+      alert('Profile updated successfully!');
+
     } catch (error) {
       console.error('Error saving profile data:', error);
       alert('Error saving profile data. Please try again.');
@@ -331,7 +331,7 @@ const MobileCourierProfile: React.FC = () => {
       paddingBottom: '80px'
     }}>
       {/* Header */}
-      <CourierHeader title="Profile" />
+      <CourierHeader />
 
 
       {/* Profile Content */}
@@ -405,29 +405,10 @@ const MobileCourierProfile: React.FC = () => {
             Courier Partner
           </p>
           
-          {/* Verification Status Badge */}
-          <div style={{ marginBottom: '16px' }}>
-            <VerificationStatusBadge 
-              userType="courier" 
-              size="medium"
-              onClick={() => {
-                const verificationSection = document.querySelector('.verification-status');
-                if (verificationSection) {
-                  verificationSection.scrollIntoView({ behavior: 'smooth' });
-                }
-              }}
-            />
-          </div>
+          {/* Verification UI removed */}
             </div>
 
-        {/* Verification Status Section */}
-        <VerificationStatus 
-          userType="courier" 
-          className="verification-status"
-        />
-
-        {/* Verification History Section */}
-        <VerificationHistory className="verification-history" />
+        {/* Verification UI removed */}
 
         {/* Profile Form */}
             <div style={{
@@ -938,15 +919,6 @@ const MobileCourierProfile: React.FC = () => {
         ))}
       </div>
 
-      {/* WebSocket Notification Popup */}
-      {showNotification && notification && (
-        <VerificationNotificationPopup
-          notification={notification}
-          onClose={handleCloseNotification}
-          onViewStatus={handleViewStatus}
-          onResubmit={handleResubmit}
-        />
-      )}
     </div>
   );
 };

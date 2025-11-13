@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { fetchVendorOrders } from '../api';
 import '../styles/OrdersPage.css';
+import '../styles/loading-spinner.css';
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState<any[]>([]);
@@ -48,8 +49,12 @@ const OrdersPage = () => {
           <h1>Order List</h1>
         </div>
         <div className="loading-state">
-          <div className="loading-spinner"></div>
-          <p>Loading orders...</p>
+          <div className="logo-loading-container">
+            <div className="logo-loading-spinner">
+              <img src="/logo.png" alt="Bestyy Logo" />
+            </div>
+            <div className="logo-loading-text">Loading orders...</div>
+          </div>
         </div>
       </div>
     );

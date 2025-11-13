@@ -245,7 +245,7 @@ const MobileVendorPayout: React.FC = () => {
         minHeight: '100vh',
         paddingBottom: '80px'
       }}>
-        <VendorHeader title="Payout" />
+        <VendorHeader />
 
         <div style={{
           display: 'flex',
@@ -270,7 +270,7 @@ const MobileVendorPayout: React.FC = () => {
         minHeight: '100vh',
         paddingBottom: '80px'
       }}>
-        <VendorHeader title="Payout" />
+        <VendorHeader />
 
         <div style={{
           display: 'flex',

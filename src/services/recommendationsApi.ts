@@ -1,6 +1,14 @@
 // Unified Vendor Recommendation API Service
 // Removed mock recommendations import - using only real API data
 
+export interface FoodImage {
+  id: number;
+  dish_name: string;
+  image: string;
+  thumbnail: string;
+  price: number;
+}
+
 export interface VendorRecommendation {
   id: number;
   business_name: string;
@@ -8,6 +16,7 @@ export interface VendorRecommendation {
   business_address: string;
   logo: string;
   logo_thumbnail: string;
+  food_images: FoodImage[];
   delivery_time: string;
   rating: number;
   total_reviews: number;
@@ -24,26 +33,19 @@ export interface VendorRecommendation {
 
 export interface RecommendationsResponse {
   success: boolean;
-  count: number;
-  page: number;
-  page_size: number;
-  total_pages: number;
-  has_next: boolean;
-  has_previous: boolean;
-  next_page?: number;
-  previous_page?: number;
+  recommendations: VendorRecommendation[];
+  total_count: number;
   filters_applied: {
     category?: string;
-    user_location?: {
-      city?: string;
-    };
-    user_authenticated: boolean;
+    cuisine?: string;
+    city?: string;
+    limit?: number;
   };
-  recommendations: VendorRecommendation[];
 }
 
 export interface RecommendationFilters {
   category?: string;
+  cuisine?: string;
   page?: number;
   page_size?: number;
   limit?: number;
@@ -53,7 +55,7 @@ export interface RecommendationFilters {
 }
 
 class RecommendationsApiService {
-  private baseUrl = `${process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000'}/api/user/recommendations`;
+  private baseUrl = `${process.env.REACT_APP_API_URL}/api/user/recommendations`;
 
   /**
    * Get unified vendor recommendations
@@ -62,6 +64,7 @@ class RecommendationsApiService {
     const params = new URLSearchParams();
     
     if (filters.category) params.append('category', filters.category);
+    if (filters.cuisine) params.append('cuisine', filters.cuisine);
     if (filters.page) params.append('page', filters.page.toString());
     if (filters.page_size) params.append('page_size', filters.page_size.toString());
     if (filters.limit) params.append('limit', filters.limit.toString());

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Edit, Trash2, Search, Filter, RefreshCw, Package, Eye, EyeOff, Home, List, Utensils, Layers, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { fetchVendorStockItems, toggleStockItemAvailability, fetchStockSummary } from '../api';
+import { getMenuItemImageUrl, getFallbackImageUrl, debugImageUrl } from '../utils/imageUtils';
 import { showError, showSuccess } from '../toast';
 import VendorHeader from '../components/VendorHeader';
 import VendorBottomNavigation from '../components/VendorBottomNavigation';
@@ -164,7 +165,7 @@ const MobileVendorStock: React.FC = () => {
       minHeight: '100vh',
       paddingBottom: '80px'
     }}>
-      <VendorHeader title="Item Stock" />
+      <VendorHeader />
 
       {/* Stock Summary Cards */}
       {stockSummary && (
@@ -467,21 +468,41 @@ const MobileVendorStock: React.FC = () => {
                   overflow: 'hidden',
                   flexShrink: 0
                 }}>
-                  {item.image_url ? (
-                    <img
-                      src={item.image_url}
-                      alt={item.dish_name}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover'
-                      }}
-                    />
-                  ) : (
-                    <div style={{ color: '#9ca3af', fontSize: '12px', textAlign: 'center' }}>
-                      No Image
-                    </div>
-                  )}
+                  {(() => {
+                    const imageUrl = getMenuItemImageUrl(item);
+                    // Debug the first few items to understand the structure
+                    if (index < 3) {
+                      debugImageUrl(item, 'MobileVendorStock');
+                    }
+
+                    return imageUrl ? (
+                      <img
+                        src={imageUrl}
+                        alt={item.dish_name}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover'
+                        }}
+                        onError={(e) => {
+                          console.log('Mobile stock image failed to load:', imageUrl);
+                          const fallbackUrl = getFallbackImageUrl(imageUrl);
+                          if (fallbackUrl && e.currentTarget.src !== fallbackUrl) {
+                            console.log('Trying fallback URL:', fallbackUrl);
+                            e.currentTarget.src = fallbackUrl;
+                          } else {
+                            console.log('No fallback available, showing placeholder');
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.parentElement!.innerHTML = '<div style="color: #9ca3af; font-size: 12px; text-align: center;">No Image</div>';
+                          }
+                        }}
+                      />
+                    ) : (
+                      <div style={{ color: '#9ca3af', fontSize: '12px', textAlign: 'center' }}>
+                        No Image
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Item Details */}

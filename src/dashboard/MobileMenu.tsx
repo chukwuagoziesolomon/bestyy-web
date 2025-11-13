@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, List, Utensils, Table, Menu, Heart, Star, Plus, X, BarChart3, CreditCard, HelpCircle, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
 import { fetchVendorMenuItems, deleteMenuItem, API_URL } from '../api';
+import { getMenuItemImageUrl, getFallbackImageUrl } from '../utils/imageUtils';
 import { showError, showSuccess } from '../toast';
 import VendorHeader from '../components/VendorHeader';
 import VendorBottomNavigation from '../components/VendorBottomNavigation';
@@ -11,6 +12,13 @@ interface MenuItem {
   dish_name: string;
   price: string;
   image?: string;
+  image_url?: string;
+  image_urls?: {
+    thumbnail?: string;
+    medium?: string;
+    large?: string;
+    original?: string;
+  };
   rating?: number;
   reviews?: number;
   description?: string;
@@ -74,17 +82,9 @@ const MobileMenu: React.FC = () => {
     return stars;
   };
 
-  const getCorrectImageUrl = (imagePath?: string) => {
-    if (!imagePath) {
-      return null; // No image, will show gradient background
-    }
-    if (imagePath.startsWith('http')) {
-      return imagePath;
-    }
-    if (imagePath.startsWith('/')) {
-      return `${API_URL}${imagePath}`;
-    }
-    return null;
+  const getCorrectImageUrl = (item?: MenuItem) => {
+    if (!item) return null;
+    return getMenuItemImageUrl(item);
   };
 
   const nextItem = () => {
@@ -102,7 +102,7 @@ const MobileMenu: React.FC = () => {
       minHeight: '100vh',
       paddingBottom: '80px'
     }}>
-      <VendorHeader title="Menu" />
+      <VendorHeader />
 
 
       {/* Main Content */}
@@ -173,13 +173,34 @@ const MobileMenu: React.FC = () => {
               <div style={{
                 width: '100%',
                 height: '240px',
-                background: getCorrectImageUrl(menuItems[currentItemIndex]?.image) ? 
-                  `url(${getCorrectImageUrl(menuItems[currentItemIndex]?.image)})` : 
+                background: getCorrectImageUrl(menuItems[currentItemIndex]) ?
+                  `url(${getCorrectImageUrl(menuItems[currentItemIndex])})` :
                   'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 position: 'relative'
               }}>
+                {/* Hidden img element for error handling */}
+                {getCorrectImageUrl(menuItems[currentItemIndex]) && (
+                  <img
+                    src={getCorrectImageUrl(menuItems[currentItemIndex])}
+                    alt=""
+                    style={{ display: 'none' }}
+                    onError={(e) => {
+                      console.log('Mobile menu image failed to load:', getCorrectImageUrl(menuItems[currentItemIndex]));
+                      const fallbackUrl = getFallbackImageUrl(getCorrectImageUrl(menuItems[currentItemIndex]) || '');
+                      if (fallbackUrl && e.currentTarget.src !== fallbackUrl) {
+                        // Update the background image of the parent div
+                        const parentDiv = e.currentTarget.parentElement;
+                        if (parentDiv) {
+                          parentDiv.style.background = `url(${fallbackUrl})`;
+                          parentDiv.style.backgroundSize = 'cover';
+                          parentDiv.style.backgroundPosition = 'center';
+                        }
+                      }
+                    }}
+                  />
+                )}
                 {/* Carousel Navigation Arrows */}
                 {menuItems.length > 1 && (
                   <>
@@ -247,7 +268,7 @@ const MobileMenu: React.FC = () => {
                 </div>
 
                 {/* If no image, show a jollof rice pattern */}
-                {!getCorrectImageUrl(menuItems[currentItemIndex]?.image) && (
+                {!getCorrectImageUrl(menuItems[currentItemIndex]) && (
                   <div style={{
                     position: 'absolute',
                     inset: 0,

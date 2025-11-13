@@ -31,7 +31,7 @@ class NotificationService {
   private reconnectAttempts: number = 0;
 
   constructor() {
-    this.baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+    this.baseUrl = process.env.REACT_APP_API_URL;
   }
 
   // Fetch all notifications for the current user

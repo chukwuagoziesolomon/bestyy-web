@@ -1,482 +1,796 @@
-import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import './VendorProfile.css';
-
-interface MenuItem {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  image: string;
-  category: string;
-}
-
-interface CartItem extends MenuItem {
-  quantity: number;
-}
+import { vendorApi, VendorProfile as VendorProfileType, MenuCategory, MenuItem, VendorProfileResponse, VendorMenuResponse } from './services/vendorApi';
+import { cartApi } from './services/cartApi';
+import { useCart, CartItem } from './context/CartContext';
+import { getMenuItemImageUrl } from './utils/imageUtils';
 
 const VendorProfile: React.FC = () => {
-  // Match route param name in App.tsx: /vendor/:id
-  const { id } = useParams<{ id: string }>();
-  const [activeCategory, setActiveCategory] = useState('All');
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [showCartModal, setShowCartModal] = useState(false);
+  const { id: vendorId } = useParams<{ id: string }>();
+  const [vendor, setVendor] = useState<VendorProfileType | null>(null);
+  const [menuCategories, setMenuCategories] = useState<MenuCategory[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
-  // Static vendor data
-  const vendor = {
-    id: id || '1',
-    name: 'Burger Palace',
-    rating: 4.8,
-    totalRatings: 2341,
-    // Use an appetizing hero image that exists in public/
-    heroImage: '/1000121265.jpg',
-    promoCode: 'BESTYY00',
-    promoDiscount: '25% OFF'
-  };
+  const { state: cartState, addItem, updateQuantity, removeItem, replaceCart } = useCart();
+  const [showAddModal, setShowAddModal] = useState<boolean>(false);
+  const [pendingItem, setPendingItem] = useState<MenuItem | null>(null);
+  const [specialInstructions, setSpecialInstructions] = useState<string>('');
+  const [isMobileView, setIsMobileView] = useState<boolean>(false);
+  const [showMobileCart, setShowMobileCart] = useState<boolean>(false);
+  const [mobileCartLoading, setMobileCartLoading] = useState<boolean>(false);
+  const [mobileCartError, setMobileCartError] = useState<string | null>(null);
 
-  // Static menu items
-  const menuItems: MenuItem[] = [
-    {
-      id: '1',
-      name: 'Classic Cheeseburger',
-      description: 'Juicy beef patty with melted cheese, lettuce, tomato, onions, pickles and our special sauce on a toasted sesame bun.',
-      price: 20000,
-      image: '/1000121265.jpg',
-      category: 'Burgers'
-    },
-    {
-      id: '2',
-      name: 'Classic Cheeseburger',
-      description: 'Juicy beef patty with melted cheese, lettuce, tomato, onions, pickles and our special sauce on a toasted sesame bun.',
-      price: 20000,
-      image: '/1000121265.jpg',
-      category: 'Burgers'
-    },
-    {
-      id: '3',
-      name: 'Classic Cheeseburger',
-      description: 'Juicy beef patty with melted cheese, lettuce, tomato, onions, pickles and our special sauce on a toasted sesame bun.',
-      price: 20000,
-      image: '/1000121265.jpg',
-      category: 'Burgers'
-    },
-    {
-      id: '4',
-      name: 'Classic Cheeseburger',
-      description: 'Juicy beef patty with melted cheese, lettuce, tomato, onions, pickles and our special sauce on a toasted sesame bun.',
-      price: 20000,
-      image: '/1000121265.jpg',
-      category: 'Burgers'
-    },
-    {
-      id: '5',
-      name: 'Classic Cheeseburger',
-      description: 'Juicy beef patty with melted cheese, lettuce, tomato, onions, pickles and our special sauce on a toasted sesame bun.',
-      price: 20000,
-      image: '/1000121265.jpg',
-      category: 'Burgers'
-    },
-    {
-      id: '6',
-      name: 'Classic Cheeseburger',
-      description: 'Juicy beef patty with melted cheese, lettuce, tomato, onions, pickles and our special sauce on a toasted sesame bun.',
-      price: 20000,
-      image: '/1000121265.jpg',
-      category: 'Burgers'
+  useEffect(() => {
+    console.log('VendorProfile useEffect triggered, vendorId:', vendorId, 'type:', typeof vendorId);
+    if (vendorId && vendorId !== 'undefined') {
+      fetchVendorProfile();
     }
-  ];
+  }, [vendorId]);
 
-  const categories = ['All', 'Burgers', 'Sandwiches', 'Pizzas', 'Salads', 'Pasta', 'Bowls', 'Drinks'];
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
 
-  const filteredItems = activeCategory === 'All' 
-    ? menuItems 
-    : menuItems.filter(item => item.category === activeCategory);
+    const MOBILE_BREAKPOINT = 1024;
+    const updateViewport = () => {
+      setIsMobileView(window.innerWidth <= MOBILE_BREAKPOINT);
+    };
 
-  const addToCart = (item: MenuItem) => {
-    const existingItem = cartItems.find(cartItem => cartItem.id === item.id);
-    if (existingItem) {
-      setCartItems(cartItems.map(cartItem =>
-        cartItem.id === item.id
-          ? { ...cartItem, quantity: cartItem.quantity + 1 }
-          : cartItem
-      ));
-    } else {
-      setCartItems([...cartItems, { ...item, quantity: 1 }]);
+    updateViewport();
+    window.addEventListener('resize', updateViewport);
+
+    return () => {
+      window.removeEventListener('resize', updateViewport);
+    };
+  }, []);
+
+  const fetchVendorProfile = async () => {
+    try {
+      console.log('Fetching vendor profile for vendorId:', vendorId);
+      setLoading(true);
+      setError(null);
+
+      const response: VendorMenuResponse = await vendorApi.getVendorMenuProfile(parseInt(vendorId!));
+      console.log('API response:', response);
+
+      if (response.success) {
+        // Transform the vendor data to match existing VendorProfile interface
+        const transformedVendor: VendorProfileType = {
+          id: response.vendor.id,
+          business_name: response.vendor.business_name,
+          business_category: response.vendor.business_category,
+          business_description: response.vendor.business_description,
+          business_address: response.vendor.business_address,
+          phone: response.vendor.phone,
+          phone_number: response.vendor.phone,
+          logo: response.vendor.logo,
+          cover_image: response.vendor.cover_image,
+          cover_photo: response.vendor.cover_image, // Use cover_image as cover_photo
+          bio: response.vendor.business_description, // Use description as bio
+          is_featured: response.vendor.is_featured,
+          verification_status: response.vendor.verification_status,
+          service_areas: response.vendor.service_areas,
+          delivery_radius: response.vendor.delivery_radius,
+          delivery_time: '30-45 mins', // Default delivery time since not in response
+          offers_delivery: response.vendor.offers_delivery,
+          opening_hours: response.vendor.opening_hours,
+          closing_hours: response.vendor.closing_hours,
+          is_open: response.vendor.is_open,
+          rating: 4.5, // Default rating since not in response
+          total_reviews: 0, // Default since not in response
+          is_favorited: false, // Default since not in response
+          created_at: response.vendor.created_at,
+          updated_at: response.vendor.updated_at
+        };
+
+        setVendor(transformedVendor);
+
+        // Transform menu items into categories
+        const transformedCategories: MenuCategory[] = Object.entries(response.categories).map(([categoryName, items]) => ({
+          category: categoryName,
+          item_count: items.length,
+          items: items.map(item => ({
+            id: item.id,
+            name: item.dish_name,
+            description: item.item_description,
+            price: item.price,
+            currency: 'NGN',
+            image: item.image,
+            category: item.category,
+            is_available: item.available_now,
+            preparation_time: undefined,
+            ingredients: [], // Not provided in response
+            allergens: [], // Not provided in response
+            is_vegetarian: false, // Not provided in response
+            is_spicy: false, // Not provided in response
+            calories: undefined,
+            created_at: item.created_at,
+            updated_at: item.created_at
+          }))
+        }));
+
+        setMenuCategories(transformedCategories);
+
+        // Set first category as active if available
+        if (transformedCategories.length > 0) {
+          setActiveCategory(transformedCategories[0].category);
+        }
+      } else {
+        setError('Failed to fetch vendor profile');
+      }
+    } catch (err) {
+      console.error('Error fetching vendor profile:', err);
+      setError('Unable to load vendor profile. Please try again later.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const updateQuantity = (itemId: string, newQuantity: number) => {
-    if (newQuantity <= 0) {
-      removeFromCart(itemId);
-    } else {
-      setCartItems(cartItems.map(item =>
-        item.id === itemId ? { ...item, quantity: newQuantity } : item
-      ));
+  const toggleFavorite = async () => {
+    if (!vendor) return;
+
+    try {
+      const response = await vendorApi.toggleFavorite(vendor.id);
+      if (response.success) {
+        setVendor({ ...vendor, is_favorited: response.is_favorited });
+      }
+    } catch (err) {
+      console.error('Error toggling favorite:', err);
     }
   };
 
-  const removeFromCart = (itemId: string) => {
-    setCartItems(cartItems.filter(item => item.id !== itemId));
+  // Get all menu items from all categories
+  const allMenuItems = menuCategories.flatMap(category => category.items);
+
+  // Filter menu items based on active category and search term
+  const filteredMenuItems = allMenuItems.filter(item => {
+    const matchesCategory = activeCategory === 'all' || item.category === activeCategory;
+    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         item.description.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
+  // Vendor-specific cart view for the sidebar
+  const vendorCartItems = cartState.items.filter(i => vendor && i.vendorId === vendor.id);
+  const vendorCartCount = vendorCartItems.reduce((sum, i) => sum + i.quantity, 0);
+  const vendorCartTotal = vendorCartItems.reduce((sum, i) => sum + i.quantity * i.price, 0);
+
+  // Handle adding item to cart
+  const handleAddToCart = (item: MenuItem) => {
+    if (!vendor) return;
+    setPendingItem(item);
+    setSpecialInstructions('');
+    setShowAddModal(true);
   };
 
-  const getTotalPrice = () => {
-    return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+  const confirmAddToCart = async () => {
+    if (!vendor || !pendingItem) return;
+    try {
+      await cartApi.addItem({
+        menu_item_id: pendingItem.id,
+        quantity: 1,
+        special_instructions: specialInstructions || undefined,
+      });
+    } catch (e) {
+      console.error('Add to cart API failed; continuing with local cart', e);
+    } finally {
+      const cartItem: Omit<CartItem, 'quantity'> = {
+        id: pendingItem.id,
+        name: pendingItem.name,
+        description: pendingItem.description,
+        price: pendingItem.price,
+        currency: pendingItem.currency,
+        image: pendingItem.image,
+        category: pendingItem.category,
+        vendorId: vendor.id,
+        vendorName: vendor.business_name,
+        specialInstructions: specialInstructions || undefined,
+      };
+      addItem(cartItem);
+      setShowAddModal(false);
+      setPendingItem(null);
+      setSpecialInstructions('');
+    }
   };
 
-  const handleWhatsAppCheckout = () => {
-    const message = cartItems.length > 0
-      ? `Hi! I'd like to order: ${cartItems.map(item => `${item.quantity}x ${item.name}`).join(', ')} from ${vendor.name}. Total: ₦${getTotalPrice().toLocaleString()}`
-      : `Hi! I'm interested in ordering from ${vendor.name}`;
-    
-    const whatsappUrl = `https://wa.me/19998887764?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
+  const normalizeCartItemsFromApi = (apiResponse: any): CartItem[] => {
+    if (!apiResponse) return [];
+
+    const maybeArray =
+      Array.isArray(apiResponse) ? apiResponse :
+      Array.isArray(apiResponse?.items) ? apiResponse.items :
+      Array.isArray(apiResponse?.cart_items) ? apiResponse.cart_items :
+      Array.isArray(apiResponse?.data?.items) ? apiResponse.data.items :
+      [];
+
+    return maybeArray.map((raw: any) => {
+      const menuItem = raw?.menu_item ?? raw?.item ?? raw?.menu_item_detail ?? raw;
+      const quantityRaw = raw?.quantity ?? raw?.menu_item_quantity ?? menuItem?.quantity ?? 1;
+      const priceRaw = menuItem?.price ?? raw?.price ?? menuItem?.amount ?? 0;
+      const priceNumeric = typeof priceRaw === 'string' ? parseFloat(priceRaw) : Number(priceRaw) || 0;
+      const quantityNumeric = typeof quantityRaw === 'string' ? parseInt(quantityRaw, 10) || 1 : Number(quantityRaw) || 1;
+
+      const derivedVendorId = vendor?.id ?? Number(menuItem?.vendor_id) ?? Number(raw?.vendor_id) ?? Number(apiResponse?.vendor_id) ?? 0;
+      const derivedVendorName = vendor?.business_name ?? raw?.vendor_name ?? menuItem?.vendor_name ?? apiResponse?.vendor_name ?? 'Vendor';
+
+      const imageCandidate =
+        menuItem?.image_urls?.medium ??
+        menuItem?.image_urls?.thumbnail ??
+        menuItem?.image_urls?.original ??
+        menuItem?.image_url ??
+        menuItem?.image ??
+        raw?.image ??
+        '';
+
+      return {
+        id: Number(menuItem?.id ?? raw?.menu_item_id ?? raw?.id ?? Date.now()),
+        name: menuItem?.name ?? menuItem?.dish_name ?? raw?.name ?? 'Menu Item',
+        description: menuItem?.description ?? menuItem?.item_description ?? raw?.description ?? '',
+        price: priceNumeric,
+        currency: menuItem?.currency ?? raw?.currency ?? 'NGN',
+        image: imageCandidate,
+        category: menuItem?.category ?? raw?.category ?? 'General',
+        vendorId: derivedVendorId,
+        vendorName: derivedVendorName,
+        quantity: quantityNumeric,
+        specialInstructions: raw?.special_instructions ?? raw?.instructions ?? menuItem?.special_instructions ?? undefined,
+      } as CartItem;
+    });
   };
+
+  const handleMobileCartToggle = async () => {
+    if (showMobileCart) {
+      setShowMobileCart(false);
+      return;
+    }
+
+    setShowMobileCart(true);
+    setMobileCartLoading(true);
+    setMobileCartError(null);
+
+    try {
+      const apiCart = await cartApi.getCart();
+      const normalizedItems = normalizeCartItemsFromApi(apiCart);
+      if (normalizedItems.length > 0) {
+        replaceCart(normalizedItems);
+      }
+    } catch (err) {
+      console.error('Error fetching cart via API:', err);
+      setMobileCartError('Unable to load your cart. Please try again.');
+    } finally {
+      setMobileCartLoading(false);
+    }
+  };
+
+  const mobileCartTitle = useMemo(() => {
+    if (!vendor) return 'Your Cart';
+    return `${vendor.business_name} cart`;
+  }, [vendor]);
+
+  // Check if item is already in cart
+  const getItemQuantityInCart = (itemId: number) => {
+    const cartItem = cartState.items.find(item => item.id === itemId);
+    return cartItem?.quantity || 0;
+  };
+
+  if (loading) {
+    return (
+      <div className="vendor-profile-page">
+        <div className="loading-state">
+          <div className="loading-content">
+            <div className="loading-spinner"></div>
+            <p>Loading vendor profile...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !vendor) {
+    return (
+      <div className="vendor-profile-page">
+        <div className="error-state">
+          <div className="error-content">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="error-icon">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 8v4"/>
+              <path d="M12 16h.01"/>
+            </svg>
+            <h3>Error loading vendor</h3>
+            <p>{error || 'Vendor not found'}</p>
+            <Link to="/recommendations" className="retry-button">
+              Back to Recommendations
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="vendor-profile">
-      {/* Header */}
-      <header className="vendor-header">
-        <div className="header-left">
-          <div className="logo-section">
-            <img src="/logo.png" alt="Bestyy Logo" className="header-logo" />
-            <span className="location-text">Enugu, Nigeria</span>
-          </div>
-        </div>
-        
-        <div className="header-right">
-          <div className="header-controls">
-            <button className="control-btn desktop-only">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-              </svg>
-            </button>
-            <button className="control-btn desktop-only">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-              </svg>
-            </button>
+    <div style={{ background: '#fff', minHeight: '100vh' }}>
+      {isMobileView && vendor && (
+        <div
+          style={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 60,
+            background: '#ffffff',
+            padding: '12px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            boxShadow: '0 6px 20px rgba(0,0,0,0.08)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button
-              className="cart-btn mobile-only"
-              onClick={() => setShowCartModal(true)}
+              onClick={() => window.history.back()}
+              style={{
+                border: 'none',
+                background: '#f3f4f6',
+                borderRadius: 999,
+                width: 36,
+                height: 36,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              aria-label="Go back"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="9" cy="21" r="1"></circle>
-                <circle cx="20" cy="21" r="1"></circle>
-                <path d="m1 1 4 4 2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6" />
               </svg>
-              {cartItems.length > 0 && (
-                <span className="cart-badge">{cartItems.reduce((sum, item) => sum + item.quantity, 0)}</span>
-              )}
             </button>
-            <div className="profile-picture">
-              <img src="/user1.png" alt="Profile" />
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Hero Section */}
-      <section className="vendor-hero">
-        <div className="hero-image">
-          <img src={vendor.heroImage} alt={vendor.name} />
-          <div className="promo-banner">
-            <span>{vendor.promoDiscount} your first order with code {vendor.promoCode}</span>
-          </div>
-        </div>
-        <div className="vendor-info">
-          <h1 className="vendor-name">{vendor.name}</h1>
-          <div className="vendor-rating">
-            <div className="stars">
-              <span>⭐</span>
-              <span className="rating-number">{vendor.rating}</span>
-              <span className="rating-count">({vendor.totalRatings})</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <div className="vendor-content">
-        {/* Menu Categories */}
-        <nav className="menu-categories">
-          <div className="category-tabs">
-            {categories.map((category) => (
-              <button
-                key={category}
-                className={`category-tab ${activeCategory === category ? 'active' : ''}`}
-                onClick={() => setActiveCategory(category)}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-        </nav>
-
-        <div className="main-content">
-          {/* Menu Items */}
-          <section className="menu-section">
-            <div className="menu-grid">
-              {filteredItems.map((item) => (
-                <div key={item.id} className="menu-item">
-                  <div className="item-image">
-                    <img src={item.image} alt={item.name} />
-                  </div>
-                  <div className="item-content">
-                    <h3 className="item-name">{item.name}</h3>
-                    <p className="item-description">{item.description}</p>
-                    <div className="item-footer">
-                      <span className="item-price">₦ {item.price.toLocaleString()}</span>
-                      <button 
-                        className="add-to-cart-btn"
-                        onClick={() => addToCart(item)}
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Cart Section */}
-          <aside className="cart-section">
-            <div className="cart-container">
-              <div className="cart-content">
-                {cartItems.length === 0 ? (
-                  <div className="empty-cart">
-                    <div className="empty-cart-illustration" aria-hidden="true">
-                      <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <ellipse cx="60" cy="92" rx="32" ry="6" fill="#F3F4F6"/>
-                        <path d="M30 72h60c0-11.046-8.954-20-20-20H50c-11.046 0-20 8.954-20 20z" fill="#F9FAFB" stroke="#E5E7EB"/>
-                        <path d="M44 46a16 16 0 0 1 32 0" stroke="#E5E7EB" strokeWidth="2"/>
-                        <circle cx="60" cy="68" r="2" fill="#E5E7EB"/>
-                      </svg>
-                    </div>
-                    <p>No item has been added yet</p>
-                    <p>Add item and checkout via WhatsApp</p>
-                  </div>
-                ) : (
-                  <div className="cart-items">
-                    {cartItems.map((item) => (
-                      <div key={item.id} className="cart-item">
-                        <div className="cart-item-image">
-                          <img src={item.image} alt={item.name} />
-                        </div>
-                        <div className="cart-item-details">
-                          <h4 className="cart-item-name">{item.name}</h4>
-                          <p className="cart-item-price">₦ {item.price.toLocaleString()}</p>
-                          <div className="quantity-controls">
-                            <button
-                              className="quantity-btn"
-                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                            >
-                              -
-                            </button>
-                            <span className="quantity">{item.quantity}</span>
-                            <button
-                              className="quantity-btn increment"
-                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                            >
-                              +
-                            </button>
-                          </div>
-                        </div>
-                        <button
-                          className="remove-item-btn"
-                          onClick={() => removeFromCart(item.id)}
-                        >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <polyline points="3,6 5,6 21,6"></polyline>
-                            <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
-                            <line x1="10" y1="11" x2="10" y2="17"></line>
-                            <line x1="14" y1="11" x2="14" y2="17"></line>
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
-                    <div className="cart-total">
-                      <div className="total-row">
-                        <span>Total</span>
-                        <strong>₦ {getTotalPrice().toLocaleString()}</strong>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {cartItems.length > 0 && (
-                  <button 
-                    className="whatsapp-checkout-btn"
-                    onClick={handleWhatsAppCheckout}
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488"/>
-                    </svg>
-                    Checkout via WhatsApp
-                  </button>
-                )}
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#111827', maxWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {vendor.business_name}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#6b7280' }}>
+                <span>⭐ {vendor.rating.toFixed(1)}</span>
+                <span>•</span>
+                <span>{vendor.delivery_time}</span>
               </div>
             </div>
-          </aside>
+          </div>
+          <button
+            onClick={handleMobileCartToggle}
+            style={{
+              position: 'relative',
+              border: 'none',
+              background: '#10b981',
+              color: '#ffffff',
+              borderRadius: 999,
+              width: 44,
+              height: 44,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 8px 24px rgba(16,185,129,0.35)',
+            }}
+            aria-label="View cart"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="9" cy="21" r="1" />
+              <circle cx="20" cy="21" r="1" />
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+            </svg>
+            {vendorCartCount > 0 && (
+              <span
+                style={{
+                  position: 'absolute',
+                  top: 4,
+                  right: 4,
+                  minWidth: 18,
+                  height: 18,
+                  borderRadius: 999,
+                  background: '#ffffff',
+                  color: '#047857',
+                  fontSize: 10,
+                  fontWeight: 800,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '0 5px',
+                }}
+              >
+                {vendorCartCount}
+              </span>
+            )}
+          </button>
+        </div>
+      )}
+      {/* Top hero */}
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '16px' }}>
+        <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', height: 220, boxShadow: '0 8px 30px rgba(0,0,0,0.08)' }}>
+          <img
+            src={vendor.cover_photo || vendor.logo || '/placeholder-banner.jpg'}
+            alt={vendor.business_name}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+          <div style={{ position: 'absolute', top: 12, left: 12, background: '#fff', padding: '6px 10px', borderRadius: 8, fontSize: 12, fontWeight: 700 }}>
+            20% OFF your first order with code BESTIY20
+          </div>
+          <div style={{ position: 'absolute', bottom: 12, left: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <img
+              src={vendor.logo || '/placeholder-vendor.jpg'}
+              alt={vendor.business_name}
+              style={{ width: 56, height: 56, borderRadius: 12, objectFit: 'cover', border: '2px solid #fff' }}
+            />
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', textShadow: '0 2px 6px rgba(0,0,0,0.35)' }}>
+                {vendor.business_name}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#fff', fontSize: 12 }}>
+                <span>⭐ {vendor.rating.toFixed(1)}</span>
+                <span>•</span>
+                <span>{vendor.delivery_time}</span>
+                <span>•</span>
+                <span>{vendor.business_category}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs row */}
+        <div style={{ display: 'flex', gap: 10, marginTop: 12, overflowX: 'auto' }}>
+          {['Burgers', 'Sandwiches', 'Pizzas', 'Salads', 'Pasta', 'Bowls', 'Drinks'].map((pill) => (
+            <button
+              key={pill}
+              style={{
+                padding: '8px 14px',
+                borderRadius: 999,
+                border: '1px solid #e5e7eb',
+                background: '#fff',
+                fontSize: 12,
+                fontWeight: 700,
+                color: '#374151',
+                whiteSpace: 'nowrap'
+              }}
+              onClick={() => setActiveCategory(pill)}
+            >
+              {pill}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="vendor-footer">
-        <div className="footer-content">
-          <div className="footer-section locations">
-            <h4>LOCATIONS <sup>4</sup></h4>
-            <ul>
-              <li>ENUGU 27</li>
-              <li>ABUJA</li>
-              <li>LAGOS</li>
-              <li>PORTHARCOURT</li>
-            </ul>
-          </div>
-          
-          <div className="footer-section contact">
-            <div className="contact-item">
-              <span>+1 999 888-77-64</span>
-            </div>
-            <div className="contact-item">
-              <span>hello@bestie.com</span>
-            </div>
-            <div className="contact-item">
-              <span>Whatsapp</span>
-            </div>
-          </div>
-          
-          <div className="footer-section partners">
-            <a href="#" className="partners-link">Become Partners</a>
-          </div>
-        </div>
-        
-        <div className="footer-bottom">
-          <div className="social-links">
-            <a href="#" className="social-link">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/>
-              </svg>
-            </a>
-            <a href="#" className="social-link">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488"/>
-              </svg>
-            </a>
-            <a href="#" className="social-link">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-              </svg>
-            </a>
-            <a href="#" className="social-link">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/>
-              </svg>
-            </a>
-          </div>
-          
-          <div className="footer-bottom-right">
-            <a href="#privacy" className="privacy-link">Privacy</a>
-            <span className="copyright">© 2025 — Copyright</span>
-          </div>
-        </div>
-      </footer>
-
-      {/* Cart Modal */}
-      {showCartModal && (
-        <div className="cart-modal-overlay" onClick={() => setShowCartModal(false)}>
-          <div className="cart-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="cart-modal-header">
-              <h2>Your Cart</h2>
-              <button
-                className="close-modal-btn"
-                onClick={() => setShowCartModal(false)}
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
-            </div>
-            
-            <div className="cart-modal-content">
-              {cartItems.length === 0 ? (
-                <div className="empty-cart-modal">
-                  <div className="empty-cart-icon">
-                    <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
-                      <circle cx="9" cy="21" r="1"></circle>
-                      <circle cx="20" cy="21" r="1"></circle>
-                      <path d="m1 1 4 4 2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-                    </svg>
-                  </div>
-                  <h3>No item has been added yet</h3>
-                  <p>Add item and checkout via WhatsApp</p>
+      {/* Main two-column layout */}
+      <div
+        style={{
+          maxWidth: 1200,
+          margin: '0 auto',
+          padding: isMobileView ? '8px 16px 80px' : '8px 16px 40px',
+          display: isMobileView ? 'block' : 'grid',
+          gridTemplateColumns: isMobileView ? undefined : '1fr 360px',
+          gap: 24,
+        }}
+      >
+        {/* Left: menu grid */}
+        <div>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: isMobileView ? 'repeat(auto-fill,minmax(160px,1fr))' : 'repeat(3,minmax(0,1fr))',
+              gap: 16,
+            }}
+          >
+            {filteredMenuItems.map((item) => (
+              <div key={item.id} style={{ border: '1px solid #f0f0f0', borderRadius: 12, overflow: 'hidden', background: '#fff' }}>
+                <div style={{ height: 120, overflow: 'hidden' }}>
+                  <img
+                    src={getMenuItemImageUrl(item) || '/placeholder-food.jpg'}
+                    alt={item.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
                 </div>
-              ) : (
-                <div className="cart-modal-items">
-                  {cartItems.map((item) => (
-                    <div key={item.id} className="cart-modal-item">
-                      <div className="cart-modal-item-image">
-                        <img src={item.image} alt={item.name} />
+                <div style={{ padding: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <div style={{ fontWeight: 800, fontSize: 13, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
+                    <div style={{ fontWeight: 800, fontSize: 12, color: '#111827' }}>₦{item.price.toLocaleString()}</div>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#6b7280', height: 30, overflow: 'hidden' }}>{item.description}</div>
+                  <div style={{ marginTop: 10 }}>
+                    {getItemQuantityInCart(item.id) > 0 ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
+                        <button
+                          onClick={() => updateQuantity(item.id, getItemQuantityInCart(item.id) - 1)}
+                          style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #e5e7eb', background: '#fff', fontWeight: 800 }}
+                        >
+                          -
+                        </button>
+                        <div style={{ minWidth: 20, textAlign: 'center', fontWeight: 800, fontSize: 12 }}>{getItemQuantityInCart(item.id)}</div>
+                        <button
+                          onClick={() => handleAddToCart(item)}
+                          style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #10b981', background: '#10b981', color: '#fff', fontWeight: 800 }}
+                        >
+                          +
+                        </button>
                       </div>
-                      <div className="cart-modal-item-details">
-                        <h4 className="cart-modal-item-name">{item.name}</h4>
-                        <p className="cart-modal-item-price">₦ {item.price.toLocaleString()}</p>
-                        <div className="cart-modal-quantity-controls">
+                    ) : (
+                      <button
+                        onClick={() => handleAddToCart(item)}
+                        disabled={!item.is_available}
+                        style={{
+                          width: '100%',
+                          background: item.is_available ? '#10b981' : '#9ca3af',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: 8,
+                          padding: '10px 12px',
+                          fontWeight: 800,
+                          fontSize: 12,
+                          cursor: item.is_available ? 'pointer' : 'not-allowed'
+                        }}
+                      >
+                        {item.is_available ? 'Add to Cart' : 'Unavailable'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Right: cart sidebar */}
+        {!isMobileView && (
+          <div style={{ position: 'sticky', top: 16, alignSelf: 'start', height: '100%' }}>
+            {vendorCartItems.length === 0 ? (
+              <div style={{ border: '1px dashed #e5e7eb', borderRadius: 16, padding: 24, textAlign: 'center', background: '#fafafa' }}>
+                <div style={{ width: 140, height: 140, borderRadius: '50%', background: '#fff', margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 0 0 1px #f3f4f6' }}>
+                  <div style={{ width: 90, height: 52, background: '#f3f4f6', borderRadius: '50%/60% 60% 40% 40%' }} />
+                </div>
+                <div style={{ fontSize: 12, color: '#9ca3af' }}>No item has been added yet</div>
+                <div style={{ fontSize: 10, color: '#9ca3af' }}>Add items and proceed to checkout</div>
+              </div>
+            ) : (
+              <div style={{ border: '1px solid #e5e7eb', borderRadius: 16, padding: 16, background: '#fff' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                  <div style={{ fontWeight: 800, fontSize: 14 }}>Your Cart</div>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>{vendorCartCount} item(s)</div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 360, overflowY: 'auto' }}>
+                  {vendorCartItems.map(ci => (
+                    <div key={ci.id} style={{ display: 'grid', gridTemplateColumns: '48px 1fr auto', gap: 10, alignItems: 'center' }}>
+                      <div style={{ width: 48, height: 48, borderRadius: 8, overflow: 'hidden', background: '#f3f4f6' }}>
+                        <img src={ci.image} alt={ci.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 12, color: '#111827', lineHeight: '16px' }}>{ci.name}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
                           <button
-                            className="cart-modal-quantity-btn"
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            onClick={() => updateQuantity(ci.id, ci.quantity - 1)}
+                            style={{ width: 24, height: 24, borderRadius: 6, border: '1px solid #e5e7eb', background: '#fff', fontWeight: 800 }}
                           >
                             -
                           </button>
-                          <span className="cart-modal-quantity">{item.quantity}</span>
+                          <div style={{ minWidth: 18, textAlign: 'center', fontWeight: 800, fontSize: 12 }}>{ci.quantity}</div>
                           <button
-                            className="cart-modal-quantity-btn increment"
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            onClick={() => updateQuantity(ci.id, ci.quantity + 1)}
+                            style={{ width: 24, height: 24, borderRadius: 6, border: '1px solid #10b981', background: '#10b981', color: '#fff', fontWeight: 800 }}
+                          >
+                            +
+                          </button>
+                          <button
+                            onClick={() => removeItem(ci.id)}
+                            style={{ marginLeft: 6, fontSize: 11, color: '#ef4444', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        {ci.specialInstructions && (
+                          <div style={{ marginTop: 6, fontSize: 11, color: '#6b7280' }}>“{ci.specialInstructions}”</div>
+                        )}
+                      </div>
+                      <div style={{ fontWeight: 800, fontSize: 12, color: '#111827' }}>₦{(ci.price * ci.quantity).toLocaleString()}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 }}>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>Subtotal</div>
+                  <div style={{ fontWeight: 900, fontSize: 14 }}>₦{vendorCartTotal.toLocaleString()}</div>
+                </div>
+                <Link to={`/checkout/${vendor.id}`} style={{ display: 'block', marginTop: 12, textDecoration: 'none' }}>
+                  <div style={{ background: '#10b981', color: '#fff', textAlign: 'center', padding: '10px 12px', borderRadius: 10, fontWeight: 800, fontSize: 13 }}>
+                    Go to Checkout
+                  </div>
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {isMobileView && showMobileCart && (
+        <div
+          onClick={() => setShowMobileCart(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.45)',
+            zIndex: 80,
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxHeight: '80vh',
+              background: '#ffffff',
+              borderRadius: '20px 20px 0 0',
+              padding: '20px 20px 32px',
+              boxShadow: '0 -10px 30px rgba(0,0,0,0.12)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 16,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: '#111827', textTransform: 'capitalize' }}>{mobileCartTitle}</div>
+                <div style={{ fontSize: 12, color: '#6b7280' }}>
+                  {vendorCartCount} item{vendorCartCount === 1 ? '' : 's'}
+                </div>
+              </div>
+              <button
+                onClick={() => setShowMobileCart(false)}
+                style={{ border: 'none', background: '#f3f4f6', width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                aria-label="Close cart"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" stroke="#111827" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            {mobileCartLoading ? (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '40px 0' }}>
+                <div style={{ width: 32, height: 32, borderRadius: '50%', border: '3px solid #d1fae5', borderTopColor: '#10b981', animation: 'spin 1s linear infinite' }} />
+                <div style={{ fontSize: 12, color: '#6b7280' }}>Loading your cart...</div>
+              </div>
+            ) : mobileCartError ? (
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', color: '#ef4444', fontSize: 13, padding: '32px 0' }}>
+                {mobileCartError}
+              </div>
+            ) : vendorCartItems.length === 0 ? (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '40px 0', color: '#6b7280' }}>
+                <div style={{ width: 96, height: 96, borderRadius: '50%', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="9" cy="21" r="1" />
+                    <circle cx="20" cy="21" r="1" />
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                  </svg>
+                </div>
+                <div style={{ fontWeight: 600, fontSize: 14 }}>No items yet</div>
+                <div style={{ fontSize: 12 }}>Add meals from {vendor?.business_name ?? 'this vendor'} to see them here.</div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, overflowY: 'auto', maxHeight: '45vh', paddingRight: 4 }}>
+                {vendorCartItems.map(ci => (
+                  <div key={ci.id} style={{ display: 'grid', gridTemplateColumns: '64px 1fr', gap: 12, alignItems: 'center' }}>
+                    <div style={{ width: 64, height: 64, borderRadius: 12, overflow: 'hidden', background: '#f3f4f6' }}>
+                      <img src={ci.image} alt={ci.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{ci.name}</div>
+                          <div style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>₦{ci.price.toLocaleString()} each</div>
+                        </div>
+                        <button
+                          onClick={() => removeItem(ci.id)}
+                          style={{ border: 'none', background: 'transparent', color: '#ef4444', fontSize: 12, fontWeight: 600 }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      {ci.specialInstructions && (
+                        <div style={{ marginTop: 6, fontSize: 11, color: '#6b7280' }}>“{ci.specialInstructions}”</div>
+                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <button
+                            onClick={() => updateQuantity(ci.id, ci.quantity - 1)}
+                            style={{ width: 28, height: 28, borderRadius: 8, border: '1px solid #e5e7eb', background: '#fff', fontWeight: 800 }}
+                          >
+                            -
+                          </button>
+                          <div style={{ minWidth: 24, textAlign: 'center', fontWeight: 800, fontSize: 13 }}>{ci.quantity}</div>
+                          <button
+                            onClick={() => updateQuantity(ci.id, ci.quantity + 1)}
+                            style={{ width: 28, height: 28, borderRadius: 8, border: '1px solid #10b981', background: '#10b981', color: '#fff', fontWeight: 800 }}
                           >
                             +
                           </button>
                         </div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: '#111827' }}>₦{(ci.price * ci.quantity).toLocaleString()}</div>
                       </div>
-                      <button
-                        className="cart-modal-remove-btn"
-                        onClick={() => removeFromCart(item.id)}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polyline points="3,6 5,6 21,6"></polyline>
-                          <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
-                          <line x1="10" y1="11" x2="10" y2="17"></line>
-                          <line x1="14" y1="11" x2="14" y2="17"></line>
-                        </svg>
-                      </button>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {cartItems.length > 0 && (
-              <div className="cart-modal-footer">
-                <div className="cart-modal-total">
-                  <div className="total-row">
-                    <span>Total</span>
-                    <strong>₦ {getTotalPrice().toLocaleString()}</strong>
                   </div>
-                </div>
-                <button
-                  className="cart-modal-checkout-btn"
-                  onClick={() => {
-                    handleWhatsAppCheckout();
-                    setShowCartModal(false);
-                  }}
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488"/>
-                  </svg>
-                  Checkout on WhatsApp
-                </button>
+                ))}
               </div>
             )}
+
+            {!mobileCartLoading && vendorCartItems.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13, color: '#6b7280' }}>
+                  <span>Subtotal</span>
+                  <span style={{ fontWeight: 800, color: '#111827' }}>₦{vendorCartTotal.toLocaleString()}</span>
+                </div>
+                <Link
+                  to={`/checkout/${vendor.id}`}
+                  onClick={() => setShowMobileCart(false)}
+                  style={{ textDecoration: 'none' }}
+                >
+                  <div style={{ width: '100%', background: '#10b981', color: '#fff', textAlign: 'center', padding: '12px 16px', borderRadius: 12, fontWeight: 800, fontSize: 14 }}>
+                    Go to Checkout
+                  </div>
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Footer */}
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '16px', borderTop: '1px solid #f3f4f6' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+          <div>
+            <div style={{ fontSize: 12, letterSpacing: 1, color: '#6b7280' }}>LOCATIONS</div>
+            <div style={{ marginTop: 8, fontSize: 12, color: '#111827', lineHeight: '18px' }}>
+              ENUGU<br/>ABUJA<br/>LAGOS<br/>PORT-HARCOURT
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: '#6b7280' }}>+1 909 287 7764</div>
+            <div style={{ fontSize: 12, color: '#6b7280' }}>hello@bestie.com</div>
+            <div style={{ fontSize: 12, color: '#6b7280' }}>Whatsapp »</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: '#6b7280' }}>Become Partner</div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 14, marginTop: 18, color: '#6b7280', fontSize: 12 }}>
+          <span>◎</span>
+          <span>◈</span>
+          <span>◉</span>
+          <span>◆</span>
+        </div>
+
+        <div style={{ marginTop: 14, fontSize: 10, color: '#9ca3af' }}>Privacy</div>
+      </div>
+      {/* Add to cart modal */}
+      {showAddModal && pendingItem && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
+          <div style={{ width: 420, maxWidth: '90%', background: '#fff', borderRadius: 12, padding: 16, boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
+            <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 8 }}>Add special instructions</div>
+            <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>
+              Optional: e.g., "Extra spicy", "No onions", "Well done".
+            </div>
+            <textarea
+              value={specialInstructions}
+              onChange={(e) => setSpecialInstructions(e.target.value)}
+              placeholder="Type instructions..."
+              rows={4}
+              style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: 10, fontSize: 13, resize: 'vertical' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
+              <button onClick={() => { setShowAddModal(false); setPendingItem(null); }} style={{ border: '1px solid #e5e7eb', background: '#fff', borderRadius: 8, padding: '8px 12px', fontWeight: 700 }}>
+                Cancel
+              </button>
+              <button onClick={confirmAddToCart} style={{ background: '#10b981', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 12px', fontWeight: 800 }}>
+                Add to cart
+              </button>
+            </div>
           </div>
         </div>
       )}

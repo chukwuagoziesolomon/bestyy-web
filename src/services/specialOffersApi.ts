@@ -20,7 +20,7 @@ export interface SpecialOffersResponse {
 }
 
 class SpecialOffersApiService {
-  private baseUrl = `${process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000'}/api/special-offers`;
+  private baseUrl = `${process.env.REACT_APP_API_URL}/api/special-offers`;
 
   /**
    * Get all active special offers

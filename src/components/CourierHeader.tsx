@@ -1,19 +1,52 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Menu, User, MessageCircle } from 'lucide-react';
+import NotificationBell from './NotificationBell';
+import { useAuth } from '../context/AuthContext';
+import { API_URL } from '../api';
 
 interface CourierHeaderProps {
-  title: string;
+  title?: string;
   showHamburger?: boolean;
+  showCourierName?: boolean;
 }
 
-const CourierHeader: React.FC<CourierHeaderProps> = ({ title, showHamburger = true }) => {
+const CourierHeader: React.FC<CourierHeaderProps> = ({ title, showHamburger = true, showCourierName = false }) => {
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
-  
+  const { user } = useAuth();
+
   // Get courier profile picture and name from localStorage
-  const courierProfilePic = localStorage.getItem('profile_picture') || '/user1.png';
-  const courierName = localStorage.getItem('first_name') || 'Courier';
+  let courierProfilePic = '/logo.png';
+  let courierName = 'Courier';
+  
+  // Try to get from courier_profile in localStorage
+  const savedCourier = localStorage.getItem('courier_profile') || localStorage.getItem('vendor_profile');
+  if (savedCourier) {
+    try {
+      const courier = JSON.parse(savedCourier);
+      courierName = courier.first_name || courier.full_name || courier.name || courierName;
+      const profileImage = courier.profile_image || courier.profile_picture || courier.avatar || courier.logo;
+      if (profileImage) {
+        courierProfilePic = profileImage.startsWith('http') ? profileImage : 
+                          profileImage.startsWith('/') ? `${API_URL}${profileImage}` : profileImage;
+      }
+    } catch (e) {
+      // Fallback
+    }
+  }
+  
+  // Also check individual localStorage items
+  const firstName = localStorage.getItem('first_name');
+  if (firstName) {
+    courierName = firstName;
+  }
+  
+  const profilePic = localStorage.getItem('profile_picture') || localStorage.getItem('profile_image');
+  if (profilePic) {
+    courierProfilePic = profilePic.startsWith('http') ? profilePic : 
+                       profilePic.startsWith('/') ? `${API_URL}${profilePic}` : profilePic;
+  }
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -47,129 +80,162 @@ const CourierHeader: React.FC<CourierHeaderProps> = ({ title, showHamburger = tr
         position: 'relative',
         overflow: 'hidden'
       }}>
-                 <div style={{ 
-                   display: 'flex', 
-                   alignItems: 'center', 
-                   gap: '16px',
-                   flex: 1,
-                   minWidth: 0
-                 }}>
-           <div style={{
-             display: 'flex',
-             alignItems: 'center',
-             gap: '12px',
-             flexShrink: 0
-           }}>
-                                                   <div style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 4px 16px rgba(16, 185, 129, 0.3)',
-                border: '3px solid rgba(255, 255, 255, 0.9)',
-                position: 'relative',
-                overflow: 'hidden',
-                flexShrink: 0
-              }}>
-                <img 
-                  src={courierProfilePic} 
-                  alt={`${courierName}'s profile`} 
-                  style={{ 
-                    width: '100%', 
-                    height: '100%',
-                    objectFit: 'cover',
-                    borderRadius: '50%'
-                  }}
-                />
-                {/* Subtle inner glow */}
-                <div style={{
-                  position: 'absolute',
-                  top: '0',
-                  left: '0',
-                  right: '0',
-                  bottom: '0',
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 100%)',
-                  pointerEvents: 'none'
-                }} />
-              </div>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          flex: 1,
+          minWidth: 0
+        }}>
+          {showCourierName && (
             <div style={{
               display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'flex-start',
+              alignItems: 'center',
+              gap: '12px',
               flexShrink: 0
             }}>
-                                                                         <span style={{
-                fontSize: '18px',
-                fontWeight: '800',
-                color: '#10b981',
-                lineHeight: '1.1',
-                letterSpacing: '-0.5px',
-                textShadow: '0 1px 2px rgba(16, 185, 129, 0.1)',
-                whiteSpace: 'nowrap'
+              <div style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 4px 16px rgba(16, 185, 129, 0.3)',
+                  border: '3px solid rgba(255, 255, 255, 0.9)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  flexShrink: 0
+                }}>
+                  {courierProfilePic && courierProfilePic !== '/logo.png' ? (
+                    <img
+                      src={courierProfilePic}
+                      alt={`${courierName}'s profile`}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        borderRadius: '50%'
+                      }}
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  ) : null}
+                  {(!courierProfilePic || courierProfilePic === '/logo.png') && (
+                    <div style={{
+                      width: '100%',
+                      height: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      fontWeight: 600,
+                      fontSize: '18px'
+                    }}>
+                      {courierName.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  {/* Subtle inner glow */}
+                  <div style={{
+                    position: 'absolute',
+                    top: '0',
+                    left: '0',
+                    right: '0',
+                    bottom: '0',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 100%)',
+                    pointerEvents: 'none'
+                  }} />
+                </div>
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                flexShrink: 0
               }}>
+                <span style={{
+                  fontSize: '18px',
+                  fontWeight: '800',
+                  color: '#10b981',
+                  lineHeight: '1.1',
+                  letterSpacing: '-0.5px',
+                  textShadow: '0 1px 2px rgba(16, 185, 129, 0.1)',
+                  whiteSpace: 'nowrap'
+                }}>
                   {courierName}
                 </span>
-               <span style={{
-                 fontSize: '10px',
-                 color: '#6b7280',
-                 fontWeight: '600',
-                 textTransform: 'uppercase',
-                 letterSpacing: '1px',
-                 background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                 backgroundClip: 'text',
-                 WebkitBackgroundClip: 'text',
-                 WebkitTextFillColor: 'transparent'
-               }}>
-                 Courier
-               </span>
+              </div>
             </div>
-          </div>
-                     <div style={{
-             height: '36px',
-             width: '2px',
-             background: 'linear-gradient(180deg, #10b981 0%, #059669 100%)',
-             borderRadius: '1px',
-             opacity: 0.6,
-             flexShrink: 0
-           }} />
-          <h1 style={{
-            fontSize: '20px',
-            fontWeight: '700',
-            margin: 0,
-            color: '#1f2937',
-            letterSpacing: '-0.5px',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis'
+          )}
+          <div style={{
+            height: '36px',
+            width: '2px',
+            background: 'linear-gradient(180deg, #10b981 0%, #059669 100%)',
+            borderRadius: '1px',
+            opacity: 0.6,
+            flexShrink: 0
+          }} />
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            justifyContent: 'center',
+            flexShrink: 0
           }}>
-            {title}
-          </h1>
+            <span style={{
+              fontSize: '18px',
+              fontWeight: '700',
+              margin: 0,
+              color: '#1f2937',
+              letterSpacing: '-0.5px',
+              lineHeight: '1.2'
+            }}>
+              Welcome
+            </span>
+            <span style={{
+              fontSize: '18px',
+              fontWeight: '700',
+              margin: 0,
+              color: '#1f2937',
+              letterSpacing: '-0.5px',
+              lineHeight: '1.2'
+            }}>
+              back
+            </span>
+          </div>
         </div>
-        
-                 {showHamburger && (
-           <button 
-             data-menu
-             onClick={() => setShowMenu(!showMenu)}
-             style={{
-               background: showMenu ? '#10b981' : 'rgba(16, 185, 129, 0.1)',
-               border: showMenu ? 'none' : '1px solid rgba(16, 185, 129, 0.2)',
-               cursor: 'pointer',
-               padding: '10px',
-               borderRadius: '10px',
-               display: 'flex',
-               alignItems: 'center',
-               gap: '4px',
-               transition: 'all 0.3s ease',
-               boxShadow: showMenu ? '0 4px 12px rgba(16, 185, 129, 0.3)' : '0 2px 8px rgba(0,0,0,0.05)',
-               flexShrink: 0
-             }}
-           >
-            <Menu size={20} color={showMenu ? "#fff" : "#10b981"} />
-          </button>
+
+        {/* Notification Bell */}
+        {user && (
+          <NotificationBell
+            userId={user.id}
+            userType="courier"
+            className="mobile-notification-bell"
+          />
+        )}
+
+        {showHamburger && (
+          <button
+            data-menu
+            onClick={() => setShowMenu(!showMenu)}
+            style={{
+              background: showMenu ? '#10b981' : 'rgba(16, 185, 129, 0.1)',
+              border: showMenu ? 'none' : '1px solid rgba(16, 185, 129, 0.2)',
+              cursor: 'pointer',
+              padding: '10px',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              transition: 'all 0.3s ease',
+              boxShadow: showMenu ? '0 4px 12px rgba(16, 185, 129, 0.3)' : '0 2px 8px rgba(0,0,0,0.05)',
+              flexShrink: 0
+            }}
+          >
+           <Menu size={20} color={showMenu ? "#fff" : "#10b981"} />
+         </button>
         )}
       </div>
 

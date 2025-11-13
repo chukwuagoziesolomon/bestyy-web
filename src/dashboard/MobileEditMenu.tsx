@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ChevronDown } from 'lucide-react';
 import { getMenuItem, updateMenuItem, deleteMenuItem, API_URL } from '../api';
 import { showError, showSuccess, showApiError } from '../toast';
+import { useImageUpload } from '../hooks/useImageUpload';
 
 const MobileEditMenu: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -11,6 +12,25 @@ const MobileEditMenu: React.FC = () => {
   const [updating, setUpdating] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+
+  // Image upload hook for menu item images
+  const { uploadImage: uploadMenuImage, isUploading: isUploadingImage, error: imageUploadError, clearError: clearImageError } = useImageUpload({
+    onSuccess: (file) => {
+      if (file instanceof File) {
+        const objectUrl = URL.createObjectURL(file);
+        setFormData(prev => ({
+          ...prev,
+          existing_image: '',
+          image: file
+        }));
+        setImagePreview(objectUrl);
+      }
+      showSuccess('Menu item image uploaded successfully!');
+    },
+    onError: (error) => {
+      showError(error);
+    }
+  });
   const [formData, setFormData] = useState({
     dish_name: '',
     item_description: '',
@@ -72,12 +92,8 @@ const MobileEditMenu: React.FC = () => {
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setFormData(prev => ({ ...prev, image: file }));
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+      // Upload to Cloudinary instead of just showing preview
+      uploadMenuImage(file, 'menu-item');
     }
   };
 
@@ -101,9 +117,9 @@ const MobileEditMenu: React.FC = () => {
         available: true
       };
 
-      // Only include image if a new one was selected
-      if (formData.image) {
-        updateData.image = formData.image;
+      // Include the Cloudinary image URL if it exists
+      if (formData.existing_image) {
+        updateData.image = formData.existing_image;
       }
 
       await updateMenuItem(token, id, updateData);
@@ -207,6 +223,7 @@ const MobileEditMenu: React.FC = () => {
               type="file"
               accept="image/*"
               onChange={handleImageUpload}
+              disabled={isUploadingImage}
               style={{
                 position: 'absolute',
                 top: 0,
@@ -214,10 +231,25 @@ const MobileEditMenu: React.FC = () => {
                 opacity: 0,
                 width: '100%',
                 height: '100%',
-                cursor: 'pointer',
+                cursor: isUploadingImage ? 'not-allowed' : 'pointer',
                 zIndex: 1
               }}
             />
+            {isUploadingImage && (
+              <div style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                color: 'white',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                textShadow: '0 0 4px rgba(0,0,0,0.5)',
+                zIndex: 2
+              }}>
+                Uploading...
+              </div>
+            )}
           </div>
         </div>
 

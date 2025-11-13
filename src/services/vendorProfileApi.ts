@@ -112,7 +112,7 @@ export interface MenuItemsResponse {
 }
 
 class VendorProfileApiService {
-  private baseUrl = `${process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000'}/api/user/vendors`;
+  private baseUrl = `${process.env.REACT_APP_API_URL}/api/user/vendors`;
 
   /**
    * Get complete vendor profile with menu and reviews

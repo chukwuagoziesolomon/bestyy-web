@@ -97,7 +97,7 @@ a.hero__cta {
   position: absolute;
   bottom: 40%;
   right: 10%;
-  width: 70%;
+  width: 75%;
   max-width: 350px;
   min-width: 120px;
   transform: none;
@@ -107,7 +107,7 @@ a.hero__cta {
   position: absolute;
   left: 10%;
   bottom: 20%;
-  width: 80%;
+  width: 75%;
   max-width: 400px;
   min-width: 120px;
   transform: none;
@@ -157,14 +157,14 @@ a.hero__cta {
   }
 
   .hero__chat-bubble--green {
-    width: 75%;
+    width: 80%;
     max-width: 280px;
     right: 10%;
     bottom: 40%;
   }
 
   .hero__chat-bubble--white {
-    width: 85%;
+    width: 80%;
     max-width: 320px;
     left: 10%;
     bottom: 20%;
@@ -193,7 +193,7 @@ a.hero__cta {
   }
 
   .hero__content h1 {
-    font-size: 2rem; /* Smaller font size for mobile */
+    font-size: 2.5rem; /* Bigger font size for mobile logo */
     min-height: 100px; /* Adjusted height for mobile */
     margin-bottom: 1rem;
   }

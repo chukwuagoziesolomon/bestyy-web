@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Book, MapPin, CreditCard, Star, HelpCircle, User, MessageCircle, HeadphonesIcon } from 'lucide-react';
+import { Home, Book, MapPin, CreditCard, Star, HelpCircle, User, HeadphonesIcon } from 'lucide-react';
 import { useLocation, Link } from 'react-router-dom';
 
 const navLinks = [
@@ -69,8 +69,22 @@ const Sidebar: React.FC = () => {
           </Link>
         ))}
       </nav>
+      {/* Subscription Link */}
+      <Link
+        to="/plans"
+        style={{
+          display: 'flex', alignItems: 'center', gap: 14, padding: '0.85rem 2.2rem', borderRadius: 8,
+          textDecoration: 'none', color: location.pathname === '/plans' ? '#fff' : '#222',
+          background: location.pathname === '/plans' ? '#10b981' : 'none',
+          fontWeight: 600, fontSize: 16, marginBottom: 8, marginTop: 8,
+          transition: 'background 0.2s',
+        }}
+      >
+        <span style={{ display: 'flex', alignItems: 'center' }}><CreditCard size={20} /></span>
+        Subscription
+      </Link>
       {/* Bottom Links */}
-      <div style={{ marginTop: 32 }}>
+      <div style={{ marginTop: 14 }}>
         {bottomLinks.map(link => (
           <Link
             key={link.path}
@@ -88,19 +102,7 @@ const Sidebar: React.FC = () => {
           </Link>
         ))}
       </div>
-      {/* Chat With Besty Button */}
-      <a
-        href="https://wa.me/2340000000000" // Replace with actual WhatsApp number
-        target="_blank"
-        rel="noopener noreferrer"
-        style={{
-          display: 'flex', alignItems: 'center', gap: 12, background: '#10b981', color: '#fff',
-          fontWeight: 700, fontSize: 17, borderRadius: 8, padding: '14px 32px', textDecoration: 'none',
-          margin: '32px 32px 0 32px', justifyContent: 'center',
-        }}
-      >
-        <MessageCircle size={22} /> Chat With Besty
-      </a>
+      {/* Remove in-sidebar WhatsApp button: now handled globally as floating chat */}
     </aside>
   );
 };

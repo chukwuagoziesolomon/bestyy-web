@@ -2,6 +2,9 @@ import React, { ReactNode } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useResponsive } from '../hooks/useResponsive';
 import { Home, List, BarChart3, Wallet, Settings } from 'lucide-react';
+import DashboardNavbar from '../components/DashboardNavbar';
+import { useAuth } from '../context/AuthContext';
+import ChatWithBestie from '../components/ChatWithBestie';
 
 interface CourierDashboardLayoutProps {
   children?: ReactNode;
@@ -20,6 +23,7 @@ function sidebarLinkStyle(active: boolean): React.CSSProperties {
 const CourierDashboardLayout: React.FC<CourierDashboardLayoutProps> = ({ children }) => {
   const location = useLocation();
   const { isMobile, isTablet } = useResponsive();
+  const { user } = useAuth();
 
   // For mobile and tablet, render content directly without sidebar
   if (isMobile || isTablet) {
@@ -28,7 +32,7 @@ const CourierDashboardLayout: React.FC<CourierDashboardLayoutProps> = ({ childre
 
   // Desktop layout with sidebar
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc', fontFamily: 'Nunito Sans, sans-serif' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc', fontFamily: 'Nunito Sans, sans-serif', position: 'relative' }}>
       <aside style={{
         width: 240,
         background: '#fff',
@@ -58,6 +62,10 @@ const CourierDashboardLayout: React.FC<CourierDashboardLayoutProps> = ({ childre
           </Link>
         </nav>
         <div style={{ marginTop: 32 }}>
+          <Link to="/plans" style={sidebarLinkStyle(location.pathname === '/plans')}>
+            <Wallet size={20} />
+            Subscription
+          </Link>
           <Link to="/courier/payouts" style={sidebarLinkStyle(location.pathname === '/courier/payouts')}>
             <Wallet size={20} />
             Payouts
@@ -68,9 +76,14 @@ const CourierDashboardLayout: React.FC<CourierDashboardLayoutProps> = ({ childre
           </Link>
         </div>
       </aside>
-      <main style={{ flex: 1, background: '#f8fafc', minHeight: '100vh' }}>
+      <main style={{ flex: 1, background: '#f8fafc', minHeight: '100vh', padding: '0.5rem 2.5rem 2.5rem 2.5rem' }}>
+        <DashboardNavbar
+          userId={user?.id}
+          userType={user?.role}
+        />
         <Outlet />
       </main>
+      <ChatWithBestie />
     </div>
   );
 };

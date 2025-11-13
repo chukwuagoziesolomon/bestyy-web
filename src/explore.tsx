@@ -1,13 +1,106 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import './ExploreDesktop.css';
 import './ExploreMobile.css';
 import Footer from './Footer';
+import { recommendationsApi, VendorRecommendation, RecommendationsResponse } from './services/recommendationsApi';
 
 const Explore: React.FC = () => {
   // State for user location and profile
-  const userLocation = 'Enugu';
+  const [userLocation, setUserLocation] = useState<string>('Lagos');
   const userProfile = null;
+
+  // State for recommendations functionality
+  const [recommendations, setRecommendations] = useState<VendorRecommendation[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [isSearching, setIsSearching] = useState<boolean>(false);
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  // Initial load - fetch all vendors
+  useEffect(() => {
+    fetchInitialResults();
+  }, []);
+
+  // Search effect - debounced search
+  useEffect(() => {
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    const timeout = setTimeout(() => {
+      if (searchTerm.trim()) {
+        performSearch(searchTerm.trim());
+      } else {
+        fetchInitialResults();
+      }
+    }, 500); // 500ms debounce
+
+    setSearchTimeout(timeout);
+
+    return () => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+    };
+  }, [searchTerm]);
+
+  const fetchInitialResults = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setIsSearching(false);
+
+      const response: RecommendationsResponse = await recommendationsApi.getRecommendations({
+        city: userLocation,
+        limit: 20
+      });
+
+      if (response.success) {
+        setRecommendations(response.recommendations);
+      } else {
+        setError('Failed to fetch recommendations');
+      }
+    } catch (err) {
+      console.error('Error fetching initial results:', err);
+      setError('Unable to load recommendations. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const performSearch = async (query: string) => {
+    try {
+      setIsSearching(true);
+      setError(null);
+
+      const response: RecommendationsResponse = await recommendationsApi.getRecommendations({
+        city: userLocation,
+        limit: 20,
+        category: query // Add search query as category filter
+      });
+
+      if (response.success) {
+        setRecommendations(response.recommendations);
+      } else {
+        setError('Search failed');
+      }
+    } catch (err) {
+      console.error('Error performing search:', err);
+      setError('Search failed. Please try again.');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Use recommendations directly (they are already vendor recommendations)
+  const vendorResults = recommendations;
+
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
 
   return (
     <div className="explore-page">
@@ -16,12 +109,26 @@ const Explore: React.FC = () => {
         <div className="header-left">
           <div className="logo-section">
             <img src="/logo.png" alt="Bestyy Logo" className="header-logo" />
-            <span className="location-text">Enugu, Nigeria</span>
+            <span className="location-text">{userLocation}, Nigeria</span>
           </div>
         </div>
         
         <div className="header-center">
-          <h1 className="main-title">Explore Bestyy</h1>
+          <div className="search-container">
+            <div className="search-input-wrapper">
+              <svg className="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+              </svg>
+              <input
+                type="text"
+                placeholder={isSearching ? "Searching..." : "Search for restaurants, dishes..."}
+                className="search-input"
+                value={searchTerm}
+                onChange={handleSearchChange}
+              />
+            </div>
+          </div>
         </div>
         
         <div className="header-right">
@@ -128,184 +235,149 @@ const Explore: React.FC = () => {
       <section className="featured-section">
         <h2 className="featured-title">Featured</h2>
 
-        <div className="featured-grid">
-          <Link to="/vendor/1" className="featured-card">
-            <div className="featured-badge">FEATURED</div>
-            <div className="card-image">
-              <img src="/pizza1.jpg" alt="Galaxy Pizza Lagos" />
+        {/* Loading State */}
+        {loading && (
+          <div className="loading-state">
+            <div className="loading-content">
+              <div className="loading-spinner"></div>
+              <p>Loading amazing restaurants...</p>
             </div>
-            <div className="card-content">
-              <h3 className="vendor-name">Galaxy Pizza Lagos</h3>
-              <div className="rating-info">
-                <div className="stars">
-                  <span>⭐⭐⭐⭐⭐</span>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="error-state">
+            <div className="error-content">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="error-icon">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 8v4"/>
+                <path d="M12 16h.01"/>
+              </svg>
+              <h3>Oops! Something went wrong</h3>
+              <p>{error}</p>
+              <button className="retry-button" onClick={() => fetchInitialResults()}>
+                Try Again
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Empty State - No vendors at all */}
+        {!loading && !error && vendorResults.length === 0 && !searchTerm && (
+          <div className="empty-state">
+            <div className="empty-content">
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="empty-icon">
+                <path d="M3 2v7h.01M21 15v7h-.01M12 2v20M3 9l9-7 9 7M9 22V12h6v10"/>
+              </svg>
+              <h3>No restaurants available</h3>
+              <p>It looks like no restaurants are currently available in your area.</p>
+              <button className="retry-button" onClick={() => fetchInitialResults()}>
+                Refresh
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Recommendations Grid */}
+        {!loading && !error && vendorResults.length > 0 && (
+          <div className="featured-grid">
+            {vendorResults.map((vendor) => (
+              <Link to={`/vendor/${vendor.id}`} key={vendor.id} className="featured-card" onClick={() => console.log('Clicked vendor:', vendor.id)}>
+                {vendor.is_featured && (
+                  <div className="featured-badge">FEATURED</div>
+                )}
+                <div className="card-image">
+                  <img
+                    src={vendor.food_images?.[0]?.image ? `${process.env.REACT_APP_API_URL}${vendor.food_images[0].image}` : (vendor.logo ? `${process.env.REACT_APP_API_URL}${vendor.logo}` : "/placeholder-vendor.jpg")}
+                    alt={vendor.business_name || 'Vendor'}
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = "/placeholder-vendor.jpg";
+                    }}
+                  />
                 </div>
-                <span className="rating-text">5 Fast</span>
-              </div>
-              <div className="price-section">
-                <span className="price">₦ 7000</span>
-              </div>
-            </div>
-          </Link>
-
-          <Link to="/vendor/2" className="featured-card">
-            <div className="featured-badge">FEATURED</div>
-            <div className="card-image">
-              <img src="/pizza2.jpg" alt="Galaxy Pizza Lagos" />
-            </div>
-            <div className="card-content">
-              <h3 className="vendor-name">Galaxy Pizza Lagos</h3>
-              <div className="rating-info">
-                <div className="stars">
-                  <span>⭐⭐⭐⭐⭐</span>
+                <div className="card-content">
+                  <h3 className="vendor-name">{vendor.business_name || 'Unknown Vendor'}</h3>
+                  {vendor.food_images?.[0]?.dish_name && (
+                    <p className="dish-name">{vendor.food_images[0].dish_name}</p>
+                  )}
+                  <div className="rating-info">
+                    <div className="stars">
+                      {vendor.rating && vendor.rating > 0 ? (
+                        <>
+                          {Array.from({ length: 5 }, (_, i) => (
+                            <span key={i} style={{ color: i < Math.floor(vendor.rating) ? '#fbbf24' : '#e5e7eb' }}>
+                              ⭐
+                            </span>
+                          ))}
+                        </>
+                      ) : (
+                        <span>⭐⭐⭐⭐⭐</span>
+                      )}
+                    </div>
+                    <span className="rating-text">
+                      {vendor.rating ? `${vendor.rating.toFixed(1)} (${vendor.total_reviews} reviews)` : 'No reviews yet'}
+                    </span>
+                  </div>
+                  {vendor.delivery_time && (
+                    <div className="rating-info">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="clock-icon">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12,6 12,12 16,14"/>
+                      </svg>
+                      <span className="rating-text">{vendor.delivery_time}</span>
+                    </div>
+                  )}
+                  {vendor.business_category && (
+                    <div className="category-tag">
+                      <span className="tag-text">{vendor.business_category}</span>
+                    </div>
+                  )}
+                  <div className="price-section">
+                    <span className="price">
+                      {vendor.food_images?.[0]?.price ? `₦ ${vendor.food_images[0].price.toLocaleString()}` : (vendor.offers_delivery ? 'Delivery available' : 'Pickup only')}
+                    </span>
+                  </div>
+                  {vendor.distance && (
+                    <div className="rating-info">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="location-icon">
+                        <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                      </svg>
+                      <span className="rating-text">{vendor.distance.toFixed(1)} km away</span>
+                    </div>
+                  )}
                 </div>
-                <span className="rating-text">5 Fast</span>
-              </div>
-              <div className="price-section">
-                <span className="price">₦ 7000</span>
-              </div>
-            </div>
-          </Link>
+              </Link>
+            ))}
+          </div>
+        )}
 
-          <Link to="/vendor/3" className="featured-card">
-            <div className="featured-badge">FEATURED</div>
-            <div className="card-image">
-              <img src="/pizza3.jpg" alt="Galaxy Pizza Lagos" />
-            </div>
-            <div className="card-content">
-              <h3 className="vendor-name">Galaxy Pizza Lagos</h3>
-              <div className="rating-info">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="clock-icon">
-                  <circle cx="12" cy="12" r="10"/>
-                  <polyline points="12,6 12,12 16,14"/>
-                </svg>
-                <span className="rating-text">30-40 min</span>
-              </div>
-              <div className="category-tag">
-                <span className="tag-text">🍕 Pizza</span>
-              </div>
-              <div className="price-section">
-                <span className="price">₦ 7000</span>
-              </div>
-            </div>
-          </Link>
+        {/* View More Button */}
+        {!loading && !error && vendorResults.length > 0 && (
+          <div className="view-more-container">
+            <button className="view-more-btn">View more</button>
+          </div>
+        )}
 
-          <Link to="/vendor/4" className="featured-card">
-            <div className="card-image">
-              <img src="/pizza4.jpg" alt="Galaxy Pizza Lagos" />
+        {/* No Results State - Search returned no results */}
+        {!loading && !error && vendorResults.length === 0 && searchTerm && (
+          <div className="no-results-state">
+            <div className="no-results-content">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="no-results-icon">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+                <line x1="8" y1="8" x2="16" y2="16"/>
+              </svg>
+              <h3>No restaurants found</h3>
+              <p>We couldn't find any restaurants matching "{searchTerm}"</p>
+              <button className="retry-button" onClick={() => setSearchTerm('')}>
+                Clear Search
+              </button>
             </div>
-            <div className="card-content">
-              <h3 className="vendor-name">Galaxy Pizza Lagos</h3>
-              <div className="rating-info">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="clock-icon">
-                  <circle cx="12" cy="12" r="10"/>
-                  <polyline points="12,6 12,12 16,14"/>
-                </svg>
-                <span className="rating-text">30-40 min</span>
-              </div>
-              <div className="category-tag">
-                <span className="tag-text">🍕 Pizza</span>
-              </div>
-              <div className="price-section">
-                <span className="price">₦ 7000</span>
-              </div>
-            </div>
-          </Link>
-
-          <Link to="/vendor/5" className="featured-card">
-            <div className="card-image">
-              <img src="/pizza5.jpg" alt="Galaxy Pizza Lagos" />
-            </div>
-            <div className="card-content">
-              <h3 className="vendor-name">Galaxy Pizza Lagos</h3>
-              <div className="rating-info">
-                <div className="stars">
-                  <span>⭐⭐⭐⭐⭐</span>
-                </div>
-                <span className="rating-text">5 Fast</span>
-              </div>
-              <div className="price-section">
-                <span className="price">₦ 7000</span>
-              </div>
-            </div>
-          </Link>
-
-          <Link to="/vendor/6" className="featured-card">
-            <div className="card-image">
-              <img src="/pizza6.jpg" alt="Galaxy Pizza Lagos" />
-            </div>
-            <div className="card-content">
-              <h3 className="vendor-name">Galaxy Pizza Lagos</h3>
-              <div className="rating-info">
-                <div className="stars">
-                  <span>⭐⭐⭐⭐⭐</span>
-                </div>
-                <span className="rating-text">5 Fast</span>
-              </div>
-              <div className="price-section">
-                <span className="price">₦ 7000</span>
-              </div>
-            </div>
-          </Link>
-
-          <Link to="/vendor/7" className="featured-card">
-            <div className="card-image">
-              <img src="/pizza7.jpg" alt="Galaxy Pizza Lagos" />
-            </div>
-            <div className="card-content">
-              <h3 className="vendor-name">Galaxy Pizza Lagos</h3>
-              <div className="rating-info">
-                <div className="stars">
-                  <span>⭐⭐⭐⭐⭐</span>
-                </div>
-                <span className="rating-text">5 Fast</span>
-              </div>
-              <div className="price-section">
-                <span className="price">₦ 7000</span>
-              </div>
-            </div>
-          </Link>
-
-          <Link to="/vendor/8" className="featured-card">
-            <div className="card-image">
-              <img src="/pizza8.jpg" alt="Galaxy Pizza Lagos" />
-            </div>
-            <div className="card-content">
-              <h3 className="vendor-name">Galaxy Pizza Lagos</h3>
-              <div className="rating-info">
-                <div className="stars">
-                  <span>⭐⭐⭐⭐⭐</span>
-                </div>
-                <span className="rating-text">5 Fast</span>
-              </div>
-              <div className="price-section">
-                <span className="price">₦ 7000</span>
-              </div>
-            </div>
-          </Link>
-
-          <Link to="/vendor/9" className="featured-card">
-            <div className="card-image">
-              <img src="/pizza9.jpg" alt="Galaxy Pizza Lagos" />
-            </div>
-            <div className="card-content">
-              <h3 className="vendor-name">Galaxy Pizza Lagos</h3>
-              <div className="rating-info">
-                <div className="stars">
-                  <span>⭐⭐⭐⭐⭐</span>
-                </div>
-                <span className="rating-text">5 Fast</span>
-              </div>
-              <div className="price-section">
-                <span className="price">₦ 7000</span>
-              </div>
-            </div>
-          </Link>
-        </div>
-
-        <div className="view-more-container">
-          <button className="view-more-btn">View more</button>
-        </div>
+          </div>
+        )}
       </section>
 
       {/* Footer */}

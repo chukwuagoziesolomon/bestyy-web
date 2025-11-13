@@ -1,5 +1,6 @@
 import React from 'react';
 import './Navbar.css';
+import './HeroSection.css';
 
 interface NavbarProps {
   darkMode: boolean;
@@ -12,12 +13,8 @@ const Navbar: React.FC<NavbarProps> = ({ darkMode, toggleDarkMode }) => (
       <img src="/logo.png" alt="Bestyy Logo" className="logo" />
     </div>
     
-    <div className="navbar-center">
-      <a href="#how-it-works" className="nav-link">How It Works</a>
-    </div>
-    
     <div className="navbar-right">
-      <a href="/login" className="login-btn">Login/Signup</a>
+      <a href="/login" className="hero__cta" style={{display: 'inline-block', padding: '0.9rem 2.2rem', fontSize: '1.15rem'}}>Login/Signup</a>
     </div>
   </nav>
 );

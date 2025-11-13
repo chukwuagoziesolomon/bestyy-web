@@ -1,226 +1,113 @@
-import { showSuccess, showError } from '../toast';
-
-// Types for WebSocket messages
-export interface VerificationNotificationData {
-  type: 'verification.status_changed';
-  user_type: 'vendor' | 'courier';
-  status: 'approved' | 'rejected' | 'pending';
-  business_name?: string;
-  admin_notes?: string;
-  timestamp: string;
-}
-
-export interface WebSocketMessage {
-  type: 'verification_notification';
-  data: VerificationNotificationData;
-}
-
-export interface WebSocketResponse {
-  success: boolean;
-  message: string;
-}
-
 class WebSocketService {
-  private vendorSocket: WebSocket | null = null;
-  private courierSocket: WebSocket | null = null;
-  private baseUrl = process.env.REACT_APP_WS_URL || 'ws://localhost:8000';
-  private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
-  private reconnectInterval = 3000;
+  private socket: WebSocket | null = null;
+  private reconnectAttempts: number = 0;
+  private maxReconnectAttempts: number = 5;
+  private reconnectDelay: number = 1000; // Start with 1 second
+  private callbacks: {
+    onOpen: ((event: Event) => void)[];
+    onClose: ((event: CloseEvent) => void)[];
+    onError: ((event: Event) => void)[];
+    onMessage: ((message: any) => void)[];
+  } = {
+    onOpen: [],
+    onClose: [],
+    onError: [],
+    onMessage: []
+  };
 
-  // Callbacks for handling notifications
-  private onVerificationNotification?: (data: VerificationNotificationData) => void;
-  private onConnectionStatusChange?: (connected: boolean) => void;
-
-  // Set callback for verification notifications
-  setVerificationNotificationCallback(callback: (data: VerificationNotificationData) => void) {
-    this.onVerificationNotification = callback;
+  constructor() {
+    // Properties are initialized above
   }
 
-  // Set callback for connection status changes
-  setConnectionStatusCallback(callback: (connected: boolean) => void) {
-    this.onConnectionStatusChange = callback;
-  }
-
-  // Connect to vendor WebSocket
-  connectVendorWebSocket(): void {
-    if (this.vendorSocket?.readyState === WebSocket.OPEN) {
+  connect(path, token) {
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      console.log('WebSocket already connected');
       return;
     }
 
-    try {
-      this.vendorSocket = new WebSocket(`${this.baseUrl}/ws/vendor/`);
+    // Build WebSocket URL
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = process.env.REACT_APP_WS_HOST || process.env.REACT_APP_API_URL?.replace(/^https?:\/\//, '') || window.location.host;
+    const url = `${protocol}//${host}${path}?token=${token}`;
 
-      this.vendorSocket.onopen = () => {
-        console.log('Vendor WebSocket connected');
-        this.reconnectAttempts = 0;
-        this.onConnectionStatusChange?.(true);
-      };
+    console.log('Connecting to WebSocket:', url);
+    this.socket = new WebSocket(url);
 
-      this.vendorSocket.onmessage = (event) => {
-        try {
-          const message: WebSocketMessage = JSON.parse(event.data);
-          
-          if (message.type === 'verification_notification') {
-            console.log('Received verification notification:', message.data);
-            this.handleVerificationNotification(message.data);
-          }
-        } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
-        }
-      };
+    this.socket.onopen = (event) => {
+      console.log('WebSocket connected successfully');
+      this.reconnectAttempts = 0;
+      this.reconnectDelay = 1000;
 
-      this.vendorSocket.onclose = () => {
-        console.log('Vendor WebSocket disconnected');
-        this.onConnectionStatusChange?.(false);
-        this.attemptReconnect('vendor');
-      };
+      this.callbacks.onOpen.forEach(callback => callback(event));
+    };
 
-      this.vendorSocket.onerror = (error) => {
-        console.error('Vendor WebSocket error:', error);
-        this.onConnectionStatusChange?.(false);
-      };
-    } catch (error) {
-      console.error('Failed to connect to vendor WebSocket:', error);
-      this.onConnectionStatusChange?.(false);
-    }
+    this.socket.onclose = (event) => {
+      console.log('WebSocket disconnected:', event.code, event.reason);
+
+      this.callbacks.onClose.forEach(callback => callback(event));
+
+      // Implement reconnection logic
+      if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
+        this.attemptReconnect(path, token);
+      }
+    };
+
+    this.socket.onerror = (error) => {
+      console.error('WebSocket error:', error);
+      this.callbacks.onError.forEach(callback => callback(error));
+    };
+
+    this.socket.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        console.log('WebSocket message received:', message);
+
+        this.callbacks.onMessage.forEach(callback => callback(message));
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error);
+      }
+    };
   }
 
-  // Connect to courier WebSocket
-  connectCourierWebSocket(): void {
-    if (this.courierSocket?.readyState === WebSocket.OPEN) {
-      return;
-    }
-
-    try {
-      this.courierSocket = new WebSocket(`${this.baseUrl}/ws/courier/`);
-
-      this.courierSocket.onopen = () => {
-        console.log('Courier WebSocket connected');
-        this.reconnectAttempts = 0;
-        this.onConnectionStatusChange?.(true);
-      };
-
-      this.courierSocket.onmessage = (event) => {
-        try {
-          const message: WebSocketMessage = JSON.parse(event.data);
-          
-          if (message.type === 'verification_notification') {
-            console.log('Received verification notification:', message.data);
-            this.handleVerificationNotification(message.data);
-          }
-        } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
-        }
-      };
-
-      this.courierSocket.onclose = () => {
-        console.log('Courier WebSocket disconnected');
-        this.onConnectionStatusChange?.(false);
-        this.attemptReconnect('courier');
-      };
-
-      this.courierSocket.onerror = (error) => {
-        console.error('Courier WebSocket error:', error);
-        this.onConnectionStatusChange?.(false);
-      };
-    } catch (error) {
-      console.error('Failed to connect to courier WebSocket:', error);
-      this.onConnectionStatusChange?.(false);
-    }
-  }
-
-  // Handle verification notification
-  private handleVerificationNotification(data: VerificationNotificationData): void {
-    if (this.onVerificationNotification) {
-      this.onVerificationNotification(data);
-    }
-
-    // Show toast notification
-    if (data.status === 'approved') {
-      showSuccess(`🎉 Congratulations! Your ${data.user_type} account has been approved!`);
-    } else if (data.status === 'rejected') {
-      showError(`❌ Your ${data.user_type} application was not approved. Please check the details.`);
-    } else {
-      showSuccess(`📋 Your ${data.user_type} account status has been updated.`);
-    }
-  }
-
-  // Attempt to reconnect WebSocket
-  private attemptReconnect(userType: 'vendor' | 'courier'): void {
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.log(`Max reconnection attempts reached for ${userType} WebSocket`);
-      return;
-    }
-
+  attemptReconnect(path, token) {
     this.reconnectAttempts++;
-    console.log(`Attempting to reconnect ${userType} WebSocket (attempt ${this.reconnectAttempts})`);
+    const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1); // Exponential backoff
+
+    console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts}) in ${delay}ms`);
 
     setTimeout(() => {
-      if (userType === 'vendor') {
-        this.connectVendorWebSocket();
-      } else {
-        this.connectCourierWebSocket();
-      }
-    }, this.reconnectInterval);
+      this.connect(path, token);
+    }, delay);
   }
 
-  // Disconnect WebSocket
-  disconnectWebSocket(userType: 'vendor' | 'courier'): void {
-    if (userType === 'vendor' && this.vendorSocket) {
-      this.vendorSocket.close();
-      this.vendorSocket = null;
-    } else if (userType === 'courier' && this.courierSocket) {
-      this.courierSocket.close();
-      this.courierSocket = null;
+  disconnect() {
+    if (this.socket) {
+      this.socket.close(1000, 'Client disconnect');
     }
   }
 
-  // Disconnect all WebSockets
-  disconnectAll(): void {
-    this.disconnectWebSocket('vendor');
-    this.disconnectWebSocket('courier');
-  }
-
-  // Check if WebSocket is connected
-  isConnected(userType: 'vendor' | 'courier'): boolean {
-    if (userType === 'vendor') {
-      return this.vendorSocket?.readyState === WebSocket.OPEN;
+  send(data) {
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(JSON.stringify(data));
     } else {
-      return this.courierSocket?.readyState === WebSocket.OPEN;
+      console.error('WebSocket is not connected');
     }
   }
 
-  // Get connection status
-  getConnectionStatus(userType: 'vendor' | 'courier'): 'connecting' | 'connected' | 'disconnected' | 'error' {
-    if (userType === 'vendor') {
-      if (!this.vendorSocket) return 'disconnected';
-      switch (this.vendorSocket.readyState) {
-        case WebSocket.CONNECTING:
-          return 'connecting';
-        case WebSocket.OPEN:
-          return 'connected';
-        case WebSocket.CLOSING:
-        case WebSocket.CLOSED:
-          return 'disconnected';
-        default:
-          return 'error';
-      }
-    } else {
-      if (!this.courierSocket) return 'disconnected';
-      switch (this.courierSocket.readyState) {
-        case WebSocket.CONNECTING:
-          return 'connecting';
-        case WebSocket.OPEN:
-          return 'connected';
-        case WebSocket.CLOSING:
-        case WebSocket.CLOSED:
-          return 'disconnected';
-        default:
-          return 'error';
+  on(event, callback) {
+    if (this.callbacks[event]) {
+      this.callbacks[event].push(callback);
+    }
+  }
+
+  off(event, callback) {
+    if (this.callbacks[event]) {
+      const index = this.callbacks[event].indexOf(callback);
+      if (index > -1) {
+        this.callbacks[event].splice(index, 1);
       }
     }
   }
 }
 
-export const websocketService = new WebSocketService();
+export const webSocketService = new WebSocketService();

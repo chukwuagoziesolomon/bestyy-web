@@ -93,13 +93,73 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  // Helper function to determine actual role by checking profiles
+  const determineActualRole = async (backendRole: string, userId?: number) => {
+    // If backend explicitly says the role is 'user', trust it and don't check for other profiles
+    // This prevents users who signed up as 'user' from being redirected to vendor/courier dashboards
+    if (backendRole === 'user') {
+      console.log('Backend role is explicitly user, not checking for other profiles');
+      return 'user';
+    }
+
+    // For non-user roles, we still check profiles to ensure they have the required profile
+    let actualRole = backendRole;
+
+    // Check for vendor profile if backend says vendor
+    if (backendRole === 'vendor') {
+      try {
+        const vendorResponse = await api.get('/api/user/vendors/me/');
+        if (vendorResponse.data && (vendorResponse.data.business_name || vendorResponse.data.id)) {
+          actualRole = 'vendor';
+          console.log('Confirmed vendor profile exists, setting role to vendor');
+          // Store vendor profile in localStorage for easy access
+          localStorage.setItem('vendor_profile', JSON.stringify(vendorResponse.data));
+        } else {
+          console.log('Vendor profile not found, keeping backend role');
+        }
+      } catch (vendorErr: any) {
+        // If 404, user doesn't have vendor profile - keep backend role
+        if (vendorErr.response?.status === 404) {
+          console.log('No vendor profile found, keeping backend role');
+        } else {
+          console.error('Error checking vendor profile:', vendorErr.response.status);
+        }
+      }
+    }
+
+    // Check for courier profile if backend says courier
+    if (backendRole === 'courier') {
+      try {
+        const courierResponse = await api.get('/api/user/couriers/me/');
+        if (courierResponse.data && (courierResponse.data.vehicle_type || courierResponse.data.id)) {
+          actualRole = 'courier';
+          console.log('Confirmed courier profile exists, setting role to courier');
+          // Store courier profile in localStorage for easy access
+          localStorage.setItem('courier_profile', JSON.stringify(courierResponse.data));
+        } else {
+          console.log('Courier profile not found, keeping backend role');
+        }
+      } catch (courierErr: any) {
+        // If 404, user doesn't have courier profile - keep backend role
+        if (courierErr.response?.status === 404) {
+          console.log('No courier profile found, keeping backend role');
+        } else {
+          console.error('Error checking courier profile:', courierErr.response.status);
+        }
+      }
+    }
+
+    console.log('Final role determined:', actualRole);
+    return actualRole;
+  };
+
   // Check if user is logged in on initial load
   useEffect(() => {
     const checkAuth = async () => {
       console.log('AuthContext - Starting auth check...');
       const token = localStorage.getItem('access_token');
       console.log('AuthContext - Token found:', token ? 'Yes' : 'No');
-      
+
       if (!token) {
         console.log('AuthContext - No token, setting loading to false');
         setLoading(false);
@@ -111,9 +171,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         // Get fresh user data from the backend using the configured axios instance
         const { data } = await api.get('/api/user/me/');
         console.log('AuthContext - API response:', data);
-        
+
         // The user data structure from /api/user/me/ endpoint
-        const userData = {
+        let userData = {
           id: data.id,
           email: data.email,
           first_name: data.first_name || '',
@@ -122,10 +182,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           phone: data.phone || '',
           ...data
         };
-        
+
         console.log('CheckAuth - Processed user data:', userData);
         console.log('CheckAuth - User role:', userData.role);
-        
+
+        // Determine actual role using helper function
+        userData.role = await determineActualRole(userData.role, userData.id);
+
         localStorage.setItem('user', JSON.stringify(userData));
         setUser(userData);
         console.log('AuthContext - User set successfully');
@@ -279,7 +342,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         phone: user.phone || '',
         ...user
       };
-      
+
+      // Determine actual role using helper function
+      userData.role = await determineActualRole(userData.role, userData.id);
+
       // Debug: Log the processed user data
       console.log('=== PROCESSED USER DATA ===');
       console.log('Final user data:', userData);
@@ -287,7 +353,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.log('Role type:', typeof userData.role);
       console.log('Role lowercase:', userData.role.toLowerCase());
       console.log('==========================');
-      
+
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
       
@@ -295,7 +361,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.log('=== ROLE-BASED REDIRECTION ===');
       console.log('User role for redirection:', userData.role);
       console.log('User role lowercase:', userData.role.toLowerCase());
-      
+
         switch(userData.role.toLowerCase()) {
           case 'vendor':
           console.log('✅ Redirecting to vendor dashboard');
@@ -342,7 +408,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const { data } = await api.get('/api/user/me/');
       
       // The user data structure from /api/user/me/ endpoint
-      const userData = {
+      let userData = {
         id: data.id,
         email: data.email,
         first_name: data.first_name || '',
@@ -354,7 +420,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       console.log('RefreshUser - Processed user data:', userData);
       console.log('RefreshUser - User role:', userData.role);
+
+      // Determine actual role using helper function
+      userData.role = await determineActualRole(userData.role, userData.id);
       
+      localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
       return userData;
     } catch (err) {

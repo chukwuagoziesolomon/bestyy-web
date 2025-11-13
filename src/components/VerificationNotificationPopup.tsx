@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { X, CheckCircle, XCircle, Clock, ExternalLink, RefreshCw } from 'lucide-react';
-import { VerificationNotificationData } from '../services/websocketService';
+
+interface VerificationNotificationData {
+  type: 'verification.status_changed';
+  user_type: 'vendor' | 'courier';
+  status: 'approved' | 'rejected' | 'pending';
+  business_name?: string;
+  admin_notes?: string;
+  timestamp: string;
+}
 
 interface VerificationNotificationPopupProps {
   notification: VerificationNotificationData;

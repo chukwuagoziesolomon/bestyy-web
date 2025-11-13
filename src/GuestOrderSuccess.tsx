@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { CheckCircle } from 'lucide-react';
 
 const GuestOrderSuccess: React.FC = () => {
   const location = useLocation();
@@ -65,9 +66,14 @@ const GuestOrderSuccess: React.FC = () => {
           fontWeight: '700',
           color: '#1f2937',
           margin: '0 0 16px 0',
-          lineHeight: '1.2'
+          lineHeight: '1.2',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 10,
         }}>
-          Order Confirmed! 🎉
+          <CheckCircle style={{ color: '#10b981', flex: '0 0 auto' }} size={32} />
+          Order Confirmed!
         </h1>
 
         <p style={{

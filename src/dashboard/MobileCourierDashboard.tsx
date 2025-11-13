@@ -145,7 +145,7 @@ const MobileCourierDashboard: React.FC = () => {
       minHeight: '100vh',
       paddingBottom: '80px'
     }}>
-      <CourierHeader title="Dashboard" />
+      <CourierHeader showCourierName={true} />
 
 
 

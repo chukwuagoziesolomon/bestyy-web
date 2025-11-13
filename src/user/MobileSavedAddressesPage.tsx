@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Home, Briefcase, Edit, Trash2, Plus, Star } from 'lucide-react';
-import MobileHeader from '../components/MobileHeader';
+import UserHeader from '../components/UserHeader';
+import UserBottomNavigation from '../components/UserBottomNavigation';
 import { useResponsive } from '../hooks/useResponsive';
 import { fetchUserAddresses, deleteUserAddress, setDefaultAddress } from '../api';
 
@@ -126,13 +127,7 @@ const MobileSavedAddressesPage: React.FC = () => {
         `}
       </style>
       {/* Header Section */}
-                           <MobileHeader
-          title="Saved Addresses"
-          subtitle="Manage your saved delivery addresses"
-          variant="default"
-          profileImageSize="medium"
-          showProfileImage={true}
-        />
+      <UserHeader />
 
       {/* Description */}
       <div style={{
@@ -363,7 +358,8 @@ const MobileSavedAddressesPage: React.FC = () => {
         </button>
       </div>
 
-             {/* Bottom Navigation is now handled by UserDashboardLayout */}
+      {/* Bottom Navigation */}
+      <UserBottomNavigation currentPath="/user/addresses" />
      </div>
    );
  };

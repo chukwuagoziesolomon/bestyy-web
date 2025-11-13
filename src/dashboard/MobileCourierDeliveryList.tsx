@@ -143,7 +143,7 @@ const MobileCourierDeliveryList: React.FC = () => {
       minHeight: '100vh',
       paddingBottom: '80px'
     }}>
-            <CourierHeader title="Delivery List" showHamburger={false} />
+            <CourierHeader showHamburger={false} />
       
       {/* Filter Button */}
       <div style={{

@@ -203,7 +203,7 @@ const MobileVendorDashboardNew: React.FC = () => {
       minHeight: '100vh',
       paddingBottom: '80px'
     }}>
-      <VendorHeader title={`Welcome Back, ${businessName}!`} />
+      <VendorHeader showBusinessName={true} />
 
       <div style={{ padding: '16px' }}>
         {/* Key Metrics Cards */}

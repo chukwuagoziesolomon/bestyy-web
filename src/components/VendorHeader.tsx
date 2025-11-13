@@ -1,19 +1,54 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Menu, User, MessageCircle, DollarSign, BarChart3, HelpCircle, Settings } from 'lucide-react';
+import NotificationBell from './NotificationBell';
+import { useAuth } from '../context/AuthContext';
+import { API_URL } from '../api';
 
 interface VendorHeaderProps {
-  title: string;
+  title?: string;
   showHamburger?: boolean;
+  showBusinessName?: boolean;
 }
 
-const VendorHeader: React.FC<VendorHeaderProps> = ({ title, showHamburger = true }) => {
+const VendorHeader: React.FC<VendorHeaderProps> = ({ title, showHamburger = true, showBusinessName = false }) => {
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
+  const { user } = useAuth();
+
+  // Get vendor profile picture and business name from localStorage vendor_profile
+  let vendorProfilePic = '/logo.png';
+  let businessName = 'Vendor';
   
-  // Get vendor profile picture and business name from localStorage
-  const vendorProfilePic = localStorage.getItem('businessLogo') || '/logo.png';
-  const businessName = localStorage.getItem('businessName') || 'Vendor';
+  const savedVendor = localStorage.getItem('vendor_profile');
+  if (savedVendor) {
+    try {
+      const vendor = JSON.parse(savedVendor);
+      const logoUrl = vendor.logo || vendor.businessLogo;
+      if (logoUrl) {
+        // If it's a relative path, prepend API_URL; otherwise use as-is (Cloudinary URL)
+        vendorProfilePic = logoUrl.startsWith('http') ? logoUrl : 
+                          logoUrl.startsWith('/') ? `${API_URL}${logoUrl}` : logoUrl;
+      }
+      businessName = vendor.business_name || vendor.businessName || businessName;
+    } catch (e) {
+      // Fallback to individual localStorage items
+      const logoUrl = localStorage.getItem('businessLogo');
+      if (logoUrl) {
+        vendorProfilePic = logoUrl.startsWith('http') ? logoUrl : 
+                          logoUrl.startsWith('/') ? `${API_URL}${logoUrl}` : logoUrl;
+      }
+      businessName = localStorage.getItem('businessName') || businessName;
+    }
+  } else {
+    // Fallback to individual localStorage items
+    const logoUrl = localStorage.getItem('businessLogo');
+    if (logoUrl) {
+      vendorProfilePic = logoUrl.startsWith('http') ? logoUrl : 
+                        logoUrl.startsWith('/') ? `${API_URL}${logoUrl}` : logoUrl;
+    }
+    businessName = localStorage.getItem('businessName') || businessName;
+  }
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -57,87 +92,95 @@ const VendorHeader: React.FC<VendorHeaderProps> = ({ title, showHamburger = true
         position: 'relative',
         overflow: 'hidden'
       }}>
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
           gap: '16px',
           flex: 1,
           minWidth: 0
         }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            flexShrink: 0
-          }}>
+          {showBusinessName && (
             <div style={{
-              width: '44px',
-              height: '44px',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 4px 16px rgba(16, 185, 129, 0.3)',
-              border: '3px solid rgba(255, 255, 255, 0.9)',
-              position: 'relative',
-              overflow: 'hidden',
+              gap: '12px',
               flexShrink: 0
             }}>
-              <img 
-                src={vendorProfilePic} 
-                alt={`${businessName}'s profile`} 
-                style={{ 
-                  width: '100%', 
-                  height: '100%',
-                  objectFit: 'cover',
-                  borderRadius: '50%'
-                }}
-              />
-              {/* Subtle inner glow */}
               <div style={{
-                position: 'absolute',
-                top: '0',
-                left: '0',
-                right: '0',
-                bottom: '0',
+                width: '44px',
+                height: '44px',
                 borderRadius: '50%',
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 100%)',
-                pointerEvents: 'none'
-              }} />
-            </div>
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'flex-start',
-              flexShrink: 0
-            }}>
-              <span style={{
-                fontSize: '18px',
-                fontWeight: '800',
-                color: '#10b981',
-                lineHeight: '1.1',
-                letterSpacing: '-0.5px',
-                textShadow: '0 1px 2px rgba(16, 185, 129, 0.1)',
-                whiteSpace: 'nowrap'
-              }}>
-                {businessName}
-              </span>
-              <span style={{
-                fontSize: '10px',
-                color: '#6b7280',
-                fontWeight: '600',
-                textTransform: 'uppercase',
-                letterSpacing: '1px',
                 background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent'
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 16px rgba(16, 185, 129, 0.3)',
+                border: '3px solid rgba(255, 255, 255, 0.9)',
+                position: 'relative',
+                overflow: 'hidden',
+                flexShrink: 0
               }}>
-                Vendor
-              </span>
+                {vendorProfilePic && vendorProfilePic !== '/logo.png' ? (
+                  <img
+                    src={vendorProfilePic}
+                    alt={`${businessName}'s profile`}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      borderRadius: '50%'
+                    }}
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                ) : null}
+                {(!vendorProfilePic || vendorProfilePic === '/logo.png') && (
+                  <div style={{
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontWeight: 600,
+                    fontSize: '18px'
+                  }}>
+                    {businessName.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                {/* Subtle inner glow */}
+                <div style={{
+                  position: 'absolute',
+                  top: '0',
+                  left: '0',
+                  right: '0',
+                  bottom: '0',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 100%)',
+                  pointerEvents: 'none'
+                }} />
+              </div>
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                flexShrink: 0
+              }}>
+                <span style={{
+                  fontSize: '18px',
+                  fontWeight: '800',
+                  color: '#10b981',
+                  lineHeight: '1.1',
+                  letterSpacing: '-0.5px',
+                  textShadow: '0 1px 2px rgba(16, 185, 129, 0.1)',
+                  whiteSpace: 'nowrap'
+                }}>
+                  {businessName}
+                </span>
+              </div>
             </div>
-          </div>
+          )}
           <div style={{
             height: '36px',
             width: '2px',
@@ -146,22 +189,47 @@ const VendorHeader: React.FC<VendorHeaderProps> = ({ title, showHamburger = true
             opacity: 0.6,
             flexShrink: 0
           }} />
-          <h1 style={{
-            fontSize: '20px',
-            fontWeight: '700',
-            margin: 0,
-            color: '#1f2937',
-            letterSpacing: '-0.5px',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis'
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            justifyContent: 'center',
+            flexShrink: 0
           }}>
-            {title}
-          </h1>
+            <span style={{
+              fontSize: '18px',
+              fontWeight: '700',
+              margin: 0,
+              color: '#1f2937',
+              letterSpacing: '-0.5px',
+              lineHeight: '1.2'
+            }}>
+              Welcome
+            </span>
+            <span style={{
+              fontSize: '18px',
+              fontWeight: '700',
+              margin: 0,
+              color: '#1f2937',
+              letterSpacing: '-0.5px',
+              lineHeight: '1.2'
+            }}>
+              back
+            </span>
+          </div>
         </div>
-        
+
+        {/* Notification Bell */}
+        {user && (
+          <NotificationBell
+            userId={user.id}
+            userType="vendor"
+            className="mobile-notification-bell"
+          />
+        )}
+
         {showHamburger && (
-          <button 
+          <button
             data-menu
             onClick={() => setShowMenu(!showMenu)}
             style={{

@@ -2,12 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Camera, Edit, Save, X, Home, List, Utensils, Layers } from 'lucide-react';
 import VendorHeader from '../components/VendorHeader';
-import VerificationBadge from '../components/VerificationBadge';
 import VendorBottomNavigation from '../components/VendorBottomNavigation';
-import VerificationStatus from '../components/VerificationStatus';
-import VerificationStatusBadge from '../components/VerificationStatusBadge';
-import VerificationNotificationPopup from '../components/VerificationNotificationPopup';
-import { websocketService, VerificationNotificationData } from '../services/websocketService';
+import { fetchVendorProfile, updateVendorProfile } from '../api';
 
 const MobileVendorProfile: React.FC = () => {
   const navigate = useNavigate();
@@ -26,9 +22,6 @@ const MobileVendorProfile: React.FC = () => {
 
   const [tempData, setTempData] = useState(profileData);
   
-  // WebSocket notification state
-  const [notification, setNotification] = useState<VerificationNotificationData | null>(null);
-  const [showNotification, setShowNotification] = useState(false);
 
   const handleInputChange = (field: string, value: string) => {
     setTempData(prev => ({
@@ -37,20 +30,39 @@ const MobileVendorProfile: React.FC = () => {
     }));
   };
 
-  const handleSave = () => {
-    setProfileData(tempData);
-    
-    // Save to localStorage
-    localStorage.setItem('businessName', tempData.businessName);
-    localStorage.setItem('vendorEmail', tempData.email);
-    localStorage.setItem('vendorPhone', tempData.phone);
-    localStorage.setItem('vendorAddress', tempData.address);
-    localStorage.setItem('vendorDescription', tempData.description);
-    if (tempData.logo) {
-      localStorage.setItem('businessLogo', tempData.logo);
+  const handleSave = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (token) {
+        const updateData = {
+          business_name: tempData.businessName,
+          phone: tempData.phone,
+          business_address: tempData.address,
+          business_description: tempData.description,
+          logo: tempData.logo
+        };
+        await updateVendorProfile(token, updateData);
+      }
+
+      setProfileData(tempData);
+
+      // Save to localStorage as backup
+      localStorage.setItem('businessName', tempData.businessName);
+      localStorage.setItem('vendorEmail', tempData.email);
+      localStorage.setItem('vendorPhone', tempData.phone);
+      localStorage.setItem('vendorAddress', tempData.address);
+      localStorage.setItem('vendorDescription', tempData.description);
+      if (tempData.logo) {
+        localStorage.setItem('businessLogo', tempData.logo);
+      }
+
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Failed to update vendor profile:', error);
+      // Still update local state even if API fails
+      setProfileData(tempData);
+      setIsEditing(false);
     }
-    
-    setIsEditing(false);
   };
 
   const handleCancel = () => {
@@ -73,47 +85,42 @@ const MobileVendorProfile: React.FC = () => {
     }
   };
 
-  // Setup WebSocket notifications
+  // Component initialization
   useEffect(() => {
-    setupWebSocketNotifications();
-    
-    // Cleanup WebSocket on unmount
-    return () => {
-      websocketService.disconnectAll();
+    const loadProfile = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        if (token) {
+          const profileData = await fetchVendorProfile(token);
+          console.log('Loaded vendor profile data:', profileData);
+          setProfileData({
+            businessName: profileData.business_name || 'Business Name',
+            email: profileData.user?.email || profileData.email || 'vendor@example.com',
+            phone: profileData.phone || '+234 000 000 0000',
+            address: profileData.business_address || 'Business Address',
+            description: profileData.business_description || 'Business Description',
+            logo: profileData.logo || null,
+            verificationStatus: profileData.verification_status || 'pending'
+          });
+          setTempData({
+            businessName: profileData.business_name || 'Business Name',
+            email: profileData.user?.email || profileData.email || 'vendor@example.com',
+            phone: profileData.phone || '+234 000 000 0000',
+            address: profileData.business_address || 'Business Address',
+            description: profileData.business_description || 'Business Description',
+            logo: profileData.logo || null,
+            verificationStatus: profileData.verification_status || 'pending'
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load vendor profile:', error);
+        // Keep existing localStorage fallback
+      }
     };
+
+    loadProfile();
   }, []);
 
-  const setupWebSocketNotifications = () => {
-    // Set up notification callback
-    websocketService.setVerificationNotificationCallback((data: VerificationNotificationData) => {
-      setNotification(data);
-      setShowNotification(true);
-    });
-
-    // Connect to vendor WebSocket
-    websocketService.connectVendorWebSocket();
-  };
-
-  // Handle notification actions
-  const handleViewStatus = () => {
-    setShowNotification(false);
-    // Scroll to verification status section
-    const verificationSection = document.querySelector('.verification-status');
-    if (verificationSection) {
-      verificationSection.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  const handleResubmit = () => {
-    setShowNotification(false);
-    // Navigate to application form or show resubmit modal
-    console.log('Resubmit application');
-  };
-
-  const handleCloseNotification = () => {
-    setShowNotification(false);
-    setNotification(null);
-  };
 
   return (
     <div style={{
@@ -122,7 +129,7 @@ const MobileVendorProfile: React.FC = () => {
       minHeight: '100vh',
       paddingBottom: '80px'
     }}>
-      <VendorHeader title="Profile" />
+      <VendorHeader />
       
       <div style={{ padding: '16px' }}>
         {/* Profile Header */}
@@ -244,26 +251,10 @@ const MobileVendorProfile: React.FC = () => {
             )}
           </p>
 
-          {/* Verification Status Badge */}
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
-            <VerificationStatusBadge 
-              userType="vendor" 
-              size="medium"
-              onClick={() => {
-                const verificationSection = document.querySelector('.verification-status');
-                if (verificationSection) {
-                  verificationSection.scrollIntoView({ behavior: 'smooth' });
-                }
-              }}
-            />
-          </div>
+          {/* Verification UI removed */}
         </div>
 
-        {/* Verification Status Section */}
-        <VerificationStatus 
-          userType="vendor" 
-          className="verification-status"
-        />
+        {/* Verification UI removed */}
 
         {/* Profile Details */}
         <div style={{
@@ -556,15 +547,6 @@ const MobileVendorProfile: React.FC = () => {
       {/* Bottom Navigation */}
       <VendorBottomNavigation currentPath="/vendor/dashboard" />
 
-      {/* WebSocket Notification Popup */}
-      {showNotification && notification && (
-        <VerificationNotificationPopup
-          notification={notification}
-          onClose={handleCloseNotification}
-          onViewStatus={handleViewStatus}
-          onResubmit={handleResubmit}
-        />
-      )}
     </div>
   );
 };
