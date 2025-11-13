@@ -119,7 +119,7 @@ const MobileProfileSettingsPage: React.FC = () => {
       console.error('Failed to load profile from API:', error);
       return populateFormFromLocalStorage(); // Fallback to localStorage
     }
-  }, [isVendor, isCourier, isUser]);
+  }, [isVendor, isCourier]);
 
   const populateFormFromLocalStorage = () => {
     // 1. First priority: vendor_profile (most complete data)
