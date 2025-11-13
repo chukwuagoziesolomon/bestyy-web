@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit2, Camera, Save } from 'lucide-react';
+import { Edit2, Save } from 'lucide-react';
 import MobileHeader from '../components/MobileHeader';
 import { useResponsive } from '../hooks/useResponsive';
 import { useImageUpload } from '../hooks/useImageUpload';
@@ -10,11 +9,9 @@ import { showError, showSuccess } from '../toast';
 
 const MobileProfileSettingsPage: React.FC = () => {
   const { isTablet } = useResponsive();
-  const navigate = useNavigate();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -82,7 +79,6 @@ const MobileProfileSettingsPage: React.FC = () => {
   const userRole = getUserRole();
   const isVendor = userRole === 'vendor';
   const isCourier = userRole === 'courier';
-  const isUser = userRole === 'user';
 
   // Smart data population function
   const populateFormFromAPI = useCallback(async () => {
