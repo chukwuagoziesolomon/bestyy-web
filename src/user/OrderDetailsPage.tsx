@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, X, MessageCircle, Clock, MapPin, Package, CreditCard, User, Phone } from 'lucide-react';
+import { ArrowLeft, X, MessageCircle } from 'lucide-react';
 import { fetchOrderDetails } from '../api';
 
 interface OrderItem {

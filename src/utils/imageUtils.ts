@@ -114,7 +114,7 @@ export const getThumbnailUrl = (url: string, size: number = 150): string => {
   }
 
   // Extract the base URL and public ID from Cloudinary URL
-  const cloudinaryRegex = /https:\/\/res\.cloudinary\.com\/([^\/]+)\/image\/upload\/(?:[^\/]*\/)?(.+)/;
+  const cloudinaryRegex = /https:\/\/res\.cloudinary\.com\/([^/]+)\/image\/upload\/(?:[^/]*\/)?(.+)/;
   const match = url.match(cloudinaryRegex);
 
   if (!match) {
@@ -137,7 +137,7 @@ export const validateCloudinaryUrl = (url: string): boolean => {
   }
 
   // Check if URL has proper format
-  const cloudinaryRegex = /^https:\/\/res\.cloudinary\.com\/[^\/]+\/image\/upload\//;
+  const cloudinaryRegex = /^https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\//;
   return cloudinaryRegex.test(url);
 };
 
@@ -150,7 +150,7 @@ export const getFallbackImageUrl = (url: string): string | null => {
   // If it's a Cloudinary URL, try to get the original without transformations
   if (url.includes('cloudinary.com')) {
     // Remove any transformation parameters and return the base URL
-    const baseUrlMatch = url.match(/(https:\/\/res\.cloudinary\.com\/[^\/]+\/image\/upload\/)[^\/]*(\/.+)/);
+    const baseUrlMatch = url.match(/(https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/)[^/]*(\/.+)/);
     if (baseUrlMatch) {
       return baseUrlMatch[1] + baseUrlMatch[2];
     }

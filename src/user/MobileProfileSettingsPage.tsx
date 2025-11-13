@@ -202,7 +202,7 @@ const MobileProfileSettingsPage: React.FC = () => {
     };
 
     loadProfile();
-  }, []);
+  }, [populateFormFromAPI]);
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Star, Filter, RotateCcw, ChevronDown, Trash2, Utensils, Building2 } from 'lucide-react';
+import { Star, Filter, Trash2, Utensils, Building2 } from 'lucide-react';
 import { fetchUserFavorites, removeFavorite } from '../api';
 import { showError, showSuccess } from '../toast';
 
