@@ -5,9 +5,11 @@ import { vendorApi, VendorProfile as VendorProfileType, MenuCategory, MenuItem, 
 import { cartApi } from './services/cartApi';
 import { useCart, CartItem } from './context/CartContext';
 import { getMenuItemImageUrl } from './utils/imageUtils';
+import { getVendorIdFromSlug } from './utils/urlUtils';
 
 const VendorProfile: React.FC = () => {
-  const { id: vendorId } = useParams<{ id: string }>();
+  const { id: vendorSlug } = useParams<{ id: string }>();
+  const vendorId = vendorSlug ? getVendorIdFromSlug(vendorSlug)?.toString() : undefined;
   const [vendor, setVendor] = useState<VendorProfileType | null>(null);
   const [menuCategories, setMenuCategories] = useState<MenuCategory[]>([]);
   const [loading, setLoading] = useState<boolean>(true);

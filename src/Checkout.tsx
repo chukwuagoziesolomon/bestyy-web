@@ -7,6 +7,7 @@ import { getThumbnailUrl } from './services/cloudinaryService';
 import { getFallbackImageUrl } from './utils/imageUtils';
 import { checkoutApi, CheckoutPayload } from './services/checkoutApi';
 import AddressAutocomplete from './components/AddressAutocomplete';
+import { getVendorProfileUrl } from './utils/urlUtils';
 
 
 interface PaymentMethod {
@@ -307,7 +308,7 @@ const Checkout: React.FC = () => {
             </svg>
             <h3>Your cart is empty</h3>
             <p>Add some delicious items from {vendor.business_name} to get started!</p>
-            <Link to={`/vendor/${vendor.id}`} className="retry-button">
+            <Link to={getVendorProfileUrl(vendor.business_name, vendor.id)} className="retry-button">
               Continue Shopping
             </Link>
           </div>
@@ -366,7 +367,7 @@ const Checkout: React.FC = () => {
   return (
     <div className="checkout-page">
       <div className="checkout-header">
-        <Link to={`/vendor/${vendor.id}`} className="back-link">
+        <Link to={getVendorProfileUrl(vendor.business_name, vendor.id)} className="back-link">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="15,18 9,12 15,6"/>
           </svg>

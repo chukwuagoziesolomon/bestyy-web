@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import './UserDashboard.css';
+import { getVendorProfileUrl } from './utils/urlUtils';
 
 const UserDashboard: React.FC = () => {
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
@@ -210,7 +211,7 @@ const UserDashboard: React.FC = () => {
           <h2>Featured</h2>
           <div className="featured-grid">
             {featuredItems.map((item, index) => (
-              <Link key={index} to={`/vendor/${item.id}`} className="featured-card-link">
+              <Link key={index} to={getVendorProfileUrl(item.name, item.id)} className="featured-card-link">
                 <div className="featured-card">
                   {item.featured && <div className="featured-badge">FEATURED</div>}
                   <div className="card-image">

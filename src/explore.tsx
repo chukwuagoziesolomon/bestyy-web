@@ -5,6 +5,8 @@ import './ExploreMobile.css';
 import Footer from './Footer';
 import { recommendationsApi, VendorRecommendation, RecommendationsResponse } from './services/recommendationsApi';
 import { vendorAutocompleteApi, VendorAutocompleteResult } from './services/vendorAutocompleteApi';
+import { bannersApi, Banner } from './services/bannersApi';
+import { getVendorProfileUrl } from './utils/urlUtils';
 
 const Explore: React.FC = () => {
   const navigate = useNavigate();
@@ -27,10 +29,94 @@ const Explore: React.FC = () => {
   const [autocompleteLoading, setAutocompleteLoading] = useState<boolean>(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // Initial load - fetch all vendors
+  // Banner slideshow state
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [currentBannerIndex, setCurrentBannerIndex] = useState<number>(0);
+  const [bannersLoading, setBannersLoading] = useState<boolean>(true);
+
+  // Fetch banners function
+  const fetchBanners = async () => {
+    try {
+      setBannersLoading(true);
+      console.log('Starting to fetch banners...');
+      
+      // Fetch all active banners (not just promotional)
+      const response = await bannersApi.getBanners({ limit: 10 });
+      
+      console.log('Banner API Response:', response);
+      console.log('Response type:', typeof response);
+      console.log('Is Array:', Array.isArray(response));
+      console.log('Response.banners:', response?.banners);
+      console.log('Response.success:', response?.success);
+      
+      // Handle response - banners should be in response.banners after API conversion
+      let bannersToSet = [];
+      
+      if (response && response.banners && Array.isArray(response.banners)) {
+        console.log('Found banners in response.banners');
+        // Filter for active banners only if is_active field exists
+        bannersToSet = response.banners.filter(banner => 
+          banner.is_active !== false // Show if is_active is true or undefined
+        );
+      } else if (Array.isArray(response)) {
+        console.log('Response itself is an array');
+        bannersToSet = response;
+      }
+      
+      console.log('Final banners to set:', bannersToSet);
+      setBanners(bannersToSet);
+      
+      if (bannersToSet.length === 0) {
+        console.warn('No banners available after processing');
+      }
+    } catch (err) {
+      console.error('Error fetching banners:', err);
+      setBanners([]);
+    } finally {
+      setBannersLoading(false);
+    }
+  };
+
+  const fetchInitialResults = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setIsSearching(false);
+
+      const response: RecommendationsResponse = await recommendationsApi.getRecommendations({
+        city: userLocation,
+        limit: 20
+      });
+
+      if (response.success) {
+        setRecommendations(response.recommendations);
+      } else {
+        setError('Failed to fetch recommendations');
+      }
+    } catch (err) {
+      console.error('Error fetching initial results:', err);
+      setError('Unable to load recommendations. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial load - fetch all vendors and banners
   useEffect(() => {
     fetchInitialResults();
+    fetchBanners();
   }, []);
+
+  // Banner auto-rotation effect
+  useEffect(() => {
+    if (banners.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setCurrentBannerIndex((prevIndex) => (prevIndex + 1) % banners.length);
+    }, 5000); // Change banner every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [banners.length]);
 
   // Autocomplete search effect - debounced
   useEffect(() => {
@@ -68,30 +154,6 @@ const Explore: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const fetchInitialResults = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      setIsSearching(false);
-
-      const response: RecommendationsResponse = await recommendationsApi.getRecommendations({
-        city: userLocation,
-        limit: 20
-      });
-
-      if (response.success) {
-        setRecommendations(response.recommendations);
-      } else {
-        setError('Failed to fetch recommendations');
-      }
-    } catch (err) {
-      console.error('Error fetching initial results:', err);
-      setError('Unable to load recommendations. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const performAutocompleteSearch = async (query: string) => {
     try {
       setAutocompleteLoading(true);
@@ -118,7 +180,8 @@ const Explore: React.FC = () => {
     setShowAutocomplete(false);
     setAutocompleteResults([]);
     // Navigate to vendor profile page
-    navigate(`/vendor/${vendor.id}`);
+    const vendorUrl = getVendorProfileUrl(vendor.business_name, vendor.id);
+    navigate(vendorUrl);
   };
 
   const handleSearchSubmit = async (e?: React.FormEvent) => {
@@ -191,29 +254,8 @@ const Explore: React.FC = () => {
           <div className="logo-location">
             <img src="/logo.png" alt="Bestyy Logo" className="header-logo" />
           </div>
-          <div className="header-controls">
-            <button className="control-btn">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-              </svg>
-            </button>
-            <button className="control-btn">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-              </svg>
-            </button>
-            <div className="profile-picture">
-              <img 
-                src={userProfile?.profile_image || userProfile?.avatar || "/user1.png"} 
-                alt="Profile" 
-              />
-            </div>
-          </div>
-        </div>
-        
-        <div className="header-search" ref={searchRef}>
+          
+          <div className="header-search" ref={searchRef}>
           <form onSubmit={handleSearchSubmit}>
             <div className="search-input-wrapper">
               <svg className="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -310,11 +352,70 @@ const Explore: React.FC = () => {
               )}
             </div>
           )}
+          </div>
         </div>
       </header>
 
+      {/* Promotional Banner Slideshow */}
+      {bannersLoading ? (
+        <div className="banner-slideshow">
+          <div className="banner-loading">Loading banners...</div>
+        </div>
+      ) : banners && banners.length > 0 ? (
+        <div className="banner-slideshow">
+          <div className="banner-container">
+            {banners.map((banner, index) => (
+              <div
+                key={banner.id}
+                className={`banner-slide ${index === currentBannerIndex ? 'active' : ''}`}
+                onClick={() => {
+                  if (banner.click_url) {
+                    if (banner.click_url.startsWith('http')) {
+                      window.open(banner.click_url, '_blank');
+                    } else {
+                      navigate(banner.click_url);
+                    }
+                  }
+                }}
+                style={{ cursor: banner.click_url ? 'pointer' : 'default' }}
+              >
+                <img 
+                  src={banner.image_url} 
+                  alt={banner.title}
+                  className="banner-image"
+                />
+                <div className="banner-content">
+                  <h2 className="banner-title">{banner.title}</h2>
+                  {banner.description && (
+                    <p className="banner-description">{banner.description}</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Navigation Dots */}
+          {banners.length > 1 && (
+            <div className="banner-dots">
+              {banners.map((_, index) => (
+                <button
+                  key={index}
+                  className={`banner-dot ${index === currentBannerIndex ? 'active' : ''}`}
+                  onClick={() => setCurrentBannerIndex(index)}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="banner-slideshow">
+          <div className="banner-loading">No promotional banners available</div>
+        </div>
+      )}
+
       {/* Category Navigation */}
-      <nav className="category-navigation">
+      <div className="category-nav">
         <div className="category-list">
           <div className="category-item active">
             <div className="category-icon">
@@ -371,23 +472,7 @@ const Explore: React.FC = () => {
             <span className="category-name">Services</span>
           </div>
         </div>
-      </nav>
-
-      {/* Promotional Banner */}
-      <section className="promotional-banner">
-        <div className="banner-slideshow">
-          <div className="banner-container">
-            <div className="banner-slide active">
-              <div className="banner-overlay"></div>
-              <div className="banner-text">
-                <h2>Weekend Getaway Special</h2>
-                <p>Exclusive shortlet deals for your weekend</p>
-                <button className="view-offers-btn">View Offers</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      </div>
 
       {/* Featured Section */}
       <section className="featured-section">
@@ -441,14 +526,21 @@ const Explore: React.FC = () => {
         {!loading && !error && vendorResults.length > 0 && (
           <div className="featured-grid">
             {vendorResults.map((vendor) => (
-              <Link to={`/vendor/${vendor.id}`} key={vendor.id} className="featured-card" onClick={() => console.log('Clicked vendor:', vendor.id)}>
+              <Link to={getVendorProfileUrl(vendor.business_name, vendor.id)} key={vendor.id} className="featured-card" onClick={() => console.log('Clicked vendor:', vendor.id)}>
                 {vendor.is_featured && (
                   <div className="featured-badge">FEATURED</div>
                 )}
                 <div className="card-image">
                   <img
-                    src={vendor.food_images?.[0]?.image ? `${process.env.REACT_APP_API_URL}${vendor.food_images[0].image}` : (vendor.logo ? `${process.env.REACT_APP_API_URL}${vendor.logo}` : "/placeholder-vendor.jpg")}
-                    alt={vendor.business_name || 'Vendor'}
+                    src={
+                      vendor.preview_image?.image ||
+                      vendor.preview_image?.thumbnail ||
+                      vendor.cover_image ||
+                      vendor.food_images?.[0]?.image ||
+                      vendor.logo ||
+                      "/placeholder-vendor.jpg"
+                    }
+                    alt={vendor.preview_image?.dish_name || vendor.business_name || 'Vendor'}
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.src = "/placeholder-vendor.jpg";
@@ -457,8 +549,8 @@ const Explore: React.FC = () => {
                 </div>
                 <div className="card-content">
                   <h3 className="vendor-name">{vendor.business_name || 'Unknown Vendor'}</h3>
-                  {vendor.food_images?.[0]?.dish_name && (
-                    <p className="dish-name">{vendor.food_images[0].dish_name}</p>
+                  {(vendor.preview_image?.dish_name || vendor.food_images?.[0]?.dish_name) && (
+                    <p className="dish-name">{vendor.preview_image?.dish_name || vendor.food_images[0].dish_name}</p>
                   )}
                   <div className="rating-info">
                     <div className="stars">
@@ -494,7 +586,10 @@ const Explore: React.FC = () => {
                   )}
                   <div className="price-section">
                     <span className="price">
-                      {vendor.food_images?.[0]?.price ? `₦ ${vendor.food_images[0].price.toLocaleString()}` : (vendor.offers_delivery ? 'Delivery available' : 'Pickup only')}
+                      {(vendor.preview_image?.price || vendor.food_images?.[0]?.price) ? 
+                        `₦ ${(vendor.preview_image?.price || vendor.food_images[0].price).toLocaleString()}` : 
+                        (vendor.offers_delivery ? 'Delivery available' : 'Pickup only')
+                      }
                     </span>
                   </div>
                   {vendor.distance && (

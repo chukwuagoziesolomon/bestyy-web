@@ -1,6 +1,14 @@
 // Unified Vendor Recommendation API Service
 // Removed mock recommendations import - using only real API data
 
+export interface PreviewImage {
+  id: number;
+  dish_name: string;
+  image: string;
+  thumbnail: string;
+  price: number;
+}
+
 export interface FoodImage {
   id: number;
   dish_name: string;
@@ -15,13 +23,15 @@ export interface VendorRecommendation {
   business_category: string;
   business_address: string;
   logo: string;
+  cover_image?: string;  // Added cover_image support
   logo_thumbnail: string;
-  food_images: FoodImage[];
+  preview_image?: PreviewImage | null;  // New: Single preview image from API
+  food_images: FoodImage[];  // Legacy support
   delivery_time: string;
   rating: number;
   total_reviews: number;
   is_featured: boolean;
-  featured_priority: number;
+  featured_priority?: number;
   recommendation_score: number;
   offers_delivery: boolean;
   service_areas: string[];
