@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar';
 import BottomNav from '../components/BottomNav';
 import MobileDashboardHome from './MobileDashboardHome';
 import MobileOrdersPage from './MobileOrdersPage';
+import ChatWithBestie from '../components/ChatWithBestie';
 import { useResponsive } from '../hooks/useResponsive';
 
 
@@ -47,6 +48,9 @@ const UserDashboardLayout: React.FC = () => {
         
         {/* Use Outlet for nested routes */}
         <Outlet context={{ isMobile, isTablet }} />
+        
+        {/* Chat With Bestie */}
+        <ChatWithBestie />
       </div>
     );
   }
@@ -76,6 +80,7 @@ const UserDashboardLayout: React.FC = () => {
           <Outlet context={{ isMobile }} />
         </div>
       </main>
+      <ChatWithBestie />
     </div>
   );
 };

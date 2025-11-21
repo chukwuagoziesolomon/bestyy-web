@@ -67,20 +67,6 @@ const UserDashboardLayout: React.FC = () => {
           margin: '0 auto', 
           padding: '40px 20px'
         }}>
-          {/* Debug indicator */}
-          <div style={{
-            position: 'fixed',
-            top: '10px',
-            right: '10px',
-            background: '#10b981',
-            color: 'white',
-            padding: '8px 12px',
-            borderRadius: '4px',
-            fontSize: '12px',
-            zIndex: 9999
-          }}>
-            Desktop View Active
-          </div>
           <Outlet context={{ isMobile }} />
         </div>
       </main>

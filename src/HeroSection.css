@@ -69,17 +69,17 @@ a.hero__cta {
 .hero__image {
   position: relative;
   width: 100%;
-  max-width: 700px;
+  max-width: 850px;
   margin: 0.5rem auto 0 auto;
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 400px;
+  min-height: 500px;
 }
 
 .hero__phone-mockup {
   width: 100%;
-  max-width: 500px;
+  max-width: 650px;
   height: auto;
   display: block;
   margin: 0 auto;

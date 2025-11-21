@@ -9,11 +9,26 @@ export function useWebSocket(token: string, path: string, callbacks: {
 } = {}) {
   const { onOpen, onClose, onError, onMessage } = callbacks;
   const callbacksRef = useRef({ onOpen, onClose, onError, onMessage });
+  const tokenRef = useRef(token);
 
   // Update callbacks ref when dependencies change
   useEffect(() => {
     callbacksRef.current = { onOpen, onClose, onError, onMessage };
   }, [onOpen, onClose, onError, onMessage]);
+
+  // Update token ref and reconnect if token changes
+  useEffect(() => {
+    if (!token || !path) return;
+
+    // If token has changed and we already have a connection, reconnect with new token
+    if (tokenRef.current !== token && tokenRef.current !== '') {
+      console.log('Token changed, reconnecting WebSocket...');
+      webSocketService.disconnect();
+      webSocketService.connect(path, token);
+    }
+    
+    tokenRef.current = token;
+  }, [token, path]);
 
   // Connect to WebSocket when component mounts
   useEffect(() => {

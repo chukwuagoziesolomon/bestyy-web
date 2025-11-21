@@ -31,12 +31,12 @@ const faqs = [
 const FAQ = () => {
   const [open, setOpen] = useState<number>(0); // First question open by default
   return (
-    <section className="faq" id="faq" data-aos="fade-up">
+    <section className="faq" id="faq">
       <div className="faq__badge">Frequently Asked Questions</div>
       <h2 className="faq__heading">Got Questions?<br />We’ve Got Answers!</h2>
       <div className="faq__list">
         {faqs.map((item, idx) => (
-          <div className={`faq__item${open === idx ? ' faq__item--open' : ''}`} key={idx} data-aos="fade-up" data-aos-delay={idx * 120}>
+          <div className={`faq__item${open === idx ? ' faq__item--open' : ''}`} key={idx}>
             <button className="faq__question" onClick={() => setOpen(open === idx ? -1 : idx)}>
               <span>{item.q}</span>
               <span className="faq__toggle">{open === idx ? '▲' : '▼'}</span>

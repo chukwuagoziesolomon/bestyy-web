@@ -10,7 +10,7 @@ import 'aos/dist/aos.css';
 
 const HowItWorks = () => {
   useEffect(() => {
-    AOS.init({ once: false, duration: 1200, offset: 120 });
+    AOS.init({ once: true, duration: 1200, offset: 120 });
   }, []);
 
   return (

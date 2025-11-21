@@ -19,7 +19,7 @@
 }
 
 .logo {
-  height: 35px;
+  height: 32px;
   width: auto;
 }
 
@@ -38,30 +38,30 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .navbar {
-    padding: 1rem;
+    padding: 0.75rem 1rem;
   }
   
   .logo {
-    height: 30px;
-  }
-  
-  .navbar-right .hero__cta {
-    padding: 0.6rem 1.2rem;
-    font-size: 0.9rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .navbar {
-    padding: 0.8rem;
-  }
-  
-  .logo {
-    height: 28px;
+    height: 26px;
   }
   
   .navbar-right .hero__cta {
     padding: 0.5rem 1rem;
     font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar {
+    padding: 0.6rem 0.75rem;
+  }
+  
+  .logo {
+    height: 24px;
+  }
+  
+  .navbar-right .hero__cta {
+    padding: 0.45rem 0.85rem;
+    font-size: 0.8rem;
   }
 }

@@ -104,11 +104,21 @@ const WhatsAppVerificationPage = () => {
     }
   };
 
-  // Poll for verification status every 5 seconds
+  // Poll for verification status every 5 seconds, stop after 5 minutes
   useEffect(() => {
     if (!isVerified && signupResponse?.phone) {
       const interval = setInterval(pollVerificationStatus, 5000);
-      return () => clearInterval(interval);
+      
+      // Stop polling after 5 minutes (300000ms)
+      const timeout = setTimeout(() => {
+        clearInterval(interval);
+        console.log('Polling stopped after 5 minutes');
+      }, 300000);
+      
+      return () => {
+        clearInterval(interval);
+        clearTimeout(timeout);
+      };
     }
   }, [signupResponse?.phone, isVerified]);
 

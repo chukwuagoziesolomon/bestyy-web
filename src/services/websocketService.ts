@@ -3,6 +3,8 @@ class WebSocketService {
   private reconnectAttempts: number = 0;
   private maxReconnectAttempts: number = 5;
   private reconnectDelay: number = 1000; // Start with 1 second
+  private currentPath: string = '';
+  private isRefreshingToken: boolean = false;
   private callbacks: {
     onOpen: ((event: Event) => void)[];
     onClose: ((event: CloseEvent) => void)[];
@@ -19,11 +21,65 @@ class WebSocketService {
     // Properties are initialized above
   }
 
-  connect(path, token) {
+  private async refreshAccessToken(): Promise<string | null> {
+    if (this.isRefreshingToken) {
+      console.log('Token refresh already in progress');
+      return null;
+    }
+
+    this.isRefreshingToken = true;
+    
+    try {
+      const refreshToken = localStorage.getItem('refresh_token');
+      if (!refreshToken) {
+        console.error('No refresh token available');
+        return null;
+      }
+
+      console.log('Refreshing access token for WebSocket...');
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000'}/api/auth/token/refresh/`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ refresh: refreshToken }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Token refresh failed');
+      }
+
+      const data = await response.json();
+      const newAccessToken = data.access;
+      
+      // Update the access token in localStorage
+      localStorage.setItem('access_token', newAccessToken);
+      console.log('Access token refreshed successfully');
+      
+      return newAccessToken;
+    } catch (error) {
+      console.error('Failed to refresh token:', error);
+      // Clear tokens and redirect to login
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      window.location.href = '/login';
+      return null;
+    } finally {
+      this.isRefreshingToken = false;
+    }
+  }
+
+  async connect(path, token) {
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
       console.log('WebSocket already connected');
       return;
     }
+
+    // Store current path for reconnection
+    this.currentPath = path;
 
     // Build WebSocket URL
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -46,8 +102,13 @@ class WebSocketService {
 
       this.callbacks.onClose.forEach(callback => callback(event));
 
-      // Implement reconnection logic
-      if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
+      // Check if it's an authentication error (code 4001 or similar)
+      // Or if connection was rejected (code 1006)
+      if (event.code === 4001 || event.code === 1006) {
+        console.log('WebSocket closed due to authentication error, attempting token refresh...');
+        this.handleAuthError(path);
+      } else if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
+        // Normal reconnection logic for other errors
         this.attemptReconnect(path, token);
       }
     };
@@ -69,6 +130,26 @@ class WebSocketService {
     };
   }
 
+  private async handleAuthError(path: string) {
+    console.log('Handling authentication error...');
+    
+    // Try to refresh the token
+    const newToken = await this.refreshAccessToken();
+    
+    if (newToken) {
+      // Reconnect with the new token
+      console.log('Reconnecting with refreshed token...');
+      this.reconnectAttempts = 0; // Reset reconnect attempts
+      setTimeout(() => {
+        this.connect(path, newToken);
+      }, 1000);
+    } else {
+      console.error('Failed to refresh token, cannot reconnect WebSocket');
+      // Don't attempt further reconnections
+      this.reconnectAttempts = this.maxReconnectAttempts;
+    }
+  }
+
   attemptReconnect(path, token) {
     this.reconnectAttempts++;
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1); // Exponential backoff
@@ -76,7 +157,9 @@ class WebSocketService {
     console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts}) in ${delay}ms`);
 
     setTimeout(() => {
-      this.connect(path, token);
+      // Get the latest token from localStorage in case it was refreshed
+      const currentToken = localStorage.getItem('access_token') || token;
+      this.connect(path, currentToken);
     }, delay);
   }
 

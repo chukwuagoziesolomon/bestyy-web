@@ -80,6 +80,7 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
+  selectProfile: (email: string, password: string, profileId: number) => Promise<void>;
   signup: (email: string, password: string, role: string, additionalData?: any) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -314,6 +315,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       const response = await api.post('/api/user/login/', { email, password });
       
+      // Check if user has multiple profiles
+      if (response.data.multiple_profiles) {
+        // Store credentials temporarily for profile selection
+        sessionStorage.setItem('temp_credentials', JSON.stringify({ email, password }));
+        sessionStorage.setItem('temp_profiles', JSON.stringify(response.data.profiles));
+        
+        // Navigate to profile selection page
+        navigate('/profile-selection', { 
+          state: { 
+            profiles: response.data.profiles,
+            message: response.data.message
+          } 
+        });
+        return;
+      }
+      
+      // Single profile - proceed with normal login
       const { access, refresh, user } = response.data;
       
       // Store tokens
@@ -323,7 +341,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Set the default authorization header for subsequent requests
       api.defaults.headers.common['Authorization'] = `Bearer ${access}`;
       
-            // Debug: Log the response to see what we're getting
       console.log('=== LOGIN DEBUG ===');
       console.log('Full response:', response.data);
       console.log('Access token:', access);
@@ -357,6 +374,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
       
+      // Merge anonymous cart with user cart after login
+      try {
+        const { cartService } = await import('../services/cartService');
+        await cartService.mergeCart();
+        console.log('Cart merge attempted after login');
+      } catch (cartError) {
+        console.error('Failed to merge cart after login:', cartError);
+        // Don't block login if cart merge fails
+      }
+      
         // Redirect based on user role
       console.log('=== ROLE-BASED REDIRECTION ===');
       console.log('User role for redirection:', userData.role);
@@ -388,6 +415,80 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const selectProfile = async (email: string, password: string, profileId: number) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await api.post('/api/user/login/select-profile/', { 
+        email, 
+        password, 
+        profile_id: profileId 
+      });
+      
+      const { access, refresh, user } = response.data;
+      
+      // Store tokens
+      localStorage.setItem('access_token', access);
+      localStorage.setItem('refresh_token', refresh);
+      
+      // Clear temporary credentials
+      sessionStorage.removeItem('temp_credentials');
+      sessionStorage.removeItem('temp_profiles');
+      
+      // Set the default authorization header
+      api.defaults.headers.common['Authorization'] = `Bearer ${access}`;
+      
+      // Process user data
+      const userData = {
+        id: user.id,
+        email: user.email,
+        first_name: user.first_name || '',
+        last_name: user.last_name || '',
+        role: user.role || 'user',
+        phone: user.phone || '',
+        ...user
+      };
+
+      // Determine actual role
+      userData.role = await determineActualRole(userData.role, userData.id);
+      
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+      
+      console.log('Profile selected:', userData);
+      
+      // Try to merge cart
+      try {
+        const { cartService } = await import('../services/cartService');
+        await cartService.mergeCart();
+        console.log('Cart merge attempted after profile selection');
+      } catch (cartError) {
+        console.error('Failed to merge cart after profile selection:', cartError);
+      }
+      
+      // Redirect based on user role
+      switch(userData.role.toLowerCase()) {
+        case 'vendor':
+          navigate('/vendor/dashboard');
+          break;
+        case 'courier':
+          navigate('/courier/dashboard');
+          break;
+        case 'admin':
+          navigate('/admin/dashboard');
+          break;
+        default:
+          navigate('/user/dashboard');
+      }
+    } catch (err) {
+      setError('Failed to select profile');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = async () => {
     try {
       await api.post('/api/auth/logout/');
@@ -396,6 +497,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } finally {
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
+      sessionStorage.removeItem('temp_credentials');
+      sessionStorage.removeItem('temp_profiles');
       setUser(null);
       navigate('/login');
     }
@@ -439,6 +542,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       loading,
       error,
       login,
+      selectProfile,
       signup,
       logout,
       refreshUser,

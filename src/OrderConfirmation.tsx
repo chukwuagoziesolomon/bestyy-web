@@ -126,6 +126,7 @@ const OrderConfirmation: React.FC = () => {
   const [showTrackOrderModal, setShowTrackOrderModal] = useState<boolean>(false);
   const [trackOrderData, setTrackOrderData] = useState<any>(null);
   const [loadingTrackOrder, setLoadingTrackOrder] = useState<boolean>(false);
+  const [liveTracking, setLiveTracking] = useState<any>(null);
 
   // WebSocket for real-time order tracking
   const token = localStorage.getItem('access_token');
@@ -307,18 +308,24 @@ const OrderConfirmation: React.FC = () => {
   };
 
   // Load track order data from API
-  const loadTrackOrderData = async () => {
+  const loadTrackOrderData = async (showModal = true) => {
     if (!orderId) return;
 
     setLoadingTrackOrder(true);
     try {
       const token = localStorage.getItem('access_token');
       const data = await fetchOrderTracking(token || '', orderId);
+      console.log('Tracking data received:', data);
       setTrackOrderData(data);
-      setShowTrackOrderModal(true);
+      setLiveTracking(data); // Update live tracking data
+      if (showModal) {
+        setShowTrackOrderModal(true);
+      }
     } catch (error) {
       console.error('Failed to load track order data:', error);
-      alert('Failed to load tracking information. Please try again.');
+      if (showModal) {
+        alert('Failed to load tracking information. Please try again.');
+      }
     } finally {
       setLoadingTrackOrder(false);
     }
@@ -358,6 +365,7 @@ const OrderConfirmation: React.FC = () => {
 
       const data = await fetchOrderConfirmation('', id, true); // Public endpoint with session support
       console.log('Order confirmation data received:', data);
+      console.log('DVA Details from API:', data.dva_details);
 
       if (data.success) {
         setOrderDetails(data);
@@ -374,7 +382,17 @@ const OrderConfirmation: React.FC = () => {
 
   useEffect(() => {
     if (orderId) {
+      // Force fresh data by adding cache-busting parameter
       fetchOrderData(orderId);
+      // Load tracking data immediately
+      loadTrackOrderData(false);
+      
+      // Auto-refresh tracking every 30 seconds
+      const trackingInterval = setInterval(() => {
+        loadTrackOrderData(false);
+      }, 30000);
+      
+      return () => clearInterval(trackingInterval);
     } else {
       setError('Order ID not found');
       setLoading(false);
@@ -504,7 +522,7 @@ const OrderConfirmation: React.FC = () => {
         <div className="status-header">
           <div className="status-icon"><Truck size={32} /></div>
           <div className="status-info">
-            <h3>Order Status: {orderDetails.order.status_display}</h3>
+            <h3>Order Status: {liveTracking?.order?.status_display || orderDetails.order.status_display}</h3>
             <p className="delivery-time">Estimated Delivery: {orderDetails.delivery.estimated_time}</p>
             {orderDetails.websocket.enabled && (
               <div className="websocket-status">
@@ -516,24 +534,40 @@ const OrderConfirmation: React.FC = () => {
             )}
           </div>
         </div>
+        
+        {/* Progress Bar */}
+        {liveTracking?.order?.progress_percentage !== undefined && (
+          <div className="order-progress-bar">
+            <div className="progress-bar-container">
+              <div 
+                className="progress-bar-fill" 
+                style={{ width: `${liveTracking.order.progress_percentage}%` }}
+              >
+                <span className="progress-text">{liveTracking.order.progress_percentage}%</span>
+              </div>
+            </div>
+            <p className="progress-label">Order Progress</p>
+          </div>
+        )}
         <div className="order-timeline">
-          {orderDetails.timeline.map((step, index) => (
+          {(liveTracking?.order?.timeline || orderDetails.timeline).map((step: any, index: number) => (
             <div key={index} className={`timeline-step ${step.completed ? 'completed' : 'pending'}`}>
               <div className="timeline-icon">
-                {step.icon === 'shopping-cart' && <ShoppingCart size={22} />}
-                {step.icon === 'credit-card' && <CreditCardIcon size={22} />}
-                {step.icon === 'check' && <Check size={22} />}
-                {step.icon === 'check-circle' && <CheckCircle size={22} />}
-                {step.icon === 'chef-hat' && <ChefHat size={22} />}
-                {step.icon === 'package' && <Package size={22} />}
-                {step.icon === 'truck' && <Truck size={22} />}
-                {step.icon === 'utensils' && <Utensils size={22} />}
+                {(step.icon === 'shopping-cart' || step.icon === '📝') && <ShoppingCart size={22} />}
+                {(step.icon === 'credit-card' || step.icon === '💳') && <CreditCardIcon size={22} />}
+                {(step.icon === 'check' || step.icon === '✅') && <Check size={22} />}
+                {(step.icon === 'check-circle' || step.icon === '✓') && <CheckCircle size={22} />}
+                {(step.icon === 'chef-hat' || step.icon === '👨‍🍳') && <ChefHat size={22} />}
+                {(step.icon === 'package' || step.icon === '📦') && <Package size={22} />}
+                {(step.icon === 'truck' || step.icon === '🚚') && <Truck size={22} />}
+                {(step.icon === 'utensils' || step.icon === '🍴') && <Utensils size={22} />}
+                {step.icon === '⏱️' && <Clock size={22} />}
               </div>
               <div className="timeline-content">
-                <h4>{step.title}</h4>
-                <p>{step.description}</p>
+                <h4>{step.title || step.label}</h4>
+                <p>{step.description || ''}</p>
                 <span className="timeline-timestamp">
-                  {new Date(step.timestamp).toLocaleString()}
+                  {step.timestamp && new Date(step.timestamp).toLocaleString()}
                 </span>
               </div>
             </div>
@@ -810,7 +844,7 @@ const OrderConfirmation: React.FC = () => {
       <div className="action-buttons">
         <button
           className="track-order-btn"
-          onClick={loadTrackOrderData}
+          onClick={() => loadTrackOrderData(true)}
           disabled={loadingTrackOrder}
         >
           {loadingTrackOrder ? 'Loading...' : 'Track Order'}

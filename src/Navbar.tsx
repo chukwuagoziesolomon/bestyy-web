@@ -14,7 +14,7 @@ const Navbar: React.FC<NavbarProps> = ({ darkMode, toggleDarkMode }) => (
     </div>
     
     <div className="navbar-right">
-      <a href="/login" className="hero__cta" style={{display: 'inline-block', padding: '0.9rem 2.2rem', fontSize: '1.15rem'}}>Login/Signup</a>
+      <a href="/login" className="hero__cta">Login/Signup</a>
     </div>
   </nav>
 );

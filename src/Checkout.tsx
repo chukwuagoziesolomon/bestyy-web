@@ -160,11 +160,15 @@ const Checkout: React.FC = () => {
   };
 
 
-  const handleQuantityChange = (itemId: number, newQuantity: number) => {
-    if (newQuantity <= 0) {
-      removeItem(itemId);
-    } else {
-      updateQuantity(itemId, newQuantity);
+  const handleQuantityChange = async (itemId: number, newQuantity: number) => {
+    try {
+      if (newQuantity <= 0) {
+        await removeItem(itemId);
+      } else {
+        await updateQuantity(itemId, newQuantity);
+      }
+    } catch (error) {
+      console.error('Failed to update cart:', error);
     }
   };
 

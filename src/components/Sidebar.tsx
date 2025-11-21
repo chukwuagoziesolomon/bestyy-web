@@ -1,10 +1,11 @@
 import React from 'react';
-import { Home, Book, MapPin, CreditCard, Star, HelpCircle, User, HeadphonesIcon } from 'lucide-react';
+import { Home, Book, MapPin, CreditCard, Star, HelpCircle, User, HeadphonesIcon, Utensils, Package } from 'lucide-react';
 import { useLocation, Link } from 'react-router-dom';
 
 const navLinks = [
   { label: 'Overview', path: '/user/dashboard', icon: <Home size={20} /> },
-  { label: 'My Orders', path: '/user/orders', icon: <Book size={20} /> },
+  { label: 'Order Food', path: '/recommendations', icon: <Utensils size={20} /> },
+  { label: 'My Orders', path: '/user/orders', icon: <Package size={20} /> },
   { label: 'Saved Addresses', path: '/user/addresses', icon: <MapPin size={20} /> },
   { label: 'Payment Methods', path: '/user/payments', icon: <CreditCard size={20} /> },
   { label: 'Favorites', path: '/user/favorites', icon: <Star size={20} /> },
@@ -69,20 +70,6 @@ const Sidebar: React.FC = () => {
           </Link>
         ))}
       </nav>
-      {/* Subscription Link */}
-      <Link
-        to="/plans"
-        style={{
-          display: 'flex', alignItems: 'center', gap: 14, padding: '0.85rem 2.2rem', borderRadius: 8,
-          textDecoration: 'none', color: location.pathname === '/plans' ? '#fff' : '#222',
-          background: location.pathname === '/plans' ? '#10b981' : 'none',
-          fontWeight: 600, fontSize: 16, marginBottom: 8, marginTop: 8,
-          transition: 'background 0.2s',
-        }}
-      >
-        <span style={{ display: 'flex', alignItems: 'center' }}><CreditCard size={20} /></span>
-        Subscription
-      </Link>
       {/* Bottom Links */}
       <div style={{ marginTop: 14 }}>
         {bottomLinks.map(link => (

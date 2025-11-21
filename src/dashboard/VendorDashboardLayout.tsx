@@ -108,7 +108,7 @@ const VendorDashboardLayout: React.FC<VendorDashboardLayoutProps> = ({ children 
       <main style={{ flex: 1, background: '#f8fafc', minHeight: '100vh', padding: '0.5rem 2.5rem 2.5rem 2.5rem' }}>
         <DashboardNavbar
           profileImageSrc={businessLogo ? getThumbnailUrl(businessLogo, 40) : ""}
-          initials={businessName ? businessName[0] : 'V'}
+          initials={businessName ? businessName[0] : (user?.first_name?.[0] || 'V')}
           userId={user?.id}
           userType={user?.role}
           businessName={businessName}

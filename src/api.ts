@@ -582,7 +582,9 @@ export async function fetchOrderConfirmation(
   useSession: boolean = false,
   signal?: AbortSignal,
 ) {
-  const url = `${API_URL}/api/user/orders/${orderId}/confirmation/`;
+  // Add cache-busting parameter to ensure fresh data
+  const timestamp = new Date().getTime();
+  const url = `${API_URL}/api/user/orders/${orderId}/confirmation/?_t=${timestamp}`;
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',

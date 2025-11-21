@@ -180,24 +180,6 @@ const UserDashboardHome = () => {
 
   return (
     <div style={{ fontFamily: 'Nunito Sans, sans-serif', color: '#111' }}>
-      {/* Debug Banner */}
-      <div style={{
-        background: '#fef3c7',
-        border: '2px solid #f59e0b',
-        borderRadius: '8px',
-        padding: '16px',
-        marginBottom: '24px',
-        color: '#92400e'
-      }}>
-        <h3 style={{ margin: '0 0 8px 0', fontSize: '18px' }}>Debug Information</h3>
-        <p style={{ margin: '0', fontSize: '14px' }}>
-          User: {user ? `${user.first_name} (${user.role})` : 'Not authenticated'} | 
-          Token: {token ? 'Present' : 'Missing'} | 
-          Loading: {loading ? 'Yes' : 'No'} | 
-          Error: {error || 'None'}
-        </p>
-      </div>
-      
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
         <div>

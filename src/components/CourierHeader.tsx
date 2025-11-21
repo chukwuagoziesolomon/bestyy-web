@@ -98,7 +98,7 @@ const CourierHeader: React.FC<CourierHeaderProps> = ({ title, showHamburger = tr
                   width: '44px',
                   height: '44px',
                   borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  background: courierProfilePic && courierProfilePic !== '/logo.png' ? 'transparent' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -119,11 +119,18 @@ const CourierHeader: React.FC<CourierHeaderProps> = ({ title, showHamburger = tr
                         borderRadius: '50%'
                       }}
                       onError={(e) => {
-                        e.currentTarget.style.display = 'none';
+                        const parent = e.currentTarget.parentElement;
+                        if (parent) {
+                          parent.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                          e.currentTarget.style.display = 'none';
+                          const fallback = document.createElement('div');
+                          fallback.style.cssText = 'width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 18px;';
+                          fallback.textContent = courierName.charAt(0).toUpperCase();
+                          parent.appendChild(fallback);
+                        }
                       }}
                     />
-                  ) : null}
-                  {(!courierProfilePic || courierProfilePic === '/logo.png') && (
+                  ) : (
                     <div style={{
                       width: '100%',
                       height: '100%',

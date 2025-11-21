@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import UserHeader from '../components/UserHeader';
 import UserBottomNavigation from '../components/UserBottomNavigation';
+import ChatWithBestie from '../components/ChatWithBestie';
 import { ChevronRight, Clock, Loader2 } from 'lucide-react';
 import { useResponsive } from '../hooks/useResponsive';
 import { fetchUserOrders } from '../api';
@@ -217,6 +218,7 @@ const MobileDashboardHome: React.FC = () => {
         </button>
 
         <button 
+          onClick={() => navigate('/recommendations')}
           style={{
             background: '#fff',
             border: 'none',
@@ -228,7 +230,7 @@ const MobileDashboardHome: React.FC = () => {
           }}
         >
           <div style={{
-            background: '#E0F2FE',
+            background: '#FEF3C7',
             width: '40px',
             height: '40px',
             borderRadius: '12px',
@@ -237,8 +239,10 @@ const MobileDashboardHome: React.FC = () => {
             justifyContent: 'center',
             marginBottom: '12px'
           }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0369A1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+              <path d="M2 17l10 5 10-5"></path>
+              <path d="M2 12l10 5 10-5"></path>
             </svg>
           </div>
           <h3 style={{ 
@@ -247,7 +251,7 @@ const MobileDashboardHome: React.FC = () => {
             fontWeight: 500,
             color: '#1e293b'
           }}>
-            Contact Support
+            Order Food
           </h3>
           <p style={{ 
             margin: 0, 
@@ -255,7 +259,7 @@ const MobileDashboardHome: React.FC = () => {
             color: '#64748b',
             lineHeight: '1.3'
           }}>
-            We're here to help
+            Browse restaurants
           </p>
         </button>
       </div>
@@ -419,6 +423,9 @@ const MobileDashboardHome: React.FC = () => {
       </div>
 
 
+
+      {/* Chat With Bestie */}
+      <ChatWithBestie />
 
       {/* Bottom Navigation */}
       <UserBottomNavigation currentPath="/user/dashboard" />

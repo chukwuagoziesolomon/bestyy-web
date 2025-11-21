@@ -169,14 +169,6 @@ const VendorProfile: React.FC = () => {
   const confirmAddToCart = async () => {
     if (!vendor || !pendingItem) return;
     try {
-      await cartApi.addItem({
-        menu_item_id: pendingItem.id,
-        quantity: 1,
-        special_instructions: specialInstructions || undefined,
-      });
-    } catch (e) {
-      console.error('Add to cart API failed; continuing with local cart', e);
-    } finally {
       const cartItem: Omit<CartItem, 'quantity'> = {
         id: pendingItem.id,
         name: pendingItem.name,
@@ -189,10 +181,16 @@ const VendorProfile: React.FC = () => {
         vendorName: vendor.business_name,
         specialInstructions: specialInstructions || undefined,
       };
-      addItem(cartItem);
+      
+      // Add to cart using new JWT-based cart service
+      await addItem(cartItem);
+      
       setShowAddModal(false);
       setPendingItem(null);
       setSpecialInstructions('');
+    } catch (error) {
+      console.error('Failed to add to cart:', error);
+      alert('Failed to add item to cart. Please try again.');
     }
   };
 

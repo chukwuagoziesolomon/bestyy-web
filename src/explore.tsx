@@ -1,11 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import './ExploreDesktop.css';
 import './ExploreMobile.css';
 import Footer from './Footer';
 import { recommendationsApi, VendorRecommendation, RecommendationsResponse } from './services/recommendationsApi';
+import { vendorAutocompleteApi, VendorAutocompleteResult } from './services/vendorAutocompleteApi';
 
 const Explore: React.FC = () => {
+  const navigate = useNavigate();
+  
   // State for user location and profile
   const [userLocation, setUserLocation] = useState<string>('Lagos');
   const userProfile = null;
@@ -17,25 +20,32 @@ const Explore: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  
+  // Autocomplete state
+  const [autocompleteResults, setAutocompleteResults] = useState<VendorAutocompleteResult[]>([]);
+  const [showAutocomplete, setShowAutocomplete] = useState<boolean>(false);
+  const [autocompleteLoading, setAutocompleteLoading] = useState<boolean>(false);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   // Initial load - fetch all vendors
   useEffect(() => {
     fetchInitialResults();
   }, []);
 
-  // Search effect - debounced search
+  // Autocomplete search effect - debounced
   useEffect(() => {
     if (searchTimeout) {
       clearTimeout(searchTimeout);
     }
 
     const timeout = setTimeout(() => {
-      if (searchTerm.trim()) {
-        performSearch(searchTerm.trim());
+      if (searchTerm.trim().length >= 2) {
+        performAutocompleteSearch(searchTerm.trim());
       } else {
-        fetchInitialResults();
+        setAutocompleteResults([]);
+        setShowAutocomplete(false);
       }
-    }, 500); // 500ms debounce
+    }, 300); // 300ms debounce for autocomplete
 
     setSearchTimeout(timeout);
 
@@ -45,6 +55,18 @@ const Explore: React.FC = () => {
       }
     };
   }, [searchTerm]);
+
+  // Click outside to close autocomplete
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowAutocomplete(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const fetchInitialResults = async () => {
     try {
@@ -70,19 +92,78 @@ const Explore: React.FC = () => {
     }
   };
 
-  const performSearch = async (query: string) => {
+  const performAutocompleteSearch = async (query: string) => {
     try {
-      setIsSearching(true);
-      setError(null);
-
-      const response: RecommendationsResponse = await recommendationsApi.getRecommendations({
-        city: userLocation,
-        limit: 20,
-        category: query // Add search query as category filter
+      setAutocompleteLoading(true);
+      
+      const response = await vendorAutocompleteApi.autocompleteSearch(query, {
+        limit: 8,
+        location: userLocation
       });
 
       if (response.success) {
-        setRecommendations(response.recommendations);
+        setAutocompleteResults(response.results);
+        setShowAutocomplete(true);
+      }
+    } catch (err) {
+      console.error('Autocomplete search error:', err);
+      setAutocompleteResults([]);
+    } finally {
+      setAutocompleteLoading(false);
+    }
+  };
+
+  const handleAutocompleteSelect = (vendor: VendorAutocompleteResult) => {
+    setSearchTerm('');
+    setShowAutocomplete(false);
+    setAutocompleteResults([]);
+    // Navigate to vendor profile page
+    navigate(`/vendor/${vendor.id}`);
+  };
+
+  const handleSearchSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    
+    if (!searchTerm.trim()) {
+      fetchInitialResults();
+      return;
+    }
+
+    try {
+      setIsSearching(true);
+      setError(null);
+      setShowAutocomplete(false);
+
+      // Use autocomplete API for full search
+      const response = await vendorAutocompleteApi.autocompleteSearch(searchTerm.trim(), {
+        limit: 50,
+        location: userLocation
+      });
+
+      if (response.success) {
+        // Convert autocomplete results to recommendations format
+        const convertedResults: VendorRecommendation[] = response.results.map(vendor => ({
+          id: vendor.id,
+          business_name: vendor.business_name,
+          business_category: vendor.category,
+          business_address: vendor.address,
+          logo: vendor.logo || '',
+          logo_thumbnail: vendor.logo || '',
+          food_images: [],
+          delivery_time: '30-45 mins',
+          rating: 4.5,
+          total_reviews: 0,
+          is_featured: false,
+          featured_priority: 0,
+          recommendation_score: 0,
+          offers_delivery: vendor.offers_delivery,
+          service_areas: vendor.service_areas.split(',').map(s => s.trim()),
+          opening_hours: vendor.opening_hours,
+          closing_hours: vendor.closing_hours,
+          is_open: true,
+        }));
+        
+        setRecommendations(convertedResults);
       } else {
         setError('Search failed');
       }
@@ -106,32 +187,10 @@ const Explore: React.FC = () => {
     <div className="explore-page">
       {/* Top Header */}
       <header className="explore-header">
-        <div className="header-left">
-          <div className="logo-section">
+        <div className="header-top">
+          <div className="logo-location">
             <img src="/logo.png" alt="Bestyy Logo" className="header-logo" />
-            <span className="location-text">{userLocation}, Nigeria</span>
           </div>
-        </div>
-        
-        <div className="header-center">
-          <div className="search-container">
-            <div className="search-input-wrapper">
-              <svg className="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8"/>
-                <path d="m21 21-4.35-4.35"/>
-              </svg>
-              <input
-                type="text"
-                placeholder={isSearching ? "Searching..." : "Search for restaurants, dishes..."}
-                className="search-input"
-                value={searchTerm}
-                onChange={handleSearchChange}
-              />
-            </div>
-          </div>
-        </div>
-        
-        <div className="header-right">
           <div className="header-controls">
             <button className="control-btn">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -152,6 +211,105 @@ const Explore: React.FC = () => {
               />
             </div>
           </div>
+        </div>
+        
+        <div className="header-search" ref={searchRef}>
+          <form onSubmit={handleSearchSubmit}>
+            <div className="search-input-wrapper">
+              <svg className="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+              </svg>
+              <input
+                type="text"
+                placeholder={isSearching ? "Searching..." : "Search for restaurants, dishes..."}
+                className="search-input"
+                value={searchTerm}
+                onChange={handleSearchChange}
+                onFocus={() => {
+                  if (autocompleteResults.length > 0) {
+                    setShowAutocomplete(true);
+                  }
+                }}
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  className="clear-search-btn"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setAutocompleteResults([]);
+                    setShowAutocomplete(false);
+                    fetchInitialResults();
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              )}
+            </div>
+          </form>
+
+          {/* Autocomplete Dropdown */}
+          {showAutocomplete && (
+            <div className="autocomplete-dropdown">
+              {autocompleteLoading ? (
+                <div className="autocomplete-loading">
+                  <div className="loading-spinner-small"></div>
+                  <span>Searching...</span>
+                </div>
+              ) : autocompleteResults.length > 0 ? (
+                <>
+                  {autocompleteResults.map((vendor) => (
+                    <div
+                      key={vendor.id}
+                      className="autocomplete-item"
+                      onClick={() => handleAutocompleteSelect(vendor)}
+                    >
+                      {vendor.logo && (
+                        <img 
+                          src={vendor.logo} 
+                          alt={vendor.business_name}
+                          className="autocomplete-logo"
+                          onError={(e) => {
+                            e.currentTarget.src = '/logo.png';
+                          }}
+                        />
+                      )}
+                      <div className="autocomplete-details">
+                        <h4 className="autocomplete-name">{vendor.business_name}</h4>
+                        <p className="autocomplete-info">
+                          {vendor.category} • {vendor.product_count} items
+                        </p>
+                        <p className="autocomplete-address">{vendor.address}</p>
+                      </div>
+                      {vendor.offers_delivery && (
+                        <span className="delivery-badge">🚚 Delivery</span>
+                      )}
+                    </div>
+                  ))}
+                  {autocompleteResults.length >= 8 && (
+                    <div className="autocomplete-footer" onClick={handleSearchSubmit}>
+                      <span>View all results for "{searchTerm}"</span>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                      </svg>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="autocomplete-empty">
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.5">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="m21 21-4.35-4.35"/>
+                  </svg>
+                  <p>No restaurants found for "{searchTerm}"</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </header>
 

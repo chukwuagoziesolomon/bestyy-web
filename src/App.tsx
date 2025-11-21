@@ -30,6 +30,7 @@ import Profile from './pages/Profile';
 import NotificationsWrapper from './components/NotificationsWrapper';
 import WhatsAppVerificationPage from './pages/WhatsAppVerificationPage';
 import BankVerificationPage from './pages/BankVerificationPage';
+import ProfileSelectionPage from './pages/ProfileSelectionPage';
 
 // Vendor Components
 import VendorDashboardLayout from './dashboard/VendorDashboardLayout';
@@ -95,11 +96,12 @@ const UserRoute: React.FC = () => {
   );
 };
 
-// Public route component that redirects authenticated users
-const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+// Public route component that redirects authenticated users only from auth pages
+const PublicRoute: React.FC<{ children: React.ReactNode; redirectIfAuth?: boolean }> = ({ children, redirectIfAuth = true }) => {
   const { user } = useAuth();
 
-  if (user) {
+  // Only redirect if redirectIfAuth is true (for login/signup pages)
+  if (user && redirectIfAuth) {
     // Redirect based on user role
     const redirectPath = user.role === 'vendor' ? '/vendor/dashboard' :
                        user.role === 'courier' ? '/courier/dashboard' :
@@ -146,7 +148,7 @@ function App() {
           <Routes>
             {/* Public routes */}
             <Route path="/" element={
-              <PublicRoute>
+              <PublicRoute redirectIfAuth={false}>
                 <>
                   <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
                   <main className="main-content">
@@ -160,6 +162,7 @@ function App() {
                           <Route index element={
                 <>
                   <HeroSection />
+                  <HowItWorks />
                   <Testimonials />
                   <FAQ />
                 </>
@@ -198,18 +201,14 @@ function App() {
             </PublicRoute>
           } />
           <Route path="/recommendations" element={
-            <PublicRoute>
-              <main>
-                <Explore />
-              </main>
-            </PublicRoute>
+            <main>
+              <Explore />
+            </main>
           } />
           <Route path="/vendor/:id" element={
-            <PublicRoute>
-              <main>
-                <VendorProfile />
-              </main>
-            </PublicRoute>
+            <main>
+              <VendorProfile />
+            </main>
           } />
           
           
@@ -220,6 +219,13 @@ function App() {
                 <UserLogin />
               </main>
             </PublicRoute>
+          } />
+          
+          {/* Profile Selection route (for multi-role users) */}
+          <Route path="/profile-selection" element={
+            <main>
+              <ProfileSelectionPage />
+            </main>
           } />
           
           {/* Role-based redirect route */}

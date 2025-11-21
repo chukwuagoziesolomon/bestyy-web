@@ -98,8 +98,9 @@
 }
 
 .how-it-works__phone {
-  width: 320px;
+  width: 420px;
   max-width: 90vw;
+  height: auto;
   transform: rotate(-10deg);
 }
 

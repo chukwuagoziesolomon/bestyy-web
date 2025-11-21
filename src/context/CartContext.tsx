@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useReducer, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, ReactNode, useEffect, useState } from 'react';
+import { cartService, CartProduct } from '../services/cartService';
 
 export interface CartItem {
   id: number;
@@ -136,39 +137,127 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 
 interface CartContextType {
   state: CartState;
-  addItem: (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => void;
-  removeItem: (id: number) => void;
-  updateQuantity: (id: number, quantity: number) => void;
+  addItem: (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => Promise<void>;
+  removeItem: (id: number) => Promise<void>;
+  updateQuantity: (id: number, quantity: number) => Promise<void>;
   updateSpecialInstructions: (id: number, instructions: string) => void;
-  clearCart: () => void;
+  clearCart: () => Promise<void>;
   replaceCart: (items: CartItem[]) => void;
+  refreshCart: () => Promise<void>;
+  loading: boolean;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(cartReducer, initialState);
+  const [loading, setLoading] = useState(false);
 
-  const addItem = (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => {
-    dispatch({ type: 'ADD_ITEM', payload: item });
+  // Convert backend cart product to frontend CartItem format
+  const convertToCartItem = (product: CartProduct): CartItem => ({
+    id: product.id,
+    name: product.name,
+    description: product.description || '',
+    price: product.price,
+    currency: 'NGN',
+    image: product.image || '',
+    category: product.category || '',
+    vendorId: product.vendor.id,
+    vendorName: product.vendor.name,
+    quantity: product.quantity,
+  });
+
+  // Load cart from backend on mount
+  useEffect(() => {
+    refreshCart();
+  }, []);
+
+  // Refresh cart from backend
+  const refreshCart = async () => {
+    try {
+      setLoading(true);
+      const response = await cartService.getCart();
+      if (response.success && response.products) {
+        const cartItems = response.products.map(convertToCartItem);
+        dispatch({ type: 'REPLACE_CART', payload: cartItems });
+      }
+    } catch (error) {
+      console.error('Failed to load cart:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const removeItem = (id: number) => {
-    dispatch({ type: 'REMOVE_ITEM', payload: { id } });
+  // Add item to cart (with backend sync)
+  const addItem = async (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => {
+    try {
+      setLoading(true);
+      const response = await cartService.addToCart(item.id, item.quantity || 1);
+      
+      if (response.success) {
+        // Refresh cart to get latest state
+        await refreshCart();
+      }
+    } catch (error: any) {
+      console.error('Failed to add item to cart:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const updateQuantity = (id: number, quantity: number) => {
-    dispatch({ type: 'UPDATE_QUANTITY', payload: { id, quantity } });
+  // Remove item from cart (with backend sync)
+  const removeItem = async (id: number) => {
+    try {
+      setLoading(true);
+      await cartService.removeItem(id);
+      dispatch({ type: 'REMOVE_ITEM', payload: { id } });
+    } catch (error) {
+      console.error('Failed to remove item:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // Update quantity (with backend sync)
+  const updateQuantity = async (id: number, quantity: number) => {
+    try {
+      setLoading(true);
+      if (quantity <= 0) {
+        await removeItem(id);
+      } else {
+        await cartService.updateQuantity(id, quantity);
+        dispatch({ type: 'UPDATE_QUANTITY', payload: { id, quantity } });
+      }
+    } catch (error) {
+      console.error('Failed to update quantity:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Update special instructions (local only for now)
   const updateSpecialInstructions = (id: number, instructions: string) => {
     dispatch({ type: 'UPDATE_SPECIAL_INSTRUCTIONS', payload: { id, instructions } });
   };
 
-  const clearCart = () => {
-    dispatch({ type: 'CLEAR_CART' });
+  // Clear cart (with backend sync)
+  const clearCart = async () => {
+    try {
+      setLoading(true);
+      await cartService.clearCart();
+      dispatch({ type: 'CLEAR_CART' });
+    } catch (error) {
+      console.error('Failed to clear cart:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // Replace cart (local only)
   const replaceCart = (items: CartItem[]) => {
     dispatch({ type: 'REPLACE_CART', payload: items });
   };
@@ -183,6 +272,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         updateSpecialInstructions,
         clearCart,
         replaceCart,
+        refreshCart,
+        loading,
       }}
     >
       {children}

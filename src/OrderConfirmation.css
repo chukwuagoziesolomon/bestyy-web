@@ -4,15 +4,33 @@
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   padding: 20px;
   font-family: 'Nunito', sans-serif;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .order-confirmation-page {
+    padding: 16px;
+    padding-bottom: 80px; /* Extra space for mobile navigation */
+  }
 }
 
 .confirmation-header {
   text-align: center;
-  margin-bottom: 30px;
-  padding: 40px 20px;
+  margin-bottom: 24px;
+  padding: 40px 24px;
   background: white;
-  border-radius: 20px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e7eb;
+}
+
+@media (max-width: 768px) {
+  .confirmation-header {
+    padding: 32px 20px;
+    margin-bottom: 20px;
+    border-radius: 12px;
+  }
 }
 
 .success-animation {
@@ -79,8 +97,17 @@
   background: white;
   border-radius: 16px;
   padding: 24px;
-  margin-bottom: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  margin-bottom: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e7eb;
+}
+
+@media (max-width: 768px) {
+  .status-card {
+    padding: 20px 16px;
+    margin-bottom: 16px;
+    border-radius: 12px;
+  }
 }
 
 .status-header {
@@ -184,8 +211,17 @@
   background: white;
   border-radius: 16px;
   padding: 24px;
-  margin-bottom: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  margin-bottom: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e7eb;
+}
+
+@media (max-width: 768px) {
+  .order-details-card {
+    padding: 20px 16px;
+    margin-bottom: 16px;
+    border-radius: 12px;
+  }
 }
 
 .order-details-card h3 {
@@ -196,10 +232,49 @@
 }
 
 .vendor-info {
-  background: #f9fafb;
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 20px;
+  border: 1px solid #e5e7eb;
+}
+
+.vendor-info .vendor-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vendor-info > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+
+.vendor-info > div:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+  .vendor-info {
+    padding: 14px;
+    margin-bottom: 16px;
+  }
+  
+  .vendor-info .vendor-name {
+    font-size: 16px;
+  }
+  
+  .vendor-info > div {
+    font-size: 13px;
+  }
 }
 
 .vendor-name {
@@ -214,7 +289,11 @@
 }
 
 .order-items {
-  margin-bottom: 20px;
+  margin: 20px 0;
+  background: #fafafa;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #f3f4f6;
 }
 
 .order-item {
@@ -222,7 +301,22 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.order-item:last-child {
+  border-bottom: none;
+}
+
+@media (max-width: 768px) {
+  .order-items {
+    padding: 14px;
+    margin: 16px 0;
+  }
+  
+  .order-item {
+    padding: 10px 0;
+  }
 }
 
 .item-info {
@@ -247,64 +341,138 @@
 }
 
 .price-breakdown {
-  background: #f9fafb;
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
   border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 20px;
+  padding: 18px;
+  margin: 20px 0;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .price-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
-  font-size: 14px;
+  padding: 10px 0;
+  font-size: 15px;
   color: #6b7280;
 }
 
 .price-row.total {
   font-weight: 700;
-  font-size: 16px;
+  font-size: 18px;
   color: #1f2937;
-  border-top: 1px solid #e5e7eb;
-  margin-top: 8px;
-  padding-top: 12px;
+  border-top: 2px solid #10b981;
+  margin-top: 12px;
+  padding-top: 14px;
 }
 
+@media (max-width: 768px) {
+  .price-breakdown {
+    padding: 14px;
+    margin: 16px 0;
+  }
+  
+  .price-row {
+    padding: 8px 0;
+    font-size: 14px;
+  }
+  
+  .price-row.total {
+    font-size: 16px;
+    padding-top: 12px;
+  }
+}
+
+.customer-info,
+.courier-info,
 .delivery-address,
 .payment-method,
+.payment-status,
 .order-time {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #fafafa;
+  border-radius: 10px;
+  border: 1px solid #f3f4f6;
 }
 
+.customer-info h4,
+.courier-info h4,
 .delivery-address h4,
 .payment-method h4,
+.payment-status h4,
 .order-time h4 {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
-  color: #374151;
-  margin: 0 0 4px 0;
+  color: #1f2937;
+  margin: 0 0 12px 0;
+}
+
+.customer-info > div,
+.courier-info > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.customer-info > div:last-child,
+.courier-info > div:last-child {
+  margin-bottom: 0;
 }
 
 .delivery-address p,
 .payment-method p,
+.payment-status p,
 .order-time p {
   font-size: 14px;
   color: #6b7280;
   margin: 0;
-  line-height: 1.4;
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .customer-info,
+  .courier-info,
+  .delivery-address,
+  .payment-method,
+  .payment-status,
+  .order-time {
+    padding: 14px;
+    margin-bottom: 16px;
+  }
+  
+  .customer-info h4,
+  .courier-info h4,
+  .delivery-address h4,
+  .payment-method h4,
+  .payment-status h4,
+  .order-time h4 {
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+  
+  .customer-info > div,
+  .courier-info > div {
+    font-size: 13px;
+  }
 }
 
 /* Action Buttons */
 .action-buttons {
   display: flex;
   gap: 12px;
-  margin-bottom: 30px;
+  margin: 24px 0;
+  flex-wrap: wrap;
 }
 
 .track-order-btn,
 .order-again-btn {
   flex: 1;
+  min-width: 200px;
   padding: 16px 24px;
   border-radius: 12px;
   text-decoration: none;
@@ -312,6 +480,24 @@
   font-weight: 600;
   font-size: 16px;
   transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+}
+
+@media (max-width: 768px) {
+  .action-buttons {
+    flex-direction: column;
+    gap: 10px;
+    margin: 20px 0;
+  }
+  
+  .track-order-btn,
+  .order-again-btn {
+    width: 100%;
+    min-width: unset;
+    padding: 14px 20px;
+    font-size: 15px;
+  }
 }
 
 .track-order-btn {
@@ -851,11 +1037,20 @@
 }
 
 .bank-transfer-card {
-  background: white;
+  background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
   border-radius: 16px;
   padding: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   border: 1px solid #e5e7eb;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+  .bank-transfer-card {
+    padding: 20px 16px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+  }
 }
 
 .transfer-header {
@@ -922,14 +1117,23 @@
   background: none;
   border: none;
   cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  transition: background 0.2s ease;
-  font-size: 14px;
+  padding: 6px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  color: #6b7280;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .copy-btn:hover {
   background: #f3f4f6;
+  color: #10b981;
+  transform: scale(1.1);
+}
+
+.copy-btn:active {
+  transform: scale(0.95);
 }
 
 .instructions-section {
@@ -1874,5 +2078,182 @@
   .track-actions .action-btn {
     width: 100%;
     min-width: unset;
+  }
+}
+
+/* Order Progress Bar */
+.order-progress-bar {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.progress-bar-container {
+  width: 100%;
+  height: 32px;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-radius: 16px;
+  transition: width 0.5s ease;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 12px;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar-fill::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.progress-text {
+  font-size: 13px;
+  font-weight: 700;
+  color: white;
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.progress-label {
+  font-size: 13px;
+  color: #6b7280;
+  text-align: center;
+  margin-top: 8px;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .order-progress-bar {
+    margin-top: 16px;
+    padding-top: 16px;
+  }
+  
+  .progress-bar-container {
+    height: 28px;
+  }
+  
+  .progress-text {
+    font-size: 12px;
+    padding-right: 8px;
+  }
+  
+  .progress-label {
+    font-size: 12px;
+  }
+}
+
+/* OTP and Login Credentials Styling */
+.otp-row {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid #a7f3d0;
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.otp-row strong {
+  color: #065f46;
+  font-weight: 700;
+}
+
+.otp-info {
+  font-size: 13px;
+  color: #059669;
+  margin-top: 8px;
+  font-style: italic;
+}
+
+.login-details {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  padding: 18px;
+  border-radius: 12px;
+  border: 1px solid #bae6fd;
+  margin: 24px 0;
+}
+
+.login-details h4 {
+  color: #0c4a6e;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.login-details > div {
+  background: white;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid #e0f2fe;
+}
+
+.login-details > div:last-of-type {
+  margin-bottom: 12px;
+}
+
+.login-details strong {
+  color: #0369a1;
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+@media (max-width: 768px) {
+  .otp-row {
+    padding: 10px 14px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .login-details {
+    padding: 16px;
+    margin: 20px 0;
+  }
+  
+  .login-details h4 {
+    font-size: 15px;
+  }
+  
+  .login-details > div {
+    padding: 8px 10px;
+    font-size: 13px;
+    flex-wrap: wrap;
   }
 }
