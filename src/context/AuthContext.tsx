@@ -30,38 +30,17 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
-    // If error is 401 and we haven't tried to refresh yet
-    if (error.response.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      
-      try {
-        const refreshToken = localStorage.getItem('refresh_token');
-        if (refreshToken) {
-          const response = await axios.post(
-            `${process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000'}/api/auth/token/refresh/`,
-            { refresh: refreshToken },
-            {
-              baseURL: `${process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000'}`
-            }
-          );
-          
-          const { access } = response.data;
-          localStorage.setItem('access_token', access);
-          
-          // Update the authorization header
-          originalRequest.headers.Authorization = `Bearer ${access}`;
-          
-          // Retry the original request with new token
-          return api(originalRequest);
-        }
-      } catch (error) {
-        // If refresh fails, clear tokens and redirect to login
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        window.location.href = '/login';
-        return Promise.reject(error);
-      }
+    // Skip auto-refresh if this request has the skip flag
+    if (originalRequest?.skipRefresh) {
+      return Promise.reject(error);
     }
+    
+    // TODO: Implement token refresh once backend endpoint is ready
+    // For now, skip auto-refresh to prevent logout on failed refresh attempts
+    // If error is 401 and we haven't tried to refresh yet
+    // if (error.response?.status === 401 && !originalRequest._retry) {
+    //   ... token refresh logic would go here ...
+    // }
     
     return Promise.reject(error);
   }
@@ -73,6 +52,7 @@ interface User {
   first_name: string;
   last_name: string;
   role: string;
+  phone?: string;
 }
 
 interface AuthContextType {
@@ -84,6 +64,7 @@ interface AuthContextType {
   signup: (email: string, password: string, role: string, additionalData?: any) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  setUserFromSignup: (userData: any) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -167,10 +148,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return;
       }
 
+      // First check if we already have user data in localStorage (from signup)
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser);
+          console.log('AuthContext - Found user in localStorage:', userData);
+          setUser(userData);
+          setLoading(false);
+          return;
+        } catch (parseErr) {
+          console.warn('Failed to parse stored user:', parseErr);
+        }
+      }
+
+      // Only make API call if we don't have user data in localStorage
       try {
         console.log('AuthContext - Making API call to /api/user/me/');
         // Get fresh user data from the backend using the configured axios instance
-        const { data } = await api.get('/api/user/me/');
+        const { data } = await api.get('/api/user/me/', { 
+          // @ts-ignore - skipRefresh is a custom config flag
+          skipRefresh: true 
+        });
         console.log('AuthContext - API response:', data);
 
         // The user data structure from /api/user/me/ endpoint
@@ -187,18 +186,33 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.log('CheckAuth - Processed user data:', userData);
         console.log('CheckAuth - User role:', userData.role);
 
-        // Determine actual role using helper function
-        userData.role = await determineActualRole(userData.role, userData.id);
+        // Only determine actual role for vendor/courier to avoid extra API calls
+        if (userData.role !== 'user') {
+          try {
+            userData.role = await determineActualRole(userData.role, userData.id);
+          } catch (roleErr) {
+            console.warn('Failed to determine actual role, using backend role:', roleErr);
+            // Keep the backend role if determination fails
+          }
+        }
 
         localStorage.setItem('user', JSON.stringify(userData));
         setUser(userData);
         console.log('AuthContext - User set successfully');
       } catch (err) {
         console.error('Auth check failed:', err);
-        // Clear invalid token on error
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        setUser(null);
+        // Only clear tokens if it's a clear auth failure (401 specifically during GET /api/user/me/)
+        // Don't rely on refresh interceptor - handle it here
+        if (err.response?.status === 401) {
+          console.warn('Auth check got 401, clearing tokens');
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          localStorage.removeItem('user');
+          setUser(null);
+        } else {
+          // For other errors, keep user logged in but don't update data
+          console.warn('Auth check got non-401 error, keeping user session:', err.message);
+        }
       } finally {
         console.log('AuthContext - Setting loading to false');
         setLoading(false);
@@ -536,6 +550,46 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const setUserFromSignup = async (signupResponse: any) => {
+    try {
+      // Extract user data from signup response
+      const { user: responseUser } = signupResponse;
+      
+      if (!responseUser) {
+        console.error('No user data in signup response');
+        throw new Error('No user data in signup response');
+      }
+
+      console.log('setUserFromSignup - Raw response user:', responseUser);
+
+      // Build user object from signup response
+      const userData: User = {
+        id: responseUser.id,
+        email: responseUser.email,
+        first_name: responseUser.first_name || '',
+        last_name: responseUser.last_name || '',
+        role: responseUser.role || 'user',
+        phone: responseUser.phone || '',
+      };
+
+      console.log('setUserFromSignup - Processed user data:', userData);
+      console.log('setUserFromSignup - User role:', userData.role);
+
+      // Don't call determineActualRole here - just use the role from signup response
+      // The role will be verified when user navigates to protected routes
+      
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+      setLoading(false);
+      console.log('✅ User set from signup response');
+    } catch (err) {
+      console.error('Failed to set user from signup:', err);
+      // Don't clear tokens - just stop loading
+      setLoading(false);
+      throw err;
+    }
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -546,6 +600,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       signup,
       logout,
       refreshUser,
+      setUserFromSignup,
     }}>
       {children}
     </AuthContext.Provider>

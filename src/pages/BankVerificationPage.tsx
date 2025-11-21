@@ -122,11 +122,10 @@ const BankVerificationPage = () => {
         setIsVerified(true);
         showSuccess('Bank details verified successfully!');
         setTimeout(() => {
-          // After bank verification, go to correct dashboard
-          let dashboardPath = '/vendor/dashboard';
-          if (userType === 'courier') dashboardPath = '/courier/dashboard';
-          // Redirect
-          navigate(dashboardPath);
+          // After bank verification, go to success page with userType
+          navigate('/success', {
+            state: { userType }
+          });
         }, 2000);
       } else {
         showError(bankResponse.error || 'Bank verification failed');
@@ -139,11 +138,11 @@ const BankVerificationPage = () => {
     }
   };
 
-  // Skip bank verification and go directly to dashboard
+  // Skip bank verification and go to success page
   const handleSkip = () => {
-    let dashboardPath = '/vendor/dashboard';
-    if (userType === 'courier') dashboardPath = '/courier/dashboard';
-    navigate(dashboardPath);
+    navigate('/success', {
+      state: { userType }
+    });
   };
 
   if (isVerified) {

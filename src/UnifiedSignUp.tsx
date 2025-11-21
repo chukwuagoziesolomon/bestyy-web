@@ -48,7 +48,7 @@ type UnifiedFormData = {
 const UnifiedSignUp = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signup } = useAuth();
+  const { signup, setUserFromSignup } = useAuth();
 
   // Check for pre-selected role from navigation state
   const preSelectedRole = location.state?.preSelectedRole;
@@ -235,6 +235,16 @@ const UnifiedSignUp = () => {
 
           if (isUserOnly) {
             showSuccess('Account created successfully! Redirecting to your dashboard...');
+            // Set user in context directly from signup response to avoid async issues
+            try {
+              console.log('🔵 Setting user from signup response...');
+              await setUserFromSignup(response);
+              console.log('✅ User set from signup response');
+            } catch (setUserError) {
+              console.error('❌ setUserFromSignup failed:', setUserError);
+              // Still navigate even if setting user fails - tokens are stored
+              console.log('⚠️ Navigating to dashboard despite setUserFromSignup error');
+            }
             // Go straight to user dashboard for user-only signup
             navigate('/user/dashboard', { replace: true });
           } else {

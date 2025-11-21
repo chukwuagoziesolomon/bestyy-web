@@ -25,12 +25,16 @@ export const authService = {
     return response.data;
   },
 
-  // Refresh access token
+  // Refresh access token - TODO: Implement once backend endpoint is ready
   refreshToken: async (refreshToken: string) => {
-    const response = await axios.post(`${API_URL}/api/auth/token/refresh/`, {
-      refresh: refreshToken
-    });
-    return response.data;
+    // For now, throw an error since endpoint doesn't exist
+    throw new Error('Token refresh endpoint not yet implemented on backend');
+    
+    // Old code kept for reference:
+    // const response = await axios.post(`${API_URL}/api/auth/token/refresh/`, {
+    //   refresh: refreshToken
+    // });
+    // return response.data;
   },
 
   // Logout

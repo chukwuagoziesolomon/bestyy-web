@@ -1,13 +1,12 @@
 import React from 'react';
-import { Home, Book, MapPin, CreditCard, Star, HelpCircle, User, HeadphonesIcon, Utensils, Package } from 'lucide-react';
+import { Home, MapPin, Star, HelpCircle, User, HeadphonesIcon, Package, Store } from 'lucide-react';
 import { useLocation, Link } from 'react-router-dom';
 
 const navLinks = [
   { label: 'Overview', path: '/user/dashboard', icon: <Home size={20} /> },
-  { label: 'Order Food', path: '/recommendations', icon: <Utensils size={20} /> },
+  { label: 'Browse Restaurants', path: '/recommendations', icon: <Store size={20} /> },
   { label: 'My Orders', path: '/user/orders', icon: <Package size={20} /> },
   { label: 'Saved Addresses', path: '/user/addresses', icon: <MapPin size={20} /> },
-  { label: 'Payment Methods', path: '/user/payments', icon: <CreditCard size={20} /> },
   { label: 'Favorites', path: '/user/favorites', icon: <Star size={20} /> },
 ];
 

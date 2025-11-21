@@ -66,8 +66,9 @@ import ResponsiveSavedAddresses from './user/ResponsiveSavedAddresses';
 import MobileAddAddressPage from './user/MobileAddAddressPage';
 import ResponsiveFavorites from './user/ResponsiveFavorites';
 
-import ResponsivePaymentMethods from './user/ResponsivePaymentMethods';
-import ResponsiveAddCard from './user/ResponsiveAddCard';
+// Payment Methods removed - see routes commented out below
+// import ResponsivePaymentMethods from './user/ResponsivePaymentMethods';
+// import ResponsiveAddCard from './user/ResponsiveAddCard';
 import ResponsiveProfileSettings from './user/ResponsiveProfileSettings';
 import RoleBasedRedirect from './components/RoleBasedRedirect';
 
@@ -276,8 +277,9 @@ function App() {
             <Route path="favorites" element={<ResponsiveFavorites />} />
             <Route path="notifications" element={<NotificationsWrapper />} />
     
-            <Route path="payments" element={<ResponsivePaymentMethods />} />
-            <Route path="payments/add" element={<ResponsiveAddCard />} />
+            {/* Payment Methods route removed as requested */}
+            {/* <Route path="payments" element={<ResponsivePaymentMethods />} /> */}
+            {/* <Route path="payments/add" element={<ResponsiveAddCard />} /> */}
             <Route path="settings" element={<ResponsiveProfileSettings />} />
           </Route>
 

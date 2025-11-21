@@ -27,41 +27,44 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config;
-    
-    // If the error status is 401 and we haven't tried to refresh yet
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      
-      try {
-        const refreshToken = localStorage.getItem('refresh_token');
-        if (!refreshToken) {
-          // No refresh token available, redirect to login
-          window.location.href = '/login';
-          return Promise.reject(error);
-        }
-        
-        // Attempt to refresh the token
-        const { access } = await authService.refreshToken(refreshToken);
-        
-        // Store the new token
-        localStorage.setItem('access_token', access);
-        
-        // Update the authorization header
-        originalRequest.headers.Authorization = `Bearer ${access}`;
-        
-        // Retry the original request with the new token
-        return api(originalRequest);
-      } catch (refreshError) {
-        // If refresh fails, clear tokens and redirect to login
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        window.location.href = '/login';
-        return Promise.reject(refreshError);
-      }
-    }
-    
+    // TODO: Implement token refresh once backend endpoint is ready
+    // For now, just reject errors without attempting refresh
     return Promise.reject(error);
+    
+    // Old code kept for reference:
+    // const originalRequest = error.config;
+    
+    // // If the error status is 401 and we haven't tried to refresh yet
+    // if (error.response?.status === 401 && !originalRequest._retry) {
+    //   originalRequest._retry = true;
+      
+    //   try {
+    //     const refreshToken = localStorage.getItem('refresh_token');
+    //     if (!refreshToken) {
+    //       // No refresh token available, redirect to login
+    //       window.location.href = '/login';
+    //       return Promise.reject(error);
+    //     }
+        
+    //     // Attempt to refresh the token
+    //     const { access } = await authService.refreshToken(refreshToken);
+        
+    //     // Store the new token
+    //     localStorage.setItem('access_token', access);
+        
+    //     // Update the authorization header
+    //     originalRequest.headers.Authorization = `Bearer ${access}`;
+        
+    //     // Retry the original request with the new token
+    //     return api(originalRequest);
+    //   } catch (refreshError) {
+    //     // If refresh fails, clear tokens and redirect to login
+    //     localStorage.removeItem('access_token');
+    //     localStorage.removeItem('refresh_token');
+    //     window.location.href = '/login';
+    //     return Promise.reject(refreshError);
+    //   }
+    // }
   }
 );
 

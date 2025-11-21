@@ -36,36 +36,37 @@ class WebSocketService {
         return null;
       }
 
-      console.log('Refreshing access token for WebSocket...');
-      const response = await fetch(
-        `${process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000'}/api/auth/token/refresh/`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ refresh: refreshToken }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Token refresh failed');
-      }
-
-      const data = await response.json();
-      const newAccessToken = data.access;
+      // TODO: Implement token refresh once backend endpoint is ready
+      console.log('Token refresh not yet implemented on backend');
+      return null;
       
-      // Update the access token in localStorage
-      localStorage.setItem('access_token', newAccessToken);
-      console.log('Access token refreshed successfully');
+      // Old code kept for reference:
+      // console.log('Refreshing access token for WebSocket...');
+      // const response = await fetch(
+      //   `${process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000'}/api/auth/token/refresh/`,
+      //   {
+      //     method: 'POST',
+      //     headers: {
+      //       'Content-Type': 'application/json',
+      //     },
+      //     body: JSON.stringify({ refresh: refreshToken }),
+      //   }
+      // );
+
+      // if (!response.ok) {
+      //   throw new Error('Token refresh failed');
+      // }
+
+      // const data = await response.json();
+      // const newAccessToken = data.access;
       
-      return newAccessToken;
+      // // Update the access token in localStorage
+      // localStorage.setItem('access_token', newAccessToken);
+      // console.log('Access token refreshed successfully');
+      
+      // return newAccessToken;
     } catch (error) {
       console.error('Failed to refresh token:', error);
-      // Clear tokens and redirect to login
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      window.location.href = '/login';
       return null;
     } finally {
       this.isRefreshingToken = false;
