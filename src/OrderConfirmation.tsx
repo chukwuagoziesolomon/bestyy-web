@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import './OrderConfirmation.css';
+import PremiumLoadingAnimation from './components/PremiumLoadingAnimation';
 import { fetchOrderConfirmation, fetchOrderTracking, API_URL } from './api';
 import { useWebSocket } from './hooks/useWebSocket';
 import { Check, CheckCircle, ShoppingCart, CreditCard as CreditCardIcon, ChefHat, Package, Truck, Utensils, Star, Phone, MapPin, User as UserIcon, Mail, AlertTriangle, Clipboard, Clock, MessageCircle, Landmark, Banknote } from 'lucide-react';
@@ -402,10 +403,7 @@ const OrderConfirmation: React.FC = () => {
   if (loading) {
     return (
       <div className="order-confirmation-page">
-        <div className="loading-state">
-          <div className="loading-spinner"></div>
-          <p>Loading order details...</p>
-        </div>
+        <PremiumLoadingAnimation message="Loading order details..." />
       </div>
     );
   }

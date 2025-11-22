@@ -8,6 +8,7 @@ import { getFallbackImageUrl } from './utils/imageUtils';
 import { checkoutApi, CheckoutPayload } from './services/checkoutApi';
 import AddressAutocomplete from './components/AddressAutocomplete';
 import { getVendorProfileUrl } from './utils/urlUtils';
+import PremiumLoadingAnimation from './components/PremiumLoadingAnimation';
 
 
 interface PaymentMethod {
@@ -271,16 +272,7 @@ const Checkout: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className="checkout-page">
-        <div className="loading-state">
-          <div className="loading-content">
-            <div className="loading-spinner"></div>
-            <p>Loading checkout...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <PremiumLoadingAnimation message="Preparing checkout..." />;
   }
 
   if (!vendor) {

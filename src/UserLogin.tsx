@@ -4,6 +4,7 @@ import './styles/loading-spinner.css';
 import { showError } from './toast';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
+import PremiumLoadingAnimation from './components/PremiumLoadingAnimation';
 
 interface UserLoginProps {
   isSignUp?: boolean;
@@ -32,6 +33,17 @@ const UserLogin: React.FC<UserLoginProps> = ({ isSignUp = false }) => {
       setIsLoading(false);
     }
   };
+
+  // Show loading animation while logging in
+  if (isLoading) {
+    return (
+      <div className="user-login__bg">
+        <div className="user-login__card" style={{ border: 'none', boxShadow: 'none', background: 'transparent' }}>
+          <PremiumLoadingAnimation message="Signing in..." />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="user-login__bg">

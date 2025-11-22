@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import './VendorProfile.css';
+import PremiumLoadingAnimation from './components/PremiumLoadingAnimation';
 import { vendorApi, VendorProfile as VendorProfileType, MenuCategory, MenuItem, VendorProfileResponse, VendorMenuResponse } from './services/vendorApi';
 import { cartApi } from './services/cartApi';
 import { useCart, CartItem } from './context/CartContext';
@@ -279,12 +280,7 @@ const VendorProfile: React.FC = () => {
   if (loading) {
     return (
       <div className="vendor-profile-page">
-        <div className="loading-state">
-          <div className="loading-content">
-            <div className="loading-spinner"></div>
-            <p>Loading vendor profile...</p>
-          </div>
-        </div>
+        <PremiumLoadingAnimation message="Loading vendor profile..." />
       </div>
     );
   }

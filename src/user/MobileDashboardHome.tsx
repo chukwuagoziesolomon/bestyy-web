@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import UserHeader from '../components/UserHeader';
 import UserBottomNavigation from '../components/UserBottomNavigation';
 import ChatWithBestie from '../components/ChatWithBestie';
-import { ChevronRight, Clock, Loader2 } from 'lucide-react';
+import { ChevronRight, Clock } from 'lucide-react';
+import PremiumLoadingAnimation from '../components/PremiumLoadingAnimation';
 import { useResponsive } from '../hooks/useResponsive';
 import { fetchUserOrders } from '../api';
 
@@ -306,20 +307,7 @@ const MobileDashboardHome: React.FC = () => {
         </div>
         
         {loading ? (
-          <div style={{ 
-            padding: '32px 16px', 
-            textAlign: 'center',
-            color: '#64748b',
-            fontSize: '13px',
-            lineHeight: '1.4',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px'
-          }}>
-            <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
-            Loading orders...
-          </div>
+          <PremiumLoadingAnimation message="Loading your dashboard..." />
         ) : error ? (
           <div style={{ 
             padding: '32px 16px', 

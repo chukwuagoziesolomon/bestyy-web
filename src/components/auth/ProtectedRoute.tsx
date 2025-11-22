@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import '../../styles/common.css';
+import PremiumLoadingAnimation from '../PremiumLoadingAnimation';
 
 interface ProtectedRouteProps {
   roles?: string[];
@@ -29,11 +30,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Show loading state while checking auth
   if (loading || isChecking) {
-    return (
-      <div className="centered-container">
-        <div className="loading-spinner-container" />
-      </div>
-    );
+    return <PremiumLoadingAnimation message="Loading..." />;
   }
 
   // If user is not authenticated, redirect to login

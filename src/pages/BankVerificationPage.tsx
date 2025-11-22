@@ -4,6 +4,7 @@ import { ArrowLeft, CreditCard, Building2, CheckCircle, Upload } from 'lucide-re
 import { showError, showSuccess } from '../toast';
 import { useImageUpload } from '../hooks/useImageUpload';
 import { fetchSupportedBanks, verifyBankAccount } from '../api';
+import PremiumLoadingAnimation from '../components/PremiumLoadingAnimation';
 
 const BankVerificationPage = () => {
   const navigate = useNavigate();
@@ -215,6 +216,11 @@ const BankVerificationPage = () => {
         </div>
       </div>
     );
+  }
+
+  // Show loading while submitting
+  if (isLoading) {
+    return <PremiumLoadingAnimation message="Verifying bank details..." />;
   }
 
   return (

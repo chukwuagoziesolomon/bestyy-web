@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, MessageCircle, Copy, ExternalLink, RefreshCw, CheckCircle } from 'lucide-react';
 import { resendVerificationCode, checkVerificationStatus } from '../api';
 import { showSuccess, showError } from '../toast';
+import PremiumLoadingAnimation from '../components/PremiumLoadingAnimation';
 
 const WhatsAppVerificationPage = () => {
   const navigate = useNavigate();
@@ -121,6 +122,11 @@ const WhatsAppVerificationPage = () => {
       };
     }
   }, [signupResponse?.phone, isVerified]);
+
+  // Show loading while checking status
+  if (isCheckingStatus) {
+    return <PremiumLoadingAnimation message="Verifying WhatsApp..." />;
+  }
 
   return (
     <div style={{

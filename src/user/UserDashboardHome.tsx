@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Moon, Bell, User, Loader2 } from 'lucide-react';
+import { Moon, Bell, User } from 'lucide-react';
+import PremiumLoadingAnimation from '../components/PremiumLoadingAnimation';
 import { fetchUserOrders } from '../api';
 
 // Define types for orders based on API response
@@ -113,21 +114,7 @@ const UserDashboardHome = () => {
   };
 
   if (loading) {
-    return (
-      <div style={{
-        fontFamily: 'Nunito Sans, sans-serif', 
-        color: '#111',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '400px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Loader2 size={24} style={{ animation: 'spin 1s linear infinite' }} />
-          <span style={{ fontSize: 18 }}>Loading orders...</span>
-        </div>
-      </div>
-    );
+    return <PremiumLoadingAnimation message="Loading your dashboard..." />;
   }
 
   if (error) {

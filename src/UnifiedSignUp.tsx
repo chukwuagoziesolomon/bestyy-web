@@ -4,6 +4,7 @@ import { registerMultiRole } from './api';
 import { useAuth } from './context/AuthContext';
 import { showError, showSuccess, showInfo } from './toast';
 import { useImageUpload } from './hooks/useImageUpload';
+import PremiumLoadingAnimation from './components/PremiumLoadingAnimation';
 
 const steps = [
   'Role Selection',
@@ -336,8 +337,18 @@ const UnifiedSignUp = () => {
     }
   };
 
-
-
+  // Show loading animation while processing
+  if (isLoading && hasSubmitted) {
+    return (
+      <div className="user-login__bg">
+        <div className="user-login__card" style={{ border: 'none', boxShadow: 'none', background: 'transparent' }}>
+          <PremiumLoadingAnimation 
+            message={step === finalStepIndex ? "Creating your account..." : "Processing..."} 
+          />
+        </div>
+      </div>
+    );
+  }
 
 
   return (

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import PremiumLoadingAnimation from '../components/PremiumLoadingAnimation';
 import { notificationService, NotificationData } from '../services/notificationService';
 
 interface NotificationsPageProps {
@@ -171,10 +172,7 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({ userId, userType 
         <div className="notifications-header">
           <h1>Notifications</h1>
         </div>
-        <div className="notifications-loading">
-          <div className="loading-spinner"></div>
-          <p>Loading notifications...</p>
-        </div>
+        <PremiumLoadingAnimation message="Loading notifications..." />
       </div>
     );
   }

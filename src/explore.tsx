@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import './ExploreDesktop.css';
 import './ExploreMobile.css';
 import Footer from './Footer';
+import PremiumLoadingAnimation from './components/PremiumLoadingAnimation';
 import { recommendationsApi, VendorRecommendation, RecommendationsResponse } from './services/recommendationsApi';
 import { vendorAutocompleteApi, VendorAutocompleteResult } from './services/vendorAutocompleteApi';
 import { bannersApi, Banner } from './services/bannersApi';
@@ -359,7 +360,7 @@ const Explore: React.FC = () => {
       {/* Promotional Banner Slideshow */}
       {bannersLoading ? (
         <div className="banner-slideshow">
-          <div className="banner-loading">Loading banners...</div>
+          <PremiumLoadingAnimation message="Loading banners..." />
         </div>
       ) : banners && banners.length > 0 ? (
         <div className="banner-slideshow">
@@ -480,12 +481,7 @@ const Explore: React.FC = () => {
 
         {/* Loading State */}
         {loading && (
-          <div className="loading-state">
-            <div className="loading-content">
-              <div className="loading-spinner"></div>
-              <p>Loading amazing restaurants...</p>
-            </div>
-          </div>
+          <PremiumLoadingAnimation message="Loading amazing restaurants..." />
         )}
 
         {/* Error State */}

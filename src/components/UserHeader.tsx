@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, User, MessageCircle, Settings, CreditCard, MapPin, Heart } from 'lucide-react';
+import { Menu, User, MessageCircle, Settings, MapPin, Heart } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import { useAuth } from '../context/AuthContext';
 import { API_URL } from '../api';
@@ -311,32 +311,8 @@ const UserHeader: React.FC<UserHeaderProps> = ({ title, showHamburger = true }) 
               Addresses
             </button>
 
-            <button
-              onClick={() => {
-                navigate('/user/payments');
-                setShowMenu(false);
-              }}
-              style={{
-                width: '100%',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '16px 20px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                fontSize: '16px',
-                color: '#374151',
-                fontWeight: '500',
-                transition: 'all 0.2s ease',
-                borderBottom: '1px solid #f3f4f6'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
-            >
-              <CreditCard size={20} color="#10b981" />
-              Payment Methods
-            </button>
+            {/* Payment Methods removed */}
+            {/* <button onClick={() => navigate('/user/payments')} ... /> */}
             
             <button
               onClick={() => {

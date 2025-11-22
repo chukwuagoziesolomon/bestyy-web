@@ -1,0 +1,309 @@
+/* Premium Loading Animation Styles */
+
+.premium-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  position: relative;
+  overflow: hidden;
+  font-family: 'Nunito Sans', sans-serif;
+}
+
+.premium-loading-container.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  z-index: 9999;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+}
+
+/* Animated Background Orbs */
+.loading-orbs {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.08;
+  filter: blur(40px);
+}
+
+.orb-1 {
+  width: 300px;
+  height: 300px;
+  background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+  top: -50px;
+  right: -50px;
+  animation: float-orb-1 8s ease-in-out infinite;
+}
+
+.orb-2 {
+  width: 250px;
+  height: 250px;
+  background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%);
+  bottom: -30px;
+  left: 10%;
+  animation: float-orb-2 10s ease-in-out infinite;
+}
+
+.orb-3 {
+  width: 200px;
+  height: 200px;
+  background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+  top: 20%;
+  left: -50px;
+  animation: float-orb-3 12s ease-in-out infinite;
+}
+
+@keyframes float-orb-1 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-30px, -30px); }
+}
+
+@keyframes float-orb-2 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(30px, 30px); }
+}
+
+@keyframes float-orb-3 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(20px, -40px); }
+}
+
+/* Loading Content */
+.loading-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 120px;
+  margin-bottom: 40px;
+}
+
+/* Animated Ring */
+.animated-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  animation: spin-ring 3s linear infinite;
+}
+
+.ring-svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.3));
+}
+
+@keyframes spin-ring {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Loading Dot - Center */
+.loading-dot {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 15px rgba(16, 185, 129, 0);
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+}
+
+/* Floating Particles */
+.floating-particles {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.particle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+}
+
+.particle:nth-child(1) {
+  top: 10%;
+  left: 20%;
+  animation: float-particle 3s ease-in-out infinite;
+  animation-delay: var(--particle-delay);
+  opacity: 0.8;
+}
+
+.particle:nth-child(2) {
+  top: 80%;
+  right: 15%;
+  animation: float-particle-reverse 3s ease-in-out infinite;
+  animation-delay: var(--particle-delay);
+  background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%);
+  opacity: 0.7;
+}
+
+.particle:nth-child(3) {
+  top: 30%;
+  right: 10%;
+  animation: float-particle 3.5s ease-in-out infinite;
+  animation-delay: var(--particle-delay);
+  background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+  opacity: 0.6;
+}
+
+.particle:nth-child(4) {
+  bottom: 20%;
+  left: 15%;
+  animation: float-particle-reverse 3.5s ease-in-out infinite;
+  animation-delay: var(--particle-delay);
+  background: linear-gradient(135deg, #10b981 0%, #8b5cf6 100%);
+  opacity: 0.7;
+}
+
+@keyframes float-particle {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(15px, -15px) scale(0.8); }
+}
+
+@keyframes float-particle-reverse {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-15px, 15px) scale(0.8); }
+}
+
+/* Loading Text */
+.loading-text {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+
+.loading-text p {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 12px 0;
+  letter-spacing: 0.5px;
+  animation: fade-in-out 2s ease-in-out infinite;
+}
+
+.loading-text .dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.loading-text .dots span {
+  width: 8px;
+  height: 8px;
+  background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+  border-radius: 50%;
+  animation: bounce-dot 1.4s ease-in-out infinite;
+}
+
+.loading-text .dots span:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.loading-text .dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loading-text .dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes bounce-dot {
+  0%, 100% {
+    opacity: 0.5;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes fade-in-out {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .premium-loading-container {
+    min-height: 200px;
+  }
+
+  .loading-content {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 30px;
+  }
+
+  .loading-text p {
+    font-size: 16px;
+  }
+
+  .orb-1 {
+    width: 200px;
+    height: 200px;
+  }
+
+  .orb-2 {
+    width: 180px;
+    height: 180px;
+  }
+
+  .orb-3 {
+    width: 150px;
+    height: 150px;
+  }
+}
+
+@media (max-width: 480px) {
+  .premium-loading-container {
+    min-height: 150px;
+  }
+
+  .loading-content {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 20px;
+  }
+
+  .loading-text p {
+    font-size: 14px;
+  }
+
+  .orb-1, .orb-2, .orb-3 {
+    opacity: 0.05;
+  }
+}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Star, Filter, Trash2, Utensils, Building2 } from 'lucide-react';
 import { fetchUserFavorites, removeFavorite } from '../api';
 import { showError, showSuccess } from '../toast';
+import PremiumLoadingAnimation from '../components/PremiumLoadingAnimation';
 
 interface FoodItem {
   id: number;
@@ -177,7 +178,7 @@ const UserFavourites = () => {
 
     {/* Favourites Table/List */}
       {loading ? (
-      <div style={{ color: '#888', fontSize: 18, padding: 32, textAlign: 'center' }}>Loading favorites...</div>
+      <PremiumLoadingAnimation message="Loading your favorites..." />
       ) : error ? (
       <div style={{ color: '#dc3545', fontSize: 18, padding: 32, textAlign: 'center' }}>Error: {error}</div>
     ) : filteredFavourites.length === 0 ? (
