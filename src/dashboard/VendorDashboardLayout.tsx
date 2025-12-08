@@ -36,16 +36,21 @@ const VendorDashboardLayout: React.FC<VendorDashboardLayoutProps> = ({ children 
   const { isMobile, isTablet } = useResponsive();
   const { user } = useAuth();
 
-  // Get business logo and name from localStorage vendor_profile
-  let businessLogo = '';
+  // Get business name and business logo from localStorage
   let businessName = '';
+  let businessLogo = '';
   const savedVendor = localStorage.getItem('vendor_profile');
   if (savedVendor) {
     try {
       const vendor = JSON.parse(savedVendor);
-      businessLogo = vendor.logo || '';
       businessName = vendor.business_name || '';
+      businessLogo = vendor.logo || vendor.businessLogo || '';
     } catch (e) {}
+  }
+  
+  // Fallback to businessLogo from localStorage if not in vendor_profile
+  if (!businessLogo) {
+    businessLogo = localStorage.getItem('businessLogo') || '';
   }
 
   // Mobile/Tablet view - render outlet directly without sidebar
@@ -107,11 +112,13 @@ const VendorDashboardLayout: React.FC<VendorDashboardLayoutProps> = ({ children 
       </aside>
       <main style={{ flex: 1, background: '#f8fafc', minHeight: '100vh', padding: '0.5rem 2.5rem 2.5rem 2.5rem' }}>
         <DashboardNavbar
-          profileImageSrc={businessLogo ? getThumbnailUrl(businessLogo, 40) : ""}
-          initials={businessName ? businessName[0] : (user?.first_name?.[0] || 'V')}
+          profileImageSrc={businessLogo ? getThumbnailUrl(businessLogo, 48) : ""}
+          initials={businessName?.[0] || 'V'}
           userId={user?.id}
           userType={user?.role}
           businessName={businessName}
+          showSearchBar={false}
+          showDarkMode={false}
         />
         <Outlet />
       </main>

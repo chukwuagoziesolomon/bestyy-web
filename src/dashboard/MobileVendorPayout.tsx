@@ -237,7 +237,7 @@ const MobileVendorPayout: React.FC = () => {
 
 
 
-  if (loading) {
+  if (error) {
     return (
       <div style={{
         fontFamily: 'Nunito Sans, sans-serif',
@@ -245,7 +245,7 @@ const MobileVendorPayout: React.FC = () => {
         minHeight: '100vh',
         paddingBottom: '80px'
       }}>
-        <VendorHeader />
+        <VendorHeader showBusinessName={true} />
 
         <div style={{
           display: 'flex',
@@ -270,7 +270,7 @@ const MobileVendorPayout: React.FC = () => {
         minHeight: '100vh',
         paddingBottom: '80px'
       }}>
-        <VendorHeader />
+        <VendorHeader showBusinessName={true} />
 
         <div style={{
           display: 'flex',
@@ -322,7 +322,7 @@ const MobileVendorPayout: React.FC = () => {
       minHeight: '100vh',
       paddingBottom: '80px'
     }}>
-      <VendorHeader title="Payout" />
+      <VendorHeader title="Payout" showBusinessName={true} />
 
       {/* Payout Content */}
       <div style={{ padding: '24px 16px' }}>

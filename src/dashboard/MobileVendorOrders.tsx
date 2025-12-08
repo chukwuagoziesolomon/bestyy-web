@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { fetchVendorOrdersList } from '../api';
 import VendorHeader from '../components/VendorHeader';
 import VendorBottomNavigation from '../components/VendorBottomNavigation';
+import ChatWithBestie from '../components/ChatWithBestie';
 
 interface VendorOrder {
   id: string;
@@ -79,9 +80,9 @@ const MobileVendorOrders: React.FC = () => {
       minHeight: '100vh',
       paddingBottom: '80px'
     }}>
-      <VendorHeader />
-      
-      <div style={{ padding: '16px' }}>
+      <VendorHeader showBusinessName={true} />
+
+      <div style={{padding: '16px' }}>
         {/* Filter Section */}
         <div style={{
           background: 'white',
@@ -276,6 +277,9 @@ const MobileVendorOrders: React.FC = () => {
 
       {/* Bottom Navigation */}
       <VendorBottomNavigation currentPath="/vendor/orders" />
+      
+      {/* Chat With Bestie */}
+      <ChatWithBestie />
     </div>
   );
 };

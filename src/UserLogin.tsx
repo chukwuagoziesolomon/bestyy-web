@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './UserLogin.css';
 import './styles/loading-spinner.css';
-import { showError } from './toast';
-import { useNavigate } from 'react-router-dom';
+import { showError, showInfo } from './toast';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import PremiumLoadingAnimation from './components/PremiumLoadingAnimation';
 
@@ -12,10 +12,24 @@ interface UserLoginProps {
 
 const UserLogin: React.FC<UserLoginProps> = ({ isSignUp = false }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { login } = useAuth();
 
-
+  // Check if user was redirected due to session expiration or token expiration
+  useEffect(() => {
+    const sessionExpired = searchParams.get('session_expired');
+    if (sessionExpired === 'true') {
+      showInfo('Your session has expired. Please log in again.');
+    }
+    
+    // Check for auth redirect message from token manager
+    const authMessage = sessionStorage.getItem('auth_redirect_message');
+    if (authMessage) {
+      showInfo(authMessage);
+      sessionStorage.removeItem('auth_redirect_message');
+    }
+  }, [searchParams]);
 
   const handleLogin = async (email: string, password: string) => {
     try {

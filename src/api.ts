@@ -1,5 +1,28 @@
 export const API_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000';
 
+// Public endpoints that don't require authentication
+const PUBLIC_ENDPOINTS = [
+  '/api/user/login/',
+  '/api/auth/login/',
+  '/api/user/signup/',
+  '/api/user/register/',
+  '/api/user/vendors/register/',
+  '/api/user/couriers/register/',
+  '/api/token/refresh/',
+  '/api/token/verify/',
+  '/api/user/recommendations/',
+  '/api/user/banners/',
+  '/api/user/vendors/',  // Public vendor list and menu
+  '/api/user/search/',
+  '/api/user/menu/',  // Public menu items
+  '/api/public/',  // Any public API endpoints
+];
+
+// Helper function to check if endpoint is public
+function isPublicEndpoint(url: string): boolean {
+  return PUBLIC_ENDPOINTS.some(endpoint => url.includes(endpoint));
+}
+
 // Courier dashboard endpoints
 export async function fetchCourierDashboardMetrics(token: string) {
   const response = await fetch(`${API_URL}/api/user/courier/dashboard/metrics/`, {
@@ -197,6 +220,163 @@ export async function loginJwt(email: string, password: string) {
     throw new Error(errorMsg);
   }
   return response.json() as Promise<{ access: string; refresh: string }>;
+}
+
+// Token refresh function
+export async function refreshToken(refreshToken: string) {
+  const url = `${API_URL}/api/auth/token/refresh/`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refresh: refreshToken }),
+  });
+  
+  if (!response.ok) {
+    let errorMsg = 'Token refresh failed';
+    try {
+      const errorData = await response.json();
+      errorMsg = extractErrorMessage(errorData) || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  
+  return response.json() as Promise<{ access: string }>;
+}
+
+// Generic function to make authenticated requests with automatic token refresh
+export async function makeAuthenticatedRequest<T>(
+  url: string,
+  options: RequestInit,
+  skipRefresh = false
+): Promise<Response> {
+  // Check if this is a public endpoint that doesn't require auth
+  const isPublic = isPublicEndpoint(url);
+  
+  let token = localStorage.getItem('access_token');
+  
+  console.log('🔐 makeAuthenticatedRequest called:', {
+    url: url.replace(API_URL, ''),
+    method: options.method || 'GET',
+    hasToken: !!token,
+    tokenPrefix: token ? token.substring(0, 10) + '...' : 'null',
+    skipRefresh,
+    isPublic,
+    isFormData: options.body instanceof FormData
+  });
+  
+  // If not public and no token, redirect to login
+  if (!token && !skipRefresh && !isPublic) {
+    console.error('❌ No authentication token found, redirecting to login');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user');
+    window.location.href = '/login';
+    throw new Error('No authentication token found');
+  }
+
+  // Add token to headers, but be careful with FormData (don't set Content-Type)
+  const headers = { ...options.headers };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
+  // Don't set Content-Type for FormData - let browser set it with boundary
+  if (!(options.body instanceof FormData) && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
+
+  console.log('📤 Making request with headers:', {
+    hasAuthorization: !!headers['Authorization'],
+    contentType: headers['Content-Type'] || 'not set',
+    authPrefix: headers['Authorization'] ? headers['Authorization'].substring(0, 20) + '...' : 'none'
+  });
+
+  let response = await fetch(url, {
+    ...options,
+    headers,
+  });
+
+  console.log('📥 Initial response:', {
+    status: response.status,
+    statusText: response.statusText,
+    ok: response.ok
+  });
+
+  // If we get 401 and haven't tried to refresh yet, attempt token refresh
+  if (response.status === 401 && !skipRefresh) {
+    const refreshTokenValue = localStorage.getItem('refresh_token');
+    
+    console.log('🔄 Got 401, attempting token refresh:', {
+      hasRefreshToken: !!refreshTokenValue
+    });
+    
+    if (refreshTokenValue) {
+      try {
+        console.log('Token expired, attempting refresh...');
+        const refreshResponse = await refreshToken(refreshTokenValue);
+        
+        // Update stored token
+        localStorage.setItem('access_token', refreshResponse.access);
+        console.log('✅ Token refreshed successfully');
+        
+        // Retry original request with new token
+        const newHeaders = { ...options.headers };
+        newHeaders['Authorization'] = `Bearer ${refreshResponse.access}`;
+        
+        // Don't set Content-Type for FormData
+        if (!(options.body instanceof FormData) && !newHeaders['Content-Type']) {
+          newHeaders['Content-Type'] = 'application/json';
+        }
+        
+        console.log('🔄 Retrying request with new token');
+        response = await fetch(url, {
+          ...options,
+          headers: newHeaders,
+        });
+        
+        console.log('📥 Retry response:', {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok
+        });
+      } catch (refreshError) {
+        console.error('❌ Token refresh failed:', refreshError);
+        // Clear tokens and redirect to login
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('vendor_profile');
+        localStorage.removeItem('courier_profile');
+        sessionStorage.clear();
+        window.location.href = '/login';
+        throw new Error('Authentication expired. Please log in again.');
+      }
+    } else {
+      console.log('❌ No refresh token available');
+      // No refresh token available
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('vendor_profile');
+      localStorage.removeItem('courier_profile');
+      sessionStorage.clear();
+      window.location.href = '/login';
+      throw new Error('Authentication expired. Please log in again.');
+    }
+  } else if (response.status === 401) {
+    // If still 401 after refresh attempt or skipRefresh is true
+    console.error('❌ Authentication failed, redirecting to login');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('vendor_profile');
+    localStorage.removeItem('courier_profile');
+    sessionStorage.clear();
+    window.location.href = '/login';
+    throw new Error('Authentication expired. Please log in again.');
+  }
+
+  return response;
 }
 
 // Current user (requires Authorization: Bearer <access>)
@@ -909,7 +1089,49 @@ export async function updateUserProfile(token: string, profileData: any) {
 }
 
 // Vendor Profile API Functions
-export async function fetchVendorProfile(token: string) {
+export interface VendorProfileData {
+  id: number;
+  business_name: string;
+  business_category: string;
+  phone: string;
+  business_address: string;
+  business_description: string;
+  cac_number?: string;
+  logo?: string;
+  cover_image?: string;
+  delivery_radius?: string;
+  service_areas?: string;
+  opening_hours?: string;
+  closing_hours?: string;
+  offers_delivery: boolean;
+  verification_status?: string;
+  bank_account_number?: string;
+  bank_code?: string;
+  bank_name?: string;
+  created_at: string;
+}
+
+export async function fetchVendorProfile(token: string): Promise<VendorProfileData> {
+  const response = await fetch(`${API_URL}/api/user/vendors/profile/`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    let errorMsg = 'Failed to fetch vendor profile';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorData?.error || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
+// Legacy vendor profile function (keep for backward compatibility)
+export async function fetchVendorProfileLegacy(token: string) {
   const response = await fetch(`${API_URL}/api/user/vendors/me/`, {
     method: 'GET',
     headers: {
@@ -2018,7 +2240,6 @@ export async function fetchSupportedBanks(token?: string) {
 export async function verifyBankAccount(bankData: {
   account_number: string;
   account_name: string;
-  bank_code: string;
   bank_name: string;
 }, token?: string) {
   const headers: any = {
@@ -2029,11 +2250,18 @@ export async function verifyBankAccount(bankData: {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
+  console.log('Making API call to:', `${API_URL}/api/user/verification/verify-bank/`);
+  console.log('Request headers:', headers);
+  console.log('Request body:', JSON.stringify(bankData));
+
   const response = await fetch(`${API_URL}/api/user/verification/verify-bank/`, {
     method: 'POST',
     headers,
     body: JSON.stringify(bankData),
   });
+  
+  console.log('Response status:', response.status);
+  console.log('Response ok:', response.ok);
   if (!response.ok) {
     let errorMsg = 'Bank verification failed';
     try {
@@ -2110,6 +2338,184 @@ export async function verifyWhatsAppSignup(phone: string, code: string) {
     throw new Error(errorMsg);
   }
   return response.json();
+}
+
+// Image Upload API Functions
+export async function uploadUserProfileImage(token: string, imageFile: File) {
+  const formData = new FormData();
+  formData.append('profile_image', imageFile);
+
+  console.log('🔄 Uploading user profile image:', {
+    fileName: imageFile.name,
+    fileSize: imageFile.size,
+    tokenExists: !!token,
+    tokenPrefix: token ? token.substring(0, 10) + '...' : 'null'
+  });
+
+  try {
+    const response = await makeAuthenticatedRequest(`${API_URL}/api/user/upload/profile-image/`, {
+      method: 'PATCH',
+      body: formData,
+    });
+    
+    console.log('✅ User profile image upload response status:', response.status);
+    
+    if (!response.ok) {
+      let errorMsg = 'Failed to upload profile image';
+      try {
+        const errorData = await response.json();
+        console.error('❌ User profile image upload error data:', errorData);
+        errorMsg = errorData?.error || errorData?.message || errorData?.detail || errorMsg;
+      } catch {}
+      throw new Error(errorMsg);
+    }
+    
+    const result = await response.json();
+    console.log('✅ User profile image uploaded successfully:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ User profile image upload failed:', error);
+    throw error;
+  }
+}
+
+export async function uploadVendorImages(token: string, images: { logo?: File; cover_image?: File }) {
+  const formData = new FormData();
+  
+  if (images.logo) {
+    formData.append('logo', images.logo);
+  }
+  if (images.cover_image) {
+    formData.append('cover_image', images.cover_image);
+  }
+
+  // Debug token status
+  const accessToken = localStorage.getItem('access_token');
+  const refreshToken = localStorage.getItem('refresh_token');
+  
+  console.log('🔄 Uploading vendor images:', {
+    hasLogo: !!images.logo,
+    hasCoverImage: !!images.cover_image,
+    tokenExists: !!token,
+    tokenPrefix: token ? token.substring(0, 10) + '...' : 'null',
+    accessTokenExists: !!accessToken,
+    refreshTokenExists: !!refreshToken,
+    tokensMatch: token === accessToken
+  });
+
+  try {
+    const response = await makeAuthenticatedRequest(`${API_URL}/api/user/upload/vendor-images/`, {
+      method: 'PATCH',
+      body: formData,
+    });
+    
+    console.log('✅ Vendor images upload response status:', response.status);
+    
+    if (!response.ok) {
+      let errorMsg = 'Failed to upload vendor images';
+      try {
+        const errorData = await response.json();
+        console.error('❌ Vendor images upload error data:', errorData);
+        errorMsg = errorData?.error || errorData?.message || errorData?.detail || errorMsg;
+      } catch {}
+      throw new Error(errorMsg);
+    }
+    
+    const result = await response.json();
+    console.log('✅ Vendor images uploaded successfully:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ Vendor images upload failed:', error);
+    console.log('🔍 Token status after error:', {
+      accessTokenExists: !!localStorage.getItem('access_token'),
+      refreshTokenExists: !!localStorage.getItem('refresh_token')
+    });
+    throw error;
+  }
+}
+
+export async function uploadCourierImages(token: string, images: { profile_image?: File; id_document?: File }) {
+  const formData = new FormData();
+  
+  if (images.profile_image) {
+    formData.append('profile_image', images.profile_image);
+  }
+  if (images.id_document) {
+    formData.append('id_document', images.id_document);
+  }
+
+  console.log('🔄 Uploading courier images:', {
+    hasProfileImage: !!images.profile_image,
+    hasIdDocument: !!images.id_document,
+    tokenExists: !!token,
+    tokenPrefix: token ? token.substring(0, 10) + '...' : 'null'
+  });
+
+  try {
+    const response = await makeAuthenticatedRequest(`${API_URL}/api/user/upload/courier-images/`, {
+      method: 'PATCH',
+      body: formData,
+    });
+    
+    console.log('✅ Courier images upload response status:', response.status);
+    
+    if (!response.ok) {
+      let errorMsg = 'Failed to upload courier images';
+      try {
+        const errorData = await response.json();
+        console.error('❌ Courier images upload error data:', errorData);
+        errorMsg = errorData?.error || errorData?.message || errorData?.detail || errorMsg;
+      } catch {}
+      throw new Error(errorMsg);
+    }
+    
+    const result = await response.json();
+    console.log('✅ Courier images uploaded successfully:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ Courier images upload failed:', error);
+    throw error;
+  }
+}
+
+export async function uploadUnifiedImages(token: string, images: { [key: string]: File }) {
+  const formData = new FormData();
+  
+  Object.entries(images).forEach(([key, file]) => {
+    formData.append(key, file);
+  });
+
+  console.log('🔄 Uploading unified images:', {
+    imageKeys: Object.keys(images),
+    tokenExists: !!token,
+    tokenPrefix: token ? token.substring(0, 10) + '...' : 'null'
+  });
+
+  try {
+    const response = await makeAuthenticatedRequest(`${API_URL}/api/user/upload/images/`, {
+      method: 'PATCH',
+      body: formData,
+    });
+    
+    console.log('✅ Unified images upload response status:', response.status);
+    
+    if (!response.ok) {
+      let errorMsg = 'Failed to upload images';
+      try {
+        const errorData = await response.json();
+        console.error('❌ Unified images upload error data:', errorData);
+        errorMsg = errorData?.error || errorData?.message || errorData?.detail || errorMsg;
+      } catch {}
+      throw new Error(errorMsg);
+    }
+    
+    const result = await response.json();
+    console.log('✅ Unified images uploaded successfully:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ Unified images upload failed:', error);
+    throw error;
+  }
 }
 
 // User Profile Info API Functions

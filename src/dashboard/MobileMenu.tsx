@@ -6,6 +6,7 @@ import { getMenuItemImageUrl, getFallbackImageUrl } from '../utils/imageUtils';
 import { showError, showSuccess } from '../toast';
 import VendorHeader from '../components/VendorHeader';
 import VendorBottomNavigation from '../components/VendorBottomNavigation';
+import ChatWithBestie from '../components/ChatWithBestie';
 
 interface MenuItem {
   id: number;
@@ -102,7 +103,7 @@ const MobileMenu: React.FC = () => {
       minHeight: '100vh',
       paddingBottom: '80px'
     }}>
-      <VendorHeader />
+      <VendorHeader showBusinessName={true} />
 
 
       {/* Main Content */}
@@ -394,6 +395,9 @@ const MobileMenu: React.FC = () => {
 
       {/* Bottom Navigation */}
       <VendorBottomNavigation currentPath="/vendor/menu" />
+      
+      {/* Chat With Bestie */}
+      <ChatWithBestie />
     </div>
   );
 };

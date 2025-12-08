@@ -165,7 +165,7 @@ const MobileVendorStock: React.FC = () => {
       minHeight: '100vh',
       paddingBottom: '80px'
     }}>
-      <VendorHeader />
+      <VendorHeader showBusinessName={true} />
 
       {/* Stock Summary Cards */}
       {stockSummary && (

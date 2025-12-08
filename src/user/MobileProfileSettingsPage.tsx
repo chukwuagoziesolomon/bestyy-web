@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Edit2, Save } from 'lucide-react';
 import MobileHeader from '../components/MobileHeader';
 import { useResponsive } from '../hooks/useResponsive';
-import { useImageUpload } from '../hooks/useImageUpload';
-import { fetchUserProfile, updateUserProfile, fetchVendorProfile, updateVendorProfile, fetchCourierProfile, updateCourierProfile } from '../api';
+
+import { fetchUserProfile, updateUserProfile, fetchVendorProfile, updateVendorProfile, fetchCourierProfile, updateCourierProfile, uploadUserProfileImage, uploadVendorImages, uploadCourierImages } from '../api';
 
 import { showError, showSuccess } from '../toast';
 
@@ -15,23 +15,8 @@ const MobileProfileSettingsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Image upload hook for profile pictures
-  const { uploadImage: uploadProfileImage, isUploading: isUploadingImage, error: imageUploadError, clearError: clearImageError } = useImageUpload({
-    onSuccess: (file) => {
-      if (file instanceof File) {
-        const objectUrl = URL.createObjectURL(file);
-        setFormData(prev => ({
-          ...prev,
-          profilePicture: objectUrl,
-          previewPicture: objectUrl
-        }));
-      }
-      showSuccess('Profile picture uploaded successfully!');
-    },
-    onError: (error) => {
-      showError(error);
-    }
-  });
+  // Image upload state
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -207,11 +192,76 @@ const MobileProfileSettingsPage: React.FC = () => {
     }));
   };
 
-  const handlePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePictureChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Upload to Cloudinary instead of just showing preview
-      uploadProfileImage(file, 'profile-image');
+      try {
+        setIsUploadingImage(true);
+        
+        // Show preview immediately
+        const objectUrl = URL.createObjectURL(file);
+        setFormData(prev => ({
+          ...prev,
+          previewPicture: objectUrl
+        }));
+
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+          showError('Authentication required. Please log in again.');
+          return;
+        }
+
+        let response;
+        
+        // Upload based on user type
+        if (isVendor) {
+          response = await uploadVendorImages(token, { logo: file });
+          const logoUrl = response.images?.logo || response.logo;
+          console.log('✅ Mobile vendor logo updated:', logoUrl);
+          setFormData(prev => ({
+            ...prev,
+            profilePicture: logoUrl,
+            previewPicture: null
+          }));
+        } else if (isCourier) {
+          response = await uploadCourierImages(token, { profile_image: file });
+          const imageUrl = response.images?.profile_image || response.profile_image;
+          console.log('✅ Mobile courier image updated:', imageUrl);
+          setFormData(prev => ({
+            ...prev,
+            profilePicture: imageUrl,
+            previewPicture: null
+          }));
+        } else {
+          response = await uploadUserProfileImage(token, file);
+          const imageUrl = response.images?.profile_image || response.profile_image;
+          console.log('✅ Mobile user image updated:', imageUrl);
+          setFormData(prev => ({
+            ...prev,
+            profilePicture: imageUrl,
+            previewPicture: null
+          }));
+        }
+
+        showSuccess('Profile picture updated successfully!');
+        
+        // Clean up object URL
+        URL.revokeObjectURL(objectUrl);
+
+      } catch (error) {
+        console.error('Error uploading profile picture:', error);
+        showError(error instanceof Error ? error.message : 'Failed to upload profile picture');
+        
+        // Clear preview on error
+        setFormData(prev => ({
+          ...prev,
+          previewPicture: null
+        }));
+      } finally {
+        setIsUploadingImage(false);
+        // Reset input
+        e.target.value = '';
+      }
     }
   };
 

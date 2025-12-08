@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { showError, showSuccess } from '../toast';
-import { Edit2, Camera, Building2, Bell, Shield, Clock, MapPin, Truck, User, Mail, Phone } from 'lucide-react';
-import { fetchUserProfile, updateUserProfile, fetchVendorProfile, updateVendorProfile, fetchCourierProfile, updateCourierProfile } from '../api';
+import { Edit2, Camera, Building2, Bell, Shield, Clock, MapPin, Truck, User, Mail, Phone, CreditCard } from 'lucide-react';
+import ImageUpload from '../components/ImageUpload';
+import { fetchUserProfile, updateUserProfile, fetchVendorProfile, updateVendorProfile, fetchCourierProfile, updateCourierProfile, uploadUserProfileImage, uploadVendorImages, uploadCourierImages } from '../api';
 
 const ProfilePage = () => {
 
@@ -27,6 +28,10 @@ const ProfilePage = () => {
   const [pushNotifications, setPushNotifications] = useState(false);
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
+  // Bank information states
+  const [bankAccountNumber, setBankAccountNumber] = useState('');
+  const [bankName, setBankName] = useState('');
+  const [bankCode, setBankCode] = useState('');
   const [previewPicture, setPreviewPicture] = useState<string | null>(null);
   const [previewCoverPhoto, setPreviewCoverPhoto] = useState<string | null>(null);
   const [selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null);
@@ -173,40 +178,68 @@ const ProfilePage = () => {
           setProfileData(apiProfileData);
 
           // Populate form fields from API response
-          const fullName = apiProfileData.business_name || '';
-          const email = apiProfileData.email || '';
-          const phone = apiProfileData.phone || '';
-          const businessAddress = apiProfileData.business_address || '';
-          const businessCategory = apiProfileData.business_category || '';
-          const businessDescription = apiProfileData.business_description || '';
-          const bio = apiProfileData.bio || '';
-          const deliveryRadius = apiProfileData.delivery_radius || '';
-          const serviceAreas = apiProfileData.service_areas || [];
-          const openingHours = apiProfileData.opening_hours || '';
-          const closingHours = apiProfileData.closing_hours || '';
-          const offersDelivery = apiProfileData.offers_delivery || false;
-          const emailNotifications = apiProfileData.email_notifications || false;
-          const pushNotifications = apiProfileData.push_notifications || false;
-          const profilePicture = apiProfileData.logo || null;
-          const coverPhoto = apiProfileData.cover_photo || apiProfileData.cover_image || null;
+          if (isVendor) {
+            // Handle vendor profile data structure
+            setFullName(apiProfileData.business_name || '');
+            setEmail(apiProfileData.email || ''); // May not be directly available in vendor endpoint
+            setPhone(apiProfileData.phone || '');
+            setBusinessAddress(apiProfileData.business_address || '');
+            setBusinessCategory(apiProfileData.business_category || '');
+            setBusinessDescription(apiProfileData.business_description || '');
+            setBio(apiProfileData.business_description || ''); // Use description as bio
+            setDeliveryRadius(apiProfileData.delivery_radius || '');
+            setServiceAreas(apiProfileData.service_areas || '');
+            setOpeningHours(apiProfileData.opening_hours?.replace(':00', '') || '');
+            setClosingHours(apiProfileData.closing_hours?.replace(':00', '') || '');
+            setOffersDelivery(apiProfileData.offers_delivery || false);
+            setProfilePicture(apiProfileData.logo || null);
+            setCoverPhoto(apiProfileData.cover_image || null);
+            
+            // Set bank information
+            setBankAccountNumber(apiProfileData.bank_account_number || '');
+            setBankName(apiProfileData.bank_name || '');
+            setBankCode(apiProfileData.bank_code || '');
+            
+            // Set notifications to default values for vendors (not in vendor endpoint)
+            setEmailNotifications(false);
+            setPushNotifications(false);
+          } else {
+            // Handle user/courier profile data structure
+            const fullName = apiProfileData.business_name || apiProfileData.full_name || '';
+            const email = apiProfileData.email || '';
+            const phone = apiProfileData.phone || '';
+            const businessAddress = apiProfileData.business_address || '';
+            const businessCategory = apiProfileData.business_category || '';
+            const businessDescription = apiProfileData.business_description || '';
+            const bio = apiProfileData.bio || '';
+            const deliveryRadius = apiProfileData.delivery_radius || '';
+            const serviceAreas = apiProfileData.service_areas || [];
+            const openingHours = apiProfileData.opening_hours || '';
+            const closingHours = apiProfileData.closing_hours || '';
+            const offersDelivery = apiProfileData.offers_delivery || false;
+            const emailNotifications = apiProfileData.email_notifications || false;
+            const pushNotifications = apiProfileData.push_notifications || false;
+            const profilePicture = apiProfileData.logo || apiProfileData.profile_picture || null;
+            const coverPhoto = apiProfileData.cover_photo || apiProfileData.cover_image || null;
 
-          // Update state variables
-          setFullName(fullName);
-          setEmail(email);
-          setPhone(phone);
-          setBusinessAddress(businessAddress);
-          setBusinessCategory(businessCategory);
-          setBusinessDescription(businessDescription);
-          setBio(bio);
-          setDeliveryRadius(deliveryRadius);
-          setServiceAreas(Array.isArray(serviceAreas) ? serviceAreas.join(', ') : serviceAreas);
-          setOpeningHours(openingHours);
-          setClosingHours(closingHours);
-          setOffersDelivery(offersDelivery);
-          setEmailNotifications(emailNotifications);
-          setPushNotifications(pushNotifications);
-          setProfilePicture(profilePicture);
-          setCoverPhoto(coverPhoto);
+            // Update state variables
+            setFullName(fullName);
+            setEmail(email);
+            setPhone(phone);
+            setBusinessAddress(businessAddress);
+            setBusinessCategory(businessCategory);
+            setBusinessDescription(businessDescription);
+            setBio(bio);
+            setDeliveryRadius(deliveryRadius);
+            setServiceAreas(Array.isArray(serviceAreas) ? serviceAreas.join(', ') : serviceAreas);
+            setOpeningHours(openingHours);
+            setClosingHours(closingHours);
+            setOffersDelivery(offersDelivery);
+            setEmailNotifications(emailNotifications);
+            setPushNotifications(pushNotifications);
+            setProfilePicture(profilePicture);
+            setCoverPhoto(coverPhoto);
+          }
           setSelectedLogoFile(null);
           setSelectedCoverFile(null);
 
@@ -229,27 +262,118 @@ const ProfilePage = () => {
   }, [isVendor, isCourier, isUser]);
 
 
-  const handlePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePictureChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files && e.target.files[0];
     if (file) {
       setSelectedLogoFile(file);
+      
+      // Show preview immediately
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreviewPicture(reader.result as string);
       };
       reader.readAsDataURL(file);
+
+      // Upload image immediately based on user type
+      try {
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+          showError('Authentication required. Please log in again.');
+          return;
+        }
+
+        setLoading(true);
+        let response;
+
+        if (isVendor) {
+          response = await uploadVendorImages(token, { logo: file });
+          // Handle the nested response structure
+          const logoUrl = response.images?.logo || response.logo;
+          setProfilePicture(logoUrl);
+          console.log('✅ Vendor logo updated:', logoUrl);
+          showSuccess('Profile picture updated successfully!');
+        } else if (isCourier) {
+          response = await uploadCourierImages(token, { profile_image: file });
+          // Handle potential nested response structure
+          const imageUrl = response.images?.profile_image || response.profile_image;
+          setProfilePicture(imageUrl);
+          console.log('✅ Courier profile image updated:', imageUrl);
+          showSuccess('Profile picture updated successfully!');
+        } else {
+          response = await uploadUserProfileImage(token, file);
+          // Handle potential nested response structure
+          const imageUrl = response.images?.profile_image || response.profile_image;
+          setProfilePicture(imageUrl);
+          console.log('✅ User profile image updated:', imageUrl);
+          showSuccess('Profile picture updated successfully!');
+        }
+
+        // Clear preview and selected file
+        setPreviewPicture(null);
+        setSelectedLogoFile(null);
+
+      } catch (error) {
+        console.error('Error uploading profile picture:', error);
+        showError(error instanceof Error ? error.message : 'Failed to upload profile picture');
+        setPreviewPicture(null);
+        setSelectedLogoFile(null);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
-  const handleCoverPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCoverPhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files && e.target.files[0];
     if (file) {
       setSelectedCoverFile(file);
+      
+      // Show preview immediately
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreviewCoverPhoto(reader.result as string);
       };
       reader.readAsDataURL(file);
+
+      // Upload cover photo immediately (only vendors and couriers can have cover photos)
+      try {
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+          showError('Authentication required. Please log in again.');
+          return;
+        }
+
+        setLoading(true);
+        let response;
+
+        if (isVendor) {
+          response = await uploadVendorImages(token, { cover_image: file });
+          // Handle the nested response structure
+          const coverUrl = response.images?.cover_image || response.cover_image;
+          setCoverPhoto(coverUrl);
+          console.log('✅ Vendor cover photo updated:', coverUrl);
+          showSuccess('Cover photo updated successfully!');
+        } else if (isCourier) {
+          // Couriers might not have cover photos, but we can use the unified endpoint
+          showError('Cover photos are not supported for courier profiles');
+          return;
+        } else {
+          showError('Cover photos are only available for vendor accounts');
+          return;
+        }
+
+        // Clear preview and selected file
+        setPreviewCoverPhoto(null);
+        setSelectedCoverFile(null);
+
+      } catch (error) {
+        console.error('Error uploading cover photo:', error);
+        showError(error instanceof Error ? error.message : 'Failed to upload cover photo');
+        setPreviewCoverPhoto(null);
+        setSelectedCoverFile(null);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -393,11 +517,11 @@ const ProfilePage = () => {
   };
 
   return (
-    <div style={{ fontFamily: 'Nunito Sans, sans-serif', color: '#111', maxWidth: 900, margin: '0 auto', padding: 32 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-        <div>
-      <h2 style={{ fontWeight: 700, fontSize: 32, marginBottom: 8 }}>Profile Settings</h2>
-          <div style={{ color: '#888', fontSize: 17, marginBottom: 8 }}>Manage your Bestie Account and preferences</div>
+    <div style={{ fontFamily: 'Nunito Sans, sans-serif', color: '#111', maxWidth: 900, margin: '0 auto', padding: '16px', paddingBottom: '100px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ flex: 1, minWidth: '200px' }}>
+      <h2 style={{ fontWeight: 700, fontSize: 'clamp(24px, 5vw, 32px)', marginBottom: 8 }}>Profile Settings</h2>
+          <div style={{ color: '#888', fontSize: 'clamp(14px, 3vw, 17px)', marginBottom: 8 }}>Manage your Bestie Account and preferences</div>
         </div>
         <div style={{
           background: isVendor ? '#10b981' : isCourier ? '#f59e0b' : '#3b82f6',
@@ -543,18 +667,18 @@ const ProfilePage = () => {
             )}
       </div>
       {/* Profile Form */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 32 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px', marginBottom: 32 }}>
         <div>
             <label style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: '8px' }}>
               <User size={16} color="#10b981" /> Full Name
             </label>
-              <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Full Name" style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6 }} disabled={!editMode} />
+              <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Full Name" style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6, boxSizing: 'border-box' }} disabled={!editMode} />
         </div>
         <div>
             <label style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Mail size={16} color="#10b981" /> Email
             </label>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="example@gmail.com" style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6 }} disabled={!editMode} />
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="example@gmail.com" style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6, boxSizing: 'border-box' }} disabled={!editMode} />
             </div>
         </div>
 
@@ -565,7 +689,7 @@ const ProfilePage = () => {
                 <Building2 size={24} color="#10b981" />
                 {isCourier ? 'Courier Information' : 'Business Information'}
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px', marginBottom: 24 }}>
               <div>
                 <label style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Phone size={16} color="#10b981" /> Phone Number
@@ -575,7 +699,7 @@ const ProfilePage = () => {
                   value={phone}
                   onChange={e => setPhone(e.target.value)}
                   placeholder="Phone Number"
-                  style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6 }}
+                  style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6, boxSizing: 'border-box' }}
                   disabled={!editMode}
                 />
               </div>
@@ -588,7 +712,7 @@ const ProfilePage = () => {
                   value={businessCategory}
                   onChange={e => setBusinessCategory(e.target.value)}
                   placeholder={isCourier ? 'e.g., Food Delivery, Groceries' : 'Business Category'}
-                  style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6 }}
+                  style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6, boxSizing: 'border-box' }}
                   disabled={!editMode}
                 />
               </div>
@@ -615,7 +739,7 @@ const ProfilePage = () => {
                 onChange={e => setBusinessDescription(e.target.value)}
                 placeholder={isCourier ? 'Describe your delivery services...' : 'Describe your business...'}
                 rows={3}
-                style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6, resize: 'vertical' }}
+                style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6, resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }}
                 disabled={!editMode}
               />
             </div>
@@ -629,12 +753,12 @@ const ProfilePage = () => {
                   onChange={e => setBio(e.target.value)}
                   placeholder="Tell customers about yourself..."
                   rows={2}
-                  style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6, resize: 'vertical' }}
+                  style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6, resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }}
                   disabled={!editMode}
                 />
               </div>
             )}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px', marginBottom: 24 }}>
               <div>
                 <label style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <MapPin size={16} color="#10b981" /> {isCourier ? 'Delivery Radius (km)' : 'Delivery Radius (km)'}
@@ -644,7 +768,7 @@ const ProfilePage = () => {
                   value={deliveryRadius}
                   onChange={e => setDeliveryRadius(e.target.value)}
                   placeholder={isCourier ? 'e.g., 10' : 'e.g., 5'}
-                  style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6 }}
+                  style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6, boxSizing: 'border-box' }}
                   disabled={!editMode}
                 />
               </div>
@@ -657,12 +781,12 @@ const ProfilePage = () => {
                   value={serviceAreas}
                   onChange={e => setServiceAreas(e.target.value)}
                   placeholder={isCourier ? 'e.g., Ikeja, Victoria Island' : 'e.g., Ikeja, Victoria Island'}
-                  style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6 }}
+                  style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6, boxSizing: 'border-box' }}
                   disabled={!editMode}
                 />
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px', marginBottom: 24 }}>
               <div>
                 <label style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Clock size={16} color="#10b981" /> {isCourier ? 'Start Time' : 'Opening Hours'}
@@ -671,7 +795,7 @@ const ProfilePage = () => {
                   type="time"
                   value={openingHours}
                   onChange={e => setOpeningHours(e.target.value)}
-                  style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6 }}
+                  style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6, boxSizing: 'border-box' }}
                   disabled={!editMode}
                 />
               </div>
@@ -683,7 +807,7 @@ const ProfilePage = () => {
                   type="time"
                   value={closingHours}
                   onChange={e => setClosingHours(e.target.value)}
-                  style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6 }}
+                  style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6, boxSizing: 'border-box' }}
                   disabled={!editMode}
                 />
               </div>
@@ -704,6 +828,74 @@ const ProfilePage = () => {
           </div>
           )}
 
+          {/* Bank Information Section - Only for Vendors */}
+          {isVendor && (
+            <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 2px 12px #f3f4f6', border: '1.5px solid #f3f4f6', marginBottom: 32, padding: 32 }}>
+              <div style={{ fontWeight: 700, fontSize: 20, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Building2 size={24} color="#10b981" /> Bank Information
+              </div>
+              <div style={{ 
+                background: '#f8fffe', 
+                border: '1px solid #d1fae5', 
+                borderRadius: 12, 
+                padding: 16, 
+                marginBottom: 20,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12
+              }}>
+                <Shield size={20} color="#059669" />
+                <div style={{ fontSize: 14, color: '#047857', lineHeight: 1.4 }}>
+                  <strong>Bank details are verified and secure.</strong> This information is used for payment processing and cannot be edited here. 
+                  To update bank details, please use the <strong>Bank Verification</strong> section.
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px', marginBottom: 24 }}>
+                <div>
+                  <label style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Building2 size={16} color="#10b981" /> Bank Name
+                  </label>
+                  <input
+                    type="text"
+                    value={bankName || 'Not provided'}
+                    readOnly
+                    style={{ 
+                      width: '100%', 
+                      padding: 12, 
+                      borderRadius: 8, 
+                      border: '1.5px solid #e5e7eb', 
+                      fontSize: 16, 
+                      marginTop: 6,
+                      backgroundColor: '#f9fafb',
+                      color: '#6b7280',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <CreditCard size={16} color="#10b981" /> Account Number
+                  </label>
+                  <input
+                    type="text"
+                    value={bankAccountNumber ? `${'*'.repeat(6)}${bankAccountNumber.slice(-4)}` : 'Not provided'}
+                    readOnly
+                    style={{ 
+                      width: '100%', 
+                      padding: 12, 
+                      borderRadius: 8, 
+                      border: '1.5px solid #e5e7eb', 
+                      fontSize: 16, 
+                      marginTop: 6,
+                      backgroundColor: '#f9fafb',
+                      color: '#6b7280',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Courier-Specific Section */}
           {isCourier && (
@@ -711,7 +903,7 @@ const ProfilePage = () => {
               <div style={{ fontWeight: 700, fontSize: 20, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10 }}>
                 <Truck size={24} color="#10b981" /> Courier Information
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px', marginBottom: 24 }}>
                 <div>
                   <label style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Truck size={16} color="#10b981" /> Vehicle Type
@@ -719,7 +911,7 @@ const ProfilePage = () => {
                   <select
                     value={deliveryRadius} // Reusing this field for vehicle type
                     onChange={e => setDeliveryRadius(e.target.value)}
-                    style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6 }}
+                    style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6, boxSizing: 'border-box' }}
                     disabled={!editMode}
                   >
                     <option value="">Select Vehicle Type</option>
@@ -738,7 +930,7 @@ const ProfilePage = () => {
                     value={serviceAreas}
                     onChange={e => setServiceAreas(e.target.value)}
                     placeholder="e.g., Ikeja, Victoria Island, Lekki"
-                    style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6 }}
+                    style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6, boxSizing: 'border-box' }}
                     disabled={!editMode}
                   />
                 </div>
@@ -752,7 +944,7 @@ const ProfilePage = () => {
               <div style={{ fontWeight: 700, fontSize: 20, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10 }}>
                 <User size={24} color="#10b981" /> Customer Information
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px', marginBottom: 24 }}>
                 <div>
                   <label style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <MapPin size={16} color="#10b981" /> Preferred Delivery Area
@@ -762,7 +954,7 @@ const ProfilePage = () => {
                     value={businessAddress} // Reusing this field for preferred delivery area
                     onChange={e => setBusinessAddress(e.target.value)}
                     placeholder="e.g., Ikeja, Victoria Island"
-                    style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6 }}
+                    style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6, boxSizing: 'border-box' }}
                     disabled={!editMode}
                   />
                 </div>

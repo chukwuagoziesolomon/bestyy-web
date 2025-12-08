@@ -85,6 +85,15 @@ const WhatsAppVerificationPage = () => {
         setIsVerified(true);
         showSuccess('WhatsApp verification completed successfully!');
 
+        // Store fresh tokens if provided after verification
+        if (response.tokens) {
+          localStorage.setItem('access_token', response.tokens.access);
+          if (response.tokens.refresh) {
+            localStorage.setItem('refresh_token', response.tokens.refresh);
+          }
+          console.log('Fresh tokens stored after WhatsApp verification');
+        }
+
         // Auto-navigate to bank verification after a short delay
         setTimeout(() => {
           navigate('/bank-verification', {
@@ -92,7 +101,10 @@ const WhatsAppVerificationPage = () => {
               userType,
               bankVerified,
               bankData,
-              signupResponse: updatedSignupResponse || signupResponse,
+              signupResponse: {
+                ...updatedSignupResponse || signupResponse,
+                tokens: response.tokens || (updatedSignupResponse || signupResponse)?.tokens
+              },
               whatsappVerified: true
             }
           });

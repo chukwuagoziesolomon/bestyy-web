@@ -1,6 +1,8 @@
 // Banners API Service
 // Handles fetching promotional banners for the explore/recommendations page
 
+import { makeAuthenticatedRequest } from '../api';
+
 export interface Banner {
   id: number;
   title: string;
@@ -53,7 +55,7 @@ class BannersApiService {
     
     try {
       console.log('🔵 [BannersApi] Fetching from URL:', url);
-      const response = await fetch(url, {
+      const response = await makeAuthenticatedRequest(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -124,7 +126,7 @@ class BannersApiService {
     const url = `${this.baseUrl}/${id}/`;
     
     try {
-      const response = await fetch(url, {
+      const response = await makeAuthenticatedRequest(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

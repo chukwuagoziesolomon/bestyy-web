@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { validateAndRefreshToken, isAuthenticated } from '../../utils/tokenManager';
 import '../../styles/common.css';
 import PremiumLoadingAnimation from '../PremiumLoadingAnimation';
 
@@ -12,29 +13,56 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   roles = [],
-  redirectTo = '/',
+  redirectTo = '/login',
   children,
 }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
   const [isChecking, setIsChecking] = useState(true);
+  const [isValidToken, setIsValidToken] = useState(false);
 
   useEffect(() => {
-    // Set a small delay to prevent flash of content
-    const timer = setTimeout(() => {
-      setIsChecking(false);
-    }, 100);
+    const validateAuth = async () => {
+      try {
+        // First check basic authentication
+        if (!isAuthenticated()) {
+          console.log('❌ User not authenticated - no valid tokens');
+          setIsValidToken(false);
+          setIsChecking(false);
+          return;
+        }
 
-    return () => clearTimeout(timer);
-  }, []);
+        // Validate and refresh token if needed
+        const valid = await validateAndRefreshToken();
+        
+        if (!valid) {
+          console.log('❌ Token validation failed');
+          setIsValidToken(false);
+        } else {
+          console.log('✅ Token validation successful');
+          setIsValidToken(true);
+        }
+      } catch (error) {
+        console.error('❌ Error validating authentication:', error);
+        setIsValidToken(false);
+      } finally {
+        setIsChecking(false);
+      }
+    };
+
+    validateAuth();
+  }, [location.pathname]);
 
   // Show loading state while checking auth
   if (loading || isChecking) {
-    return <PremiumLoadingAnimation message="Loading..." />;
+    return <PremiumLoadingAnimation message="Verifying authentication..." />;
   }
 
-  // If user is not authenticated, redirect to login
-  if (!user) {
+  // If token is invalid or user is not authenticated, redirect to login
+  if (!isValidToken || !user) {
+    console.log('🚪 Redirecting to login - Invalid token or no user');
+    // Store the attempted location for redirect after login
+    sessionStorage.setItem('redirect_after_login', location.pathname);
     return <Navigate to={redirectTo} state={{ from: location }} replace />;
   }
 

@@ -767,9 +767,27 @@ const VendorProfile: React.FC = () => {
       {/* Add to cart modal */}
       {showAddModal && pendingItem && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
-          <div style={{ width: 420, maxWidth: '90%', background: '#fff', borderRadius: 12, padding: 16, boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
-            <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 8 }}>Add special instructions</div>
-            <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>
+          <div style={{ 
+            width: 420, 
+            maxWidth: '95%', 
+            background: '#fff', 
+            borderRadius: 16, 
+            padding: '20px', 
+            boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
+            margin: '16px'
+          }}>
+            <div style={{ 
+              fontWeight: 700, 
+              fontSize: 18, 
+              marginBottom: 12,
+              color: '#111827'
+            }}>Add special instructions</div>
+            <div style={{ 
+              fontSize: 14, 
+              color: '#6b7280', 
+              marginBottom: 16,
+              lineHeight: 1.4
+            }}>
               Optional: e.g., "Extra spicy", "No onions", "Well done".
             </div>
             <textarea
@@ -777,13 +795,76 @@ const VendorProfile: React.FC = () => {
               onChange={(e) => setSpecialInstructions(e.target.value)}
               placeholder="Type instructions..."
               rows={4}
-              style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: 10, fontSize: 13, resize: 'vertical' }}
+              style={{ 
+                width: '100%', 
+                border: '2px solid #e5e7eb', 
+                borderRadius: 12, 
+                padding: '14px', 
+                fontSize: 16, 
+                resize: 'vertical',
+                fontFamily: 'inherit',
+                boxSizing: 'border-box',
+                transition: 'border-color 0.2s ease',
+                outline: 'none'
+              }}
+              onFocus={(e) => e.target.style.borderColor = '#10b981'}
+              onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
             />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
-              <button onClick={() => { setShowAddModal(false); setPendingItem(null); }} style={{ border: '1px solid #e5e7eb', background: '#fff', borderRadius: 8, padding: '8px 12px', fontWeight: 700 }}>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'flex-end', 
+              gap: 12, 
+              marginTop: 20,
+              flexWrap: 'wrap'
+            }}>
+              <button 
+                onClick={() => { setShowAddModal(false); setPendingItem(null); }} 
+                style={{ 
+                  border: '2px solid #e5e7eb', 
+                  background: '#fff', 
+                  borderRadius: 12, 
+                  padding: '12px 20px', 
+                  fontWeight: 600,
+                  fontSize: 16,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  minWidth: '80px'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#f9fafb';
+                  e.currentTarget.style.borderColor = '#d1d5db';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#fff';
+                  e.currentTarget.style.borderColor = '#e5e7eb';
+                }}
+              >
                 Cancel
               </button>
-              <button onClick={confirmAddToCart} style={{ background: '#10b981', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 12px', fontWeight: 800 }}>
+              <button 
+                onClick={confirmAddToCart} 
+                style={{ 
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', 
+                  color: '#fff', 
+                  border: 'none', 
+                  borderRadius: 12, 
+                  padding: '12px 24px', 
+                  fontWeight: 700,
+                  fontSize: 16,
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                  transition: 'all 0.2s ease',
+                  minWidth: '120px'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)';
+                }}
+              >
                 Add to cart
               </button>
             </div>

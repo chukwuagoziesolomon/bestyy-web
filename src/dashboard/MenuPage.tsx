@@ -120,8 +120,6 @@ const MenuPage: React.FC = () => {
       background: '#f8fafc',
       minHeight: '100vh'
     }}>
-      <VendorHeader />
-      
       <div style={{ padding: '24px' }}>
         {/* Header Actions */}
         <div style={{

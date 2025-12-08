@@ -35,12 +35,63 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
     
-    // TODO: Implement token refresh once backend endpoint is ready
-    // For now, skip auto-refresh to prevent logout on failed refresh attempts
-    // If error is 401 and we haven't tried to refresh yet
-    // if (error.response?.status === 401 && !originalRequest._retry) {
-    //   ... token refresh logic would go here ...
-    // }
+    // Handle 401 errors with automatic token refresh
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      
+      const refreshToken = localStorage.getItem('refresh_token');
+      
+      if (!refreshToken) {
+        // No refresh token, clear storage and redirect to login
+        console.log('❌ No refresh token available, redirecting to login');
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('vendor_profile');
+        localStorage.removeItem('courier_profile');
+        sessionStorage.clear();
+        window.location.href = '/login';
+        return Promise.reject(error);
+      }
+      
+      try {
+        console.log('🔄 Token expired, attempting refresh...');
+        // Attempt to refresh the token
+        const response = await axios.post(
+          `${process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000'}/api/token/refresh/`,
+          { refresh: refreshToken },
+          { headers: { 'Content-Type': 'application/json' } }
+        );
+        
+        const { access, refresh: newRefreshToken } = response.data;
+        
+        // Store new tokens
+        localStorage.setItem('access_token', access);
+        if (newRefreshToken) {
+          localStorage.setItem('refresh_token', newRefreshToken);
+        }
+        
+        console.log('✅ Token refreshed successfully');
+        
+        // Update the authorization header
+        api.defaults.headers.common['Authorization'] = `Bearer ${access}`;
+        originalRequest.headers['Authorization'] = `Bearer ${access}`;
+        
+        // Retry the original request
+        return api(originalRequest);
+      } catch (refreshError) {
+        // Refresh failed, clear storage and redirect to login
+        console.error('❌ Token refresh failed:', refreshError);
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('vendor_profile');
+        localStorage.removeItem('courier_profile');
+        sessionStorage.clear();
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      }
+    }
     
     return Promise.reject(error);
   }
@@ -53,6 +104,7 @@ interface User {
   last_name: string;
   role: string;
   phone?: string;
+  profile_picture?: string;
 }
 
 interface AuthContextType {
@@ -398,7 +450,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         // Don't block login if cart merge fails
       }
       
-        // Redirect based on user role
+      // Check if there's a redirect path from before login
+      const redirectPath = sessionStorage.getItem('redirect_after_login');
+      if (redirectPath) {
+        console.log('✅ Redirecting to original path:', redirectPath);
+        sessionStorage.removeItem('redirect_after_login');
+        navigate(redirectPath);
+        return;
+      }
+      
+      // Redirect based on user role
       console.log('=== ROLE-BASED REDIRECTION ===');
       console.log('User role for redirection:', userData.role);
       console.log('User role lowercase:', userData.role.toLowerCase());
@@ -509,12 +570,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (err) {
       console.error('Logout error:', err);
     } finally {
+      // Clear all authentication data
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
-      sessionStorage.removeItem('temp_credentials');
-      sessionStorage.removeItem('temp_profiles');
+      localStorage.removeItem('user');
+      localStorage.removeItem('vendor_profile');
+      localStorage.removeItem('courier_profile');
+      localStorage.removeItem('cart');
+      sessionStorage.clear();
+      
+      // Clear API authorization header
+      delete api.defaults.headers.common['Authorization'];
+      
       setUser(null);
       navigate('/login');
+      console.log('✅ User logged out successfully');
     }
   };
 

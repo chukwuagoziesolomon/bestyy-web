@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Camera, Edit, Save, X, Home, List, Utensils, Layers } from 'lucide-react';
 import VendorHeader from '../components/VendorHeader';
 import VendorBottomNavigation from '../components/VendorBottomNavigation';
-import { fetchVendorProfile, updateVendorProfile } from '../api';
+import { fetchVendorProfile, updateVendorProfile, uploadVendorImages } from '../api';
+import { showError, showSuccess } from '../toast';
 
 const MobileVendorProfile: React.FC = () => {
   const navigate = useNavigate();
@@ -17,7 +18,10 @@ const MobileVendorProfile: React.FC = () => {
     address: localStorage.getItem('vendorAddress') || 'Business Address',
     description: localStorage.getItem('vendorDescription') || 'Business Description',
     logo: localStorage.getItem('businessLogo') || null,
-    verificationStatus: localStorage.getItem('vendorVerificationStatus') || 'pending'
+    verificationStatus: localStorage.getItem('vendorVerificationStatus') || 'pending',
+    bankName: '',
+    bankAccountNumber: '',
+    bankCode: ''
   });
 
   const [tempData, setTempData] = useState(profileData);
@@ -54,6 +58,21 @@ const MobileVendorProfile: React.FC = () => {
       localStorage.setItem('vendorDescription', tempData.description);
       if (tempData.logo) {
         localStorage.setItem('businessLogo', tempData.logo);
+        
+        // Also update vendor_profile in localStorage
+        const existingVendorProfile = localStorage.getItem('vendor_profile');
+        if (existingVendorProfile) {
+          try {
+            const vendorProfile = JSON.parse(existingVendorProfile);
+            vendorProfile.logo = tempData.logo;
+            vendorProfile.businessLogo = tempData.logo;
+            vendorProfile.business_name = tempData.businessName;
+            localStorage.setItem('vendor_profile', JSON.stringify(vendorProfile));
+            console.log('📦 Updated vendor_profile on save');
+          } catch (e) {
+            console.error('❌ Failed to update vendor_profile:', e);
+          }
+        }
       }
 
       setIsEditing(false);
@@ -70,18 +89,68 @@ const MobileVendorProfile: React.FC = () => {
     setIsEditing(false);
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const result = event.target?.result as string;
-        setTempData(prev => ({
-          ...prev,
-          logo: result
-        }));
-      };
-      reader.readAsDataURL(file);
+      try {
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+          showError('Authentication required. Please log in again.');
+          return;
+        }
+
+        // Show preview immediately
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const result = event.target?.result as string;
+          setTempData(prev => ({
+            ...prev,
+            logo: result
+          }));
+        };
+        reader.readAsDataURL(file);
+
+        // Upload logo immediately
+        const response = await uploadVendorImages(token, { logo: file });
+        
+        // Handle the nested response structure
+        const logoUrl = response.images?.logo || response.logo;
+        console.log('✅ Mobile vendor logo updated:', logoUrl);
+        
+        // Update both profile data and temp data with the uploaded image URL
+        const updatedData = {
+          ...profileData,
+          logo: logoUrl
+        };
+        
+        setProfileData(updatedData);
+        setTempData(updatedData);
+        
+        // Save to localStorage (businessLogo for backward compatibility)
+        if (logoUrl) {
+          localStorage.setItem('businessLogo', logoUrl);
+          
+          // Also update vendor_profile in localStorage so VendorHeader can access it
+          const existingVendorProfile = localStorage.getItem('vendor_profile');
+          if (existingVendorProfile) {
+            try {
+              const vendorProfile = JSON.parse(existingVendorProfile);
+              vendorProfile.logo = logoUrl;
+              vendorProfile.businessLogo = logoUrl; // Add both keys for compatibility
+              localStorage.setItem('vendor_profile', JSON.stringify(vendorProfile));
+              console.log('📦 Updated vendor_profile with logo:', logoUrl);
+            } catch (e) {
+              console.error('❌ Failed to update vendor_profile:', e);
+            }
+          }
+        }
+        
+        showSuccess('Profile picture updated successfully!');
+
+      } catch (error) {
+        console.error('Error uploading logo:', error);
+        showError(error instanceof Error ? error.message : 'Failed to upload logo');
+      }
     }
   };
 
@@ -93,23 +162,41 @@ const MobileVendorProfile: React.FC = () => {
         if (token) {
           const profileData = await fetchVendorProfile(token);
           console.log('Loaded vendor profile data:', profileData);
+          
+          // Save to localStorage vendor_profile for VendorHeader
+          localStorage.setItem('vendor_profile', JSON.stringify({
+            business_name: profileData.business_name,
+            logo: profileData.logo,
+            businessLogo: profileData.logo, // Add both for compatibility
+            phone: profileData.phone,
+            business_address: profileData.business_address,
+            business_description: profileData.business_description,
+            verification_status: profileData.verification_status
+          }));
+          
           setProfileData({
             businessName: profileData.business_name || 'Business Name',
-            email: profileData.user?.email || profileData.email || 'vendor@example.com',
+            email: 'vendor@example.com', // Email not available in vendor profile endpoint
             phone: profileData.phone || '+234 000 000 0000',
             address: profileData.business_address || 'Business Address',
             description: profileData.business_description || 'Business Description',
             logo: profileData.logo || null,
-            verificationStatus: profileData.verification_status || 'pending'
+            verificationStatus: profileData.verification_status || 'pending',
+            bankName: profileData.bank_name || '',
+            bankAccountNumber: profileData.bank_account_number || '',
+            bankCode: profileData.bank_code || ''
           });
           setTempData({
             businessName: profileData.business_name || 'Business Name',
-            email: profileData.user?.email || profileData.email || 'vendor@example.com',
+            email: 'vendor@example.com', // Email not available in vendor profile endpoint
             phone: profileData.phone || '+234 000 000 0000',
             address: profileData.business_address || 'Business Address',
             description: profileData.business_description || 'Business Description',
             logo: profileData.logo || null,
-            verificationStatus: profileData.verification_status || 'pending'
+            verificationStatus: profileData.verification_status || 'pending',
+            bankName: profileData.bank_name || '',
+            bankAccountNumber: profileData.bank_account_number || '',
+            bankCode: profileData.bank_code || ''
           });
         }
       } catch (error) {
@@ -129,7 +216,7 @@ const MobileVendorProfile: React.FC = () => {
       minHeight: '100vh',
       paddingBottom: '80px'
     }}>
-      <VendorHeader />
+      <VendorHeader showBusinessName={true} />
       
       <div style={{ padding: '16px' }}>
         {/* Profile Header */}
@@ -218,7 +305,8 @@ const MobileVendorProfile: React.FC = () => {
                   fontSize: '20px',
                   fontWeight: '600',
                   textAlign: 'center',
-                  background: '#f9fafb'
+                  background: '#f9fafb',
+                  boxSizing: 'border-box'
                 }}
               />
             ) : (
@@ -243,7 +331,8 @@ const MobileVendorProfile: React.FC = () => {
                   border: '1px solid #d1d5db',
                   fontSize: '14px',
                   textAlign: 'center',
-                  background: '#f9fafb'
+                  background: '#f9fafb',
+                  boxSizing: 'border-box'
                 }}
               />
             ) : (
@@ -348,12 +437,15 @@ const MobileVendorProfile: React.FC = () => {
             {/* Phone */}
             <div>
               <label style={{
-                display: 'block',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
                 fontSize: '14px',
-                fontWeight: '500',
+                fontWeight: '600',
                 color: '#374151',
                 marginBottom: '8px'
               }}>
+                <span style={{ fontSize: '18px' }}>📞</span>
                 Phone Number
               </label>
               {isEditing ? (
@@ -361,44 +453,51 @@ const MobileVendorProfile: React.FC = () => {
                   type="tel"
                   value={tempData.phone}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
+                  placeholder="e.g., +234 000 000 0000"
                   style={{
                     width: '100%',
                     padding: '12px 16px',
                     borderRadius: '8px',
                     border: '1px solid #d1d5db',
                     fontSize: '16px',
-                    background: '#f9fafb'
+                    background: '#f9fafb',
+                    boxSizing: 'border-box',
+                    fontFamily: 'inherit'
                   }}
                 />
               ) : (
-                <p style={{
+                <div style={{
                   fontSize: '16px',
                   color: '#1f2937',
-                  margin: 0,
                   padding: '12px 16px',
                   background: '#f9fafb',
-                  borderRadius: '8px'
+                  borderRadius: '8px',
+                  border: '1px solid #e5e7eb'
                 }}>
-                  {profileData.phone}
-                </p>
+                  {profileData.phone || 'Not provided'}
+                </div>
               )}
             </div>
 
             {/* Address */}
             <div>
               <label style={{
-                display: 'block',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
                 fontSize: '14px',
-                fontWeight: '500',
+                fontWeight: '600',
                 color: '#374151',
                 marginBottom: '8px'
               }}>
+                <span style={{ fontSize: '18px' }}>📍</span>
                 Business Address
               </label>
               {isEditing ? (
                 <textarea
                   value={tempData.address}
                   onChange={(e) => handleInputChange('address', e.target.value)}
+                  placeholder="e.g., Lagos, Nigeria"
                   rows={3}
                   style={{
                     width: '100%',
@@ -407,39 +506,46 @@ const MobileVendorProfile: React.FC = () => {
                     border: '1px solid #d1d5db',
                     fontSize: '16px',
                     background: '#f9fafb',
-                    resize: 'vertical'
+                    resize: 'vertical',
+                    boxSizing: 'border-box',
+                    fontFamily: 'inherit',
+                    lineHeight: '1.5'
                   }}
                 />
               ) : (
-                <p style={{
+                <div style={{
                   fontSize: '16px',
                   color: '#1f2937',
-                  margin: 0,
                   padding: '12px 16px',
                   background: '#f9fafb',
                   borderRadius: '8px',
-                  lineHeight: '1.5'
+                  lineHeight: '1.5',
+                  border: '1px solid #e5e7eb'
                 }}>
-                  {profileData.address}
-                </p>
+                  {profileData.address || 'Not provided'}
+                </div>
               )}
             </div>
 
             {/* Description */}
             <div>
               <label style={{
-                display: 'block',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
                 fontSize: '14px',
-                fontWeight: '500',
+                fontWeight: '600',
                 color: '#374151',
                 marginBottom: '8px'
               }}>
+                <span style={{ fontSize: '18px' }}>📝</span>
                 Business Description
               </label>
               {isEditing ? (
                 <textarea
                   value={tempData.description}
                   onChange={(e) => handleInputChange('description', e.target.value)}
+                  placeholder="Describe your business..."
                   rows={4}
                   style={{
                     width: '100%',
@@ -448,22 +554,111 @@ const MobileVendorProfile: React.FC = () => {
                     border: '1px solid #d1d5db',
                     fontSize: '16px',
                     background: '#f9fafb',
-                    resize: 'vertical'
+                    resize: 'vertical',
+                    boxSizing: 'border-box',
+                    fontFamily: 'inherit',
+                    lineHeight: '1.5'
                   }}
                 />
               ) : (
-                <p style={{
+                <div style={{
                   fontSize: '16px',
                   color: '#1f2937',
-                  margin: 0,
                   padding: '12px 16px',
                   background: '#f9fafb',
                   borderRadius: '8px',
-                  lineHeight: '1.5'
+                  lineHeight: '1.5',
+                  border: '1px solid #e5e7eb'
                 }}>
-                  {profileData.description}
-                </p>
+                  {profileData.description || 'Not provided'}
+                </div>
               )}
+            </div>
+          </div>
+        </div>
+
+        {/* Bank Information */}
+        <div style={{
+          background: 'white',
+          borderRadius: '12px',
+          padding: '20px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          marginBottom: '16px'
+        }}>
+          <h3 style={{
+            fontSize: '18px',
+            fontWeight: '600',
+            color: '#1f2937',
+            margin: '0 0 16px 0',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <span style={{ fontSize: '20px' }}>🏦</span>
+            Bank Information
+          </h3>
+          
+          <div style={{ 
+            background: '#f0fdf4', 
+            border: '1px solid #bbf7d0', 
+            borderRadius: '8px', 
+            padding: '12px', 
+            marginBottom: '16px'
+          }}>
+            <p style={{ 
+              fontSize: '14px', 
+              color: '#15803d', 
+              margin: 0,
+              lineHeight: 1.4
+            }}>
+              <strong>🔒 Secure & Verified</strong><br />
+              Bank details are encrypted and verified. To update, use Bank Verification.
+            </p>
+          </div>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div>
+              <label style={{
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#6b7280',
+                marginBottom: '4px',
+                display: 'block'
+              }}>
+                Bank Name
+              </label>
+              <div style={{
+                padding: '12px 16px',
+                background: '#f9fafb',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                fontSize: '16px',
+                color: profileData.bankName ? '#1f2937' : '#9ca3af'
+              }}>
+                {profileData.bankName || 'Not provided'}
+              </div>
+            </div>
+            
+            <div>
+              <label style={{
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#6b7280',
+                marginBottom: '4px',
+                display: 'block'
+              }}>
+                Account Number
+              </label>
+              <div style={{
+                padding: '12px 16px',
+                background: '#f9fafb',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                fontSize: '16px',
+                color: profileData.bankAccountNumber ? '#1f2937' : '#9ca3af'
+              }}>
+                {profileData.bankAccountNumber ? `${'*'.repeat(6)}${profileData.bankAccountNumber.slice(-4)}` : 'Not provided'}
+              </div>
             </div>
           </div>
         </div>

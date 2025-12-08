@@ -5,6 +5,7 @@ import { CartProvider } from './context/CartContext';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './toast.css'; // Custom toast styling
+import { setupAutoRefresh } from './utils/tokenManager';
 
 // Layout Components
 import Navbar from './Navbar';
@@ -52,6 +53,7 @@ import ResponsiveCourierAnalytics from './dashboard/ResponsiveCourierAnalytics';
 import CourierPayout from './dashboard/CourierPayout';
 import ResponsiveCourierProfile from './dashboard/ResponsiveCourierProfile';
 import Explore from './explore';
+import EnhancedExplorePage from './EnhancedExplorePage';
 import VendorProfile from './VendorProfile';
 import Checkout from './Checkout';
 import OrderConfirmation from './OrderConfirmation';
@@ -125,6 +127,19 @@ function App() {
     // Remove automatic dark mode detection. Only set dark mode if user toggles it.
     document.documentElement.classList.remove('dark-mode');
     setDarkMode(false);
+  }, []);
+
+  useEffect(() => {
+    // Setup automatic token refresh
+    const cleanup = setupAutoRefresh();
+    
+    console.log('✅ Automatic token refresh enabled');
+    
+    // Cleanup on unmount
+    return () => {
+      cleanup();
+      console.log('🔴 Automatic token refresh disabled');
+    };
   }, []);
 
   return (
@@ -203,7 +218,7 @@ function App() {
           } />
           <Route path="/recommendations" element={
             <main>
-              <Explore />
+              <EnhancedExplorePage />
             </main>
           } />
           <Route path="/vendor/:id" element={

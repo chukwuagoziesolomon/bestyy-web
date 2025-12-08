@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Menu, User, MessageCircle, DollarSign, BarChart3, HelpCircle, Settings } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import { useAuth } from '../context/AuthContext';
-import { API_URL } from '../api';
+import { API_URL, fetchVendorProfile } from '../api';
 
 interface VendorHeaderProps {
   title?: string;
@@ -15,40 +15,133 @@ const VendorHeader: React.FC<VendorHeaderProps> = ({ title, showHamburger = true
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
   const { user } = useAuth();
+  const [profilePic, setProfilePic] = useState('');
+  const [vendorName, setVendorName] = useState('Vendor');
+  const [initials, setInitials] = useState('V');
 
-  // Get vendor profile picture and business name from localStorage vendor_profile
-  let vendorProfilePic = '/logo.png';
-  let businessName = 'Vendor';
+  // Fetch vendor profile from API on mount
+  useEffect(() => {
+    const loadVendorProfile = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        if (!token) return;
+
+        const profileData = await fetchVendorProfile(token);
+        console.log('🔍 Fetched vendor profile from API:', profileData);
+
+        // Extract business logo
+        const logoUrl = profileData.logo;
+        if (logoUrl) {
+          const fullLogoUrl = logoUrl.startsWith('http') ? logoUrl :
+                             logoUrl.startsWith('/') ? `${API_URL}${logoUrl}` : logoUrl;
+          setProfilePic(fullLogoUrl);
+          console.log('📸 Set profile pic from API:', fullLogoUrl);
+          
+          // Update localStorage
+          localStorage.setItem('businessLogo', logoUrl);
+        }
+
+        // Extract business name
+        const name = profileData.business_name || 'Vendor';
+        setVendorName(name);
+        if (name) {
+          setInitials(name[0].toUpperCase());
+        }
+
+        // Update vendor_profile in localStorage
+        localStorage.setItem('vendor_profile', JSON.stringify({
+          business_name: profileData.business_name,
+          logo: profileData.logo,
+          businessLogo: profileData.logo,
+          phone: profileData.phone,
+          business_address: profileData.business_address,
+          business_description: profileData.business_description,
+          verification_status: profileData.verification_status
+        }));
+
+      } catch (error) {
+        console.error('❌ Error fetching vendor profile:', error);
+        // Fallback to localStorage
+        loadFromLocalStorage();
+      }
+    };
+
+    loadVendorProfile();
+  }, []);
+
+  // Fallback: Load from localStorage
+  const loadFromLocalStorage = () => {
+    // Get profile picture (prioritize business logo) and business name
+    let userProfilePic = '';
+    let businessName = 'Vendor';
+    let userInitials = 'V';
   
-  const savedVendor = localStorage.getItem('vendor_profile');
-  if (savedVendor) {
-    try {
-      const vendor = JSON.parse(savedVendor);
-      const logoUrl = vendor.logo || vendor.businessLogo;
-      if (logoUrl) {
-        // If it's a relative path, prepend API_URL; otherwise use as-is (Cloudinary URL)
-        vendorProfilePic = logoUrl.startsWith('http') ? logoUrl : 
+    console.log('🔍 Loading from localStorage...');
+    
+    // First, try to get business logo and name from vendor_profile
+    const savedVendor = localStorage.getItem('vendor_profile');
+    
+    if (savedVendor) {
+      try {
+        const vendor = JSON.parse(savedVendor);
+        businessName = vendor.business_name || vendor.businessName || businessName;
+        
+        // Try to get business logo first (what user uploads on profile page)
+        const logoUrl = vendor.logo || vendor.businessLogo || vendor.business_logo;
+        if (logoUrl) {
+          userProfilePic = logoUrl.startsWith('http') ? logoUrl :
                           logoUrl.startsWith('/') ? `${API_URL}${logoUrl}` : logoUrl;
+          console.log('📸 Using business logo from vendor_profile:', userProfilePic);
+        }
+      } catch (e) {
+        console.error('Error parsing vendor_profile:', e);
       }
-      businessName = vendor.business_name || vendor.businessName || businessName;
-    } catch (e) {
-      // Fallback to individual localStorage items
-      const logoUrl = localStorage.getItem('businessLogo');
-      if (logoUrl) {
-        vendorProfilePic = logoUrl.startsWith('http') ? logoUrl : 
-                          logoUrl.startsWith('/') ? `${API_URL}${logoUrl}` : logoUrl;
+    }
+    
+    // Fallback to businessLogo from localStorage
+    if (!userProfilePic) {
+      const businessLogo = localStorage.getItem('businessLogo');
+      if (businessLogo) {
+        userProfilePic = businessLogo.startsWith('http') ? businessLogo :
+                        businessLogo.startsWith('/') ? `${API_URL}${businessLogo}` : businessLogo;
+        console.log('📸 Using businessLogo from localStorage:', userProfilePic);
       }
-      businessName = localStorage.getItem('businessName') || businessName;
     }
-  } else {
-    // Fallback to individual localStorage items
-    const logoUrl = localStorage.getItem('businessLogo');
-    if (logoUrl) {
-      vendorProfilePic = logoUrl.startsWith('http') ? logoUrl : 
-                        logoUrl.startsWith('/') ? `${API_URL}${logoUrl}` : logoUrl;
+    
+    // Fallback to user profile picture
+    if (!userProfilePic) {
+      if (user?.profile_picture) {
+        userProfilePic = user.profile_picture.startsWith('http') ? user.profile_picture :
+                         user.profile_picture.startsWith('/') ? `${API_URL}${user.profile_picture}` : user.profile_picture;
+        console.log('📸 Using user profile_picture from auth:', userProfilePic);
+      } else {
+        const savedUser = localStorage.getItem('user');
+        if (savedUser) {
+          try {
+            const userData = JSON.parse(savedUser);
+            if (userData.profile_picture) {
+              userProfilePic = userData.profile_picture.startsWith('http') ? userData.profile_picture :
+                              userData.profile_picture.startsWith('/') ? `${API_URL}${userData.profile_picture}` : userData.profile_picture;
+              console.log('📸 Using user profile_picture from localStorage:', userProfilePic);
+            }
+          } catch (e) {}
+        }
+      }
     }
-    businessName = localStorage.getItem('businessName') || businessName;
-  }
+    
+    // Get user initials for fallback
+    if (businessName && businessName !== 'Vendor') {
+      userInitials = businessName[0].toUpperCase();
+    } else if (user?.first_name) {
+      userInitials = user.first_name[0].toUpperCase();
+    } else if (user?.email) {
+      userInitials = user.email[0].toUpperCase();
+    }
+
+    setProfilePic(userProfilePic);
+    setVendorName(businessName);
+    setInitials(userInitials);
+  };
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -104,38 +197,53 @@ const VendorHeader: React.FC<VendorHeaderProps> = ({ title, showHamburger = true
               display: 'flex',
               alignItems: 'center',
               gap: '12px',
-              flexShrink: 0
+              flex: 1,
+              minWidth: 0,
+              maxWidth: 'calc(100% - 100px)'
             }}>
               <div style={{
                 width: '44px',
                 height: '44px',
                 borderRadius: '50%',
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                background: profilePic ? 'transparent' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 boxShadow: '0 4px 16px rgba(16, 185, 129, 0.3)',
-                border: '3px solid rgba(255, 255, 255, 0.9)',
+                border: profilePic ? 'none' : '3px solid rgba(255, 255, 255, 0.9)',
                 position: 'relative',
                 overflow: 'hidden',
                 flexShrink: 0
               }}>
-                {vendorProfilePic && vendorProfilePic !== '/logo.png' ? (
+                {profilePic ? (
                   <img
-                    src={vendorProfilePic}
-                    alt={`${businessName}'s profile`}
+                    src={profilePic}
+                    alt="Profile"
                     style={{
                       width: '100%',
                       height: '100%',
                       objectFit: 'cover',
-                      borderRadius: '50%'
+                      borderRadius: '50%',
+                      display: 'block'
+                    }}
+                    onLoad={(e) => {
+                      console.log('✅ Profile image loaded successfully:', profilePic);
+                      e.currentTarget.style.display = 'block';
                     }}
                     onError={(e) => {
+                      console.error('❌ Profile image failed to load:', profilePic);
                       e.currentTarget.style.display = 'none';
+                      // Show initials when image fails
+                      const parent = e.currentTarget.parentElement;
+                      if (parent) {
+                        const initialsDiv = document.createElement('div');
+                        initialsDiv.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:white;font-weight:600;font-size:18px;';
+                        initialsDiv.textContent = initials;
+                        parent.appendChild(initialsDiv);
+                      }
                     }}
                   />
-                ) : null}
-                {(!vendorProfilePic || vendorProfilePic === '/logo.png') && (
+                ) : (
                   <div style={{
                     width: '100%',
                     height: '100%',
@@ -146,7 +254,7 @@ const VendorHeader: React.FC<VendorHeaderProps> = ({ title, showHamburger = true
                     fontWeight: 600,
                     fontSize: '18px'
                   }}>
-                    {businessName.charAt(0).toUpperCase()}
+                    {initials}
                   </div>
                 )}
                 {/* Subtle inner glow */}
@@ -165,18 +273,24 @@ const VendorHeader: React.FC<VendorHeaderProps> = ({ title, showHamburger = true
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'flex-start',
-                flexShrink: 0
+                flex: 1,
+                minWidth: 0,
+                overflow: 'hidden'
               }}>
                 <span style={{
-                  fontSize: '18px',
+                  fontSize: '16px',
                   fontWeight: '800',
                   color: '#10b981',
-                  lineHeight: '1.1',
+                  lineHeight: '1.2',
                   letterSpacing: '-0.5px',
                   textShadow: '0 1px 2px rgba(16, 185, 129, 0.1)',
-                  whiteSpace: 'nowrap'
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  maxWidth: '100%',
+                  display: 'block'
                 }}>
-                  {businessName}
+                  {vendorName}
                 </span>
               </div>
             </div>

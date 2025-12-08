@@ -46,52 +46,59 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({
     position: 'relative',
     zIndex: 2
   }}>
-    {showSearchBar ? (
-      <div style={{ width: 420, position: 'relative' }}>
-        <input
-          type="text"
-          placeholder="Search"
-          value={searchValue}
-          onChange={e => onSearchChange && onSearchChange(e.target.value)}
-          style={{
-            width: '100%',
-            padding: '0.9rem 2.5rem 0.9rem 2.5rem',
-            borderRadius: 24,
-            border: 'none',
-            background: '#f8fafc',
-            fontSize: 18,
-            fontWeight: 500,
-            color: '#222',
-            outline: 'none',
-            boxShadow: '0 1px 4px rgba(16,24,40,0.04)'
-          }}
-        />
-        <span style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#bbb' }}>
-          <Search size={20} />
-        </span>
-      </div>
-    ) : (
-      <div style={{ flex: 1, paddingLeft: '2rem' }}>
-        {businessName && (
-          <div style={{
-            fontSize: '18px',
-            fontWeight: '600',
-            color: '#1f2937',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
-            Welcome back, {businessName}
-          </div>
-        )}
-      </div>
-    )}
-    <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-      {showDarkMode && (
-        <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 4px rgba(16,24,40,0.04)', cursor: 'pointer' }}>
-          <Moon size={22} color="#555" />
+    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '16px' }}>
+      {showProfileImage && profileImageSrc && (
+        <div style={{
+          width: '48px',
+          height: '48px',
+          borderRadius: '50%',
+          overflow: 'hidden',
+          border: '2px solid #10b981',
+          flexShrink: 0
+        }}>
+          <img
+            src={profileImageSrc}
+            alt="Business Logo"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover'
+            }}
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              const parent = e.currentTarget.parentElement;
+              if (parent && initials) {
+                parent.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                parent.style.display = 'flex';
+                parent.style.alignItems = 'center';
+                parent.style.justifyContent = 'center';
+                parent.innerHTML = `<span style="color: white; font-weight: 600; font-size: 20px;">${initials}</span>`;
+              }
+            }}
+          />
         </div>
       )}
+      {businessName && (
+        <div>
+          <div style={{
+            fontSize: '20px',
+            fontWeight: '700',
+            color: '#10b981',
+            lineHeight: '1.2'
+          }}>
+            {businessName}
+          </div>
+          <div style={{
+            fontSize: '14px',
+            color: '#6b7280',
+            fontWeight: '500'
+          }}>
+            Business Dashboard
+          </div>
+        </div>
+      )}
+    </div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
       {showNotification && (
         userId && userType ? (
           <NotificationBell 
@@ -104,9 +111,6 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({
             <Bell size={22} color="#555" />
           </div>
         )
-      )}
-      {showProfileImage && (
-        <ProfileImage src={profileImageSrc || ""} size={40} initials={initials} />
       )}
     </div>
   </div>
