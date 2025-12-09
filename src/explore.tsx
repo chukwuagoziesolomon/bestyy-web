@@ -458,14 +458,6 @@ const Explore: React.FC = () => {
             <span className="category-name">Hotels</span>
           </div>
 
-          <div className="category-item coming-soon desktop-only">
-            <div className="category-icon">
-              <img src="/Airbnb.png" alt="Airbnb" className="category-image" />
-              <span className="coming-soon-badge">Coming Soon</span>
-            </div>
-            <span className="category-name">Airbnb</span>
-          </div>
-
           <div className="category-item desktop-only">
             <div className="category-icon">
               <img src="/food.png" alt="Services" className="category-image" />

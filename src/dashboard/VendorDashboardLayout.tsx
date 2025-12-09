@@ -1,6 +1,6 @@
 import React, { ReactNode } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Home, List, Utensils, Archive, BarChart2, CreditCard, User, Table } from 'lucide-react';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Home, List, Utensils, Archive, BarChart2, CreditCard, User, Table, LogOut } from 'lucide-react';
 import DashboardNavbar from '../components/DashboardNavbar';
 import { useResponsive } from '../hooks/useResponsive';
 import { getThumbnailUrl } from '../services/cloudinaryService';
@@ -33,6 +33,7 @@ const bottomLinks = [
 
 const VendorDashboardLayout: React.FC<VendorDashboardLayoutProps> = ({ children }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { isMobile, isTablet } = useResponsive();
   const { user } = useAuth();
 
@@ -108,6 +109,20 @@ const VendorDashboardLayout: React.FC<VendorDashboardLayoutProps> = ({ children 
               {link.label}
             </Link>
           ))}
+          <button
+            onClick={() => {
+              localStorage.clear();
+              window.location.href = '/login';
+            }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 12, padding: '0.85rem 1.1rem', borderRadius: 8,
+              border: 'none', background: 'none', cursor: 'pointer',
+              color: '#ef4444', fontWeight: 600, fontSize: 16, width: '100%', textAlign: 'left'
+            }}
+          >
+            <span style={{ display: 'flex', alignItems: 'center' }}><LogOut size={20} /></span>
+            Logout
+          </button>
         </div>
       </aside>
       <main style={{ flex: 1, background: '#f8fafc', minHeight: '100vh', padding: '0.5rem 2.5rem 2.5rem 2.5rem' }}>

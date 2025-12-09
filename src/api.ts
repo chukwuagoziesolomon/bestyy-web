@@ -862,16 +862,16 @@ export async function createUserAddress(token: string, address: {
   return response.json();
 }
 
-export async function updateUserAddress(token: string, id: number, address: {
+export async function updateUserAddress(token: string, id: number, address: Partial<{
   address_type: string;
   address: string;
   city: string;
   state: string;
   zip_code: string;
-  is_default?: boolean;
-}) {
+  is_default: boolean;
+}>) {
   const response = await fetch(`${API_URL}/api/user/addresses/${id}/`, {
-    method: 'PUT',
+    method: 'PATCH',  // Changed from PUT to PATCH for partial updates
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
@@ -1068,9 +1068,13 @@ export async function fetchUserProfile(token: string) {
   return response.json();
 }
 
-export async function updateUserProfile(token: string, profileData: any) {
+export async function updateUserProfile(token: string, profileData: {
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+}) {
   const response = await fetch(`${API_URL}/api/user/profile/`, {
-    method: 'PUT',
+    method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
@@ -2518,6 +2522,26 @@ export async function uploadUnifiedImages(token: string, images: { [key: string]
   }
 }
 
+// Get current user basic info (GET /api/user/me/)
+export async function getUserMe(token: string) {
+  const response = await fetch(`${API_URL}/api/user/me/`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    let errorMsg = 'Failed to fetch user info';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
 // User Profile Info API Functions
 export async function getUserProfileInfo(token: string) {
   const response = await fetch(`${API_URL}/api/user/profile/info/`, {
@@ -2669,4 +2693,119 @@ export async function verifySubscriptionPayment(token: string, reference: string
     throw new Error(errorMsg);
   }
   return response.json();
+}
+
+// ==================== ADDRESS MANAGEMENT APIs ====================
+
+export interface AddressSuggestion {
+  place_id: string;
+  description: string;
+  structured_formatting: {
+    main_text: string;
+    secondary_text: string;
+  };
+}
+
+export interface AddressDetails {
+  formatted_address: string;
+  geometry: {
+    location: {
+      lat: number;
+      lng: number;
+    };
+  };
+  address_components: Array<{
+    long_name: string;
+    short_name: string;
+    types: string[];
+  }>;
+}
+
+export interface UserAddress {
+  id: number;
+  address_type: 'home' | 'work' | 'other';
+  address: string;
+  city: string;
+  state: string;
+  zip_code: string;
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// Get address autocomplete suggestions (no auth required)
+export async function getAddressSuggestions(input: string, location?: string): Promise<AddressSuggestion[]> {
+  const url = new URL(`${API_URL}/api/user/location/suggestions/`);
+  url.searchParams.append('input', input);
+  if (location) {
+    url.searchParams.append('location', location);
+  }
+
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch address suggestions');
+  }
+
+  const data = await response.json();
+  return data.predictions || [];
+}
+
+// Get full address details from place ID (no auth required)
+export async function getAddressDetails(placeId: string): Promise<AddressDetails | null> {
+  const url = new URL(`${API_URL}/api/user/location/geocode/`);
+  url.searchParams.append('place_id', placeId);
+
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch address details');
+  }
+
+  const data = await response.json();
+  return data.results && data.results.length > 0 ? data.results[0] : null;
+}
+
+// Get all user addresses (auth required)
+export async function getUserAddresses(token: string): Promise<UserAddress[]> {
+  const response = await fetch(`${API_URL}/api/user/addresses/`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch addresses');
+  }
+
+  return await response.json();
+}
+
+// Get single address (auth required) - NEW FUNCTION
+export async function getUserAddress(token: string, addressId: number): Promise<UserAddress> {
+  const response = await fetch(`${API_URL}/api/user/addresses/${addressId}/`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch address');
+  }
+
+  return await response.json();
 }

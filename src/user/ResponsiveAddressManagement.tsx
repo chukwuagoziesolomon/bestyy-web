@@ -3,7 +3,7 @@ import { useResponsive } from '../hooks/useResponsive';
 import AddressManagement from './AddressManagement';
 import MobileAddressManagement from './MobileAddressManagement';
 
-const ResponsiveSavedAddresses: React.FC = () => {
+const ResponsiveAddressManagement: React.FC = () => {
   const { isMobile, isTablet } = useResponsive();
   
   // Force mobile view for testing - adjust threshold as needed
@@ -18,4 +18,4 @@ const ResponsiveSavedAddresses: React.FC = () => {
   return <AddressManagement />;
 };
 
-export default ResponsiveSavedAddresses;
+export default ResponsiveAddressManagement;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, User, MessageCircle, DollarSign, BarChart3, HelpCircle, Settings } from 'lucide-react';
+import { Menu, User, MessageCircle, DollarSign, BarChart3, HelpCircle, Settings, LogOut } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import { useAuth } from '../context/AuthContext';
 import { API_URL, fetchVendorProfile } from '../api';
@@ -484,13 +484,40 @@ const VendorHeader: React.FC<VendorHeaderProps> = ({ title, showHamburger = true
                 fontSize: '16px',
                 color: '#374151',
                 fontWeight: '500',
-                transition: 'all 0.2s ease'
+                transition: 'all 0.2s ease',
+                borderBottom: '1px solid #f3f4f6'
               }}
               onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
               onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
             >
               <MessageCircle size={20} color="#10b981" />
               Help & Support
+            </button>
+            
+            <button
+              onClick={() => {
+                localStorage.clear();
+                window.location.href = '/login';
+              }}
+              style={{
+                width: '100%',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '16px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                fontSize: '16px',
+                color: '#ef4444',
+                fontWeight: '600',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#fef2f2'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+            >
+              <LogOut size={20} color="#ef4444" />
+              Logout
             </button>
           </div>
         </div>

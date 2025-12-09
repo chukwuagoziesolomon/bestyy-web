@@ -6,6 +6,7 @@ import MobileDashboardHome from '../user/MobileDashboardHome';
 import MobileOrdersPage from '../user/MobileOrdersPage';
 import { useResponsive } from '../hooks/useResponsive';
 import ChatWithBestie from '../components/ChatWithBestie';
+import DashboardNavbar from '../components/DashboardNavbar';
 
 const UserDashboardLayout: React.FC = () => {
   const { isMobile, isTablet, windowSize } = useResponsive();
@@ -47,6 +48,20 @@ const UserDashboardLayout: React.FC = () => {
   }
   
   // Desktop view
+  // Get user name and profile image from localStorage
+  let userName = '';
+  let userProfilePic = '';
+  const savedUser = localStorage.getItem('user');
+  if (savedUser) {
+    try {
+      const userData = JSON.parse(savedUser);
+      userName = userData.first_name || userData.full_name || userData.name || '';
+      userProfilePic = userData.profile_image || userData.profile_picture || userData.avatar || '';
+    } catch (e) {}
+  }
+  if (!userProfilePic) {
+    userProfilePic = localStorage.getItem('profile_image') || localStorage.getItem('profile_picture') || '';
+  }
   return (
     <div style={{
       display: 'flex',
@@ -62,11 +77,18 @@ const UserDashboardLayout: React.FC = () => {
         width: '100%',
         overflowY: 'auto'
       }}>
-        <div style={{ 
-          maxWidth: 1200, 
-          margin: '0 auto', 
-          padding: '40px 20px'
-        }}>
+        {/* Add DashboardNavbar for desktop user dashboard, matching vendor style */}
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 20px 0 20px' }}>
+          <DashboardNavbar
+            profileImageSrc={userProfilePic}
+            initials={userName?.[0] || 'U'}
+            businessName={userName}
+            showSearchBar={false}
+            showDarkMode={false}
+            showNotification={false}
+          />
+        </div>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px' }}>
           <Outlet context={{ isMobile }} />
         </div>
       </main>

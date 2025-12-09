@@ -66,6 +66,7 @@ import MobileOrdersPage from './user/MobileOrdersPage';
 import ResponsiveOrderDetails from './components/ResponsiveOrderDetails';
 import ResponsiveSavedAddresses from './user/ResponsiveSavedAddresses';
 import MobileAddAddressPage from './user/MobileAddAddressPage';
+import ResponsiveAddressManagement from './user/ResponsiveAddressManagement';
 import ResponsiveFavorites from './user/ResponsiveFavorites';
 
 // Payment Methods removed - see routes commented out below
@@ -289,6 +290,7 @@ function App() {
             <Route path="addresses" element={<ResponsiveSavedAddresses />} />
             <Route path="addresses/add" element={<MobileAddAddressPage />} />
             <Route path="addresses/edit/:id" element={<MobileAddAddressPage />} />
+            <Route path="manage-addresses" element={<ResponsiveAddressManagement />} />
             <Route path="favorites" element={<ResponsiveFavorites />} />
             <Route path="notifications" element={<NotificationsWrapper />} />
     

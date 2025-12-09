@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { showError, showSuccess } from '../toast';
-import { Edit2, Camera, Building2, Bell, Shield, Clock, MapPin, Truck, User, Mail, Phone, CreditCard } from 'lucide-react';
+import { Edit2, Camera, Building2, Bell, Shield, Clock, MapPin, Truck, User, Mail, Phone, CreditCard, LogOut } from 'lucide-react';
 import ImageUpload from '../components/ImageUpload';
-import { fetchUserProfile, updateUserProfile, fetchVendorProfile, updateVendorProfile, fetchCourierProfile, updateCourierProfile, uploadUserProfileImage, uploadVendorImages, uploadCourierImages } from '../api';
+import { getUserMe, fetchUserProfile, updateUserProfile, fetchVendorProfile, updateVendorProfile, fetchCourierProfile, updateCourierProfile, uploadUserProfileImage, uploadVendorImages, uploadCourierImages } from '../api';
 
 const ProfilePage = () => {
 
@@ -11,8 +12,8 @@ const ProfilePage = () => {
   const [error, setError] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
   // Editable fields - expanded to include all vendor signup data
-  const [fullName, setFullName] = useState('');
-  // Removed nickName and language as they're not in the endpoint response
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [businessAddress, setBusinessAddress] = useState('');
@@ -24,8 +25,6 @@ const ProfilePage = () => {
   const [openingHours, setOpeningHours] = useState('');
   const [closingHours, setClosingHours] = useState('');
   const [offersDelivery, setOffersDelivery] = useState(false);
-  const [emailNotifications, setEmailNotifications] = useState(false);
-  const [pushNotifications, setPushNotifications] = useState(false);
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
   // Bank information states
@@ -90,7 +89,8 @@ const ProfilePage = () => {
         console.log('✅ Loading vendor profile data:', vendor);
 
         // Populate all fields from signup data
-        setFullName(vendor.business_name || vendor.user?.full_name || '');
+        setFirstName(vendor.business_name || vendor.user?.first_name || '');
+        setLastName(vendor.user?.last_name || '');
         setEmail(vendor.user?.email || vendor.email || '');
         setPhone(vendor.phone || '');
         setBusinessAddress(vendor.business_address || '');
@@ -121,7 +121,8 @@ const ProfilePage = () => {
         const user = JSON.parse(savedUser);
         console.log('✅ Loading user data:', user);
 
-        setFullName(user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || '');
+        setFirstName(user.first_name || '');
+        setLastName(user.last_name || '');
         setEmail(user.email || '');
         setPhone(user.phone || '');
 
@@ -141,7 +142,8 @@ const ProfilePage = () => {
         const pending = JSON.parse(pendingData);
         console.log('✅ Loading pending profile data:', pending);
 
-        setFullName(pending.fullName || pending.businessName || '');
+        setFirstName(pending.firstName || pending.businessName || '');
+        setLastName(pending.lastName || '');
         setEmail(pending.email || '');
         setPhone(pending.phone || '');
         setBusinessAddress(pending.businessAddress || '');
@@ -171,7 +173,20 @@ const ProfilePage = () => {
           } else if (isCourier) {
             apiProfileData = await fetchCourierProfile(token);
           } else {
+            // Fetch basic user info from /api/user/me/
+            const userMe = await getUserMe(token);
+            // Fetch full profile from /api/user/profile/
             apiProfileData = await fetchUserProfile(token);
+            
+            // Merge data from both endpoints
+            apiProfileData = {
+              ...apiProfileData,
+              email: userMe.email || apiProfileData.email,
+              username: userMe.username || apiProfileData.username,
+              first_name: userMe.first_name || apiProfileData.first_name,
+              last_name: userMe.last_name || apiProfileData.last_name,
+              phone: userMe.phone || apiProfileData.phone,
+            };
           }
 
           // Store API data
@@ -180,7 +195,8 @@ const ProfilePage = () => {
           // Populate form fields from API response
           if (isVendor) {
             // Handle vendor profile data structure
-            setFullName(apiProfileData.business_name || '');
+            setFirstName(apiProfileData.business_name || '');
+            setLastName('');
             setEmail(apiProfileData.email || ''); // May not be directly available in vendor endpoint
             setPhone(apiProfileData.phone || '');
             setBusinessAddress(apiProfileData.business_address || '');
@@ -199,13 +215,10 @@ const ProfilePage = () => {
             setBankAccountNumber(apiProfileData.bank_account_number || '');
             setBankName(apiProfileData.bank_name || '');
             setBankCode(apiProfileData.bank_code || '');
-            
-            // Set notifications to default values for vendors (not in vendor endpoint)
-            setEmailNotifications(false);
-            setPushNotifications(false);
-          } else {
-            // Handle user/courier profile data structure
-            const fullName = apiProfileData.business_name || apiProfileData.full_name || '';
+          } else if (isCourier) {
+            // Handle courier profile data structure
+            const firstName = apiProfileData.full_name?.split(' ')[0] || '';
+            const lastName = apiProfileData.full_name?.split(' ').slice(1).join(' ') || '';
             const email = apiProfileData.email || '';
             const phone = apiProfileData.phone || '';
             const businessAddress = apiProfileData.business_address || '';
@@ -217,13 +230,12 @@ const ProfilePage = () => {
             const openingHours = apiProfileData.opening_hours || '';
             const closingHours = apiProfileData.closing_hours || '';
             const offersDelivery = apiProfileData.offers_delivery || false;
-            const emailNotifications = apiProfileData.email_notifications || false;
-            const pushNotifications = apiProfileData.push_notifications || false;
             const profilePicture = apiProfileData.logo || apiProfileData.profile_picture || null;
             const coverPhoto = apiProfileData.cover_photo || apiProfileData.cover_image || null;
 
             // Update state variables
-            setFullName(fullName);
+            setFirstName(firstName);
+            setLastName(lastName);
             setEmail(email);
             setPhone(phone);
             setBusinessAddress(businessAddress);
@@ -235,10 +247,15 @@ const ProfilePage = () => {
             setOpeningHours(openingHours);
             setClosingHours(closingHours);
             setOffersDelivery(offersDelivery);
-            setEmailNotifications(emailNotifications);
-            setPushNotifications(pushNotifications);
             setProfilePicture(profilePicture);
             setCoverPhoto(coverPhoto);
+          } else {
+            // Handle user profile data structure - matching API response
+            setFirstName(apiProfileData.first_name || '');
+            setLastName(apiProfileData.last_name || '');
+            setEmail(apiProfileData.email || '');
+            setPhone(apiProfileData.phone || '');
+            setProfilePicture(apiProfileData.profile_picture || null);
           }
           setSelectedLogoFile(null);
           setSelectedCoverFile(null);
@@ -306,6 +323,19 @@ const ProfilePage = () => {
           setProfilePicture(imageUrl);
           console.log('✅ User profile image updated:', imageUrl);
           showSuccess('Profile picture updated successfully!');
+          // Save to localStorage so UserHeader/Sidebar reflect immediately
+          if (imageUrl) {
+            localStorage.setItem('profile_image', imageUrl);
+            // Also update user object in localStorage if present
+            const savedUser = localStorage.getItem('user');
+            if (savedUser) {
+              try {
+                const userData = JSON.parse(savedUser);
+                userData.profile_image = imageUrl;
+                localStorage.setItem('user', JSON.stringify(userData));
+              } catch (e) {}
+            }
+          }
         }
 
         // Clear preview and selected file
@@ -421,7 +451,7 @@ const ProfilePage = () => {
         };
 
         updateData = {
-          business_name: fullName,
+          business_name: firstName + ' ' + lastName,
           business_category: businessCategory,
           business_description: businessDescription,
           bio: bio,
@@ -439,6 +469,7 @@ const ProfilePage = () => {
         updatedProfile = await updateVendorProfile(token, updateData, { method: 'PATCH' });
       } else if (isCourier) {
         updateData = {
+          full_name: firstName + ' ' + lastName,
           phone: phone,
           business_address: businessAddress,
           business_category: businessCategory,
@@ -448,20 +479,14 @@ const ProfilePage = () => {
           opening_hours: openingHours ? `${openingHours}:00` : '',
           closing_hours: closingHours ? `${closingHours}:00` : '',
           offers_delivery: offersDelivery,
-          profile_picture: previewPicture || profilePicture,
-          email_notifications: emailNotifications,
-          push_notifications: pushNotifications
+          profile_picture: previewPicture || profilePicture
         };
         updatedProfile = await updateCourierProfile(token, updateData);
       } else {
         updateData = {
-          first_name: fullName.split(' ')[0] || '',
-          last_name: fullName.split(' ').slice(1).join(' ') || '',
-          phone: phone,
-          address: businessAddress,
-          email_notifications: emailNotifications,
-          push_notifications: pushNotifications,
-          profile_picture: previewPicture || profilePicture
+          first_name: firstName,
+          last_name: lastName,
+          phone: phone
         };
         updatedProfile = await updateUserProfile(token, updateData);
       }
@@ -470,7 +495,7 @@ const ProfilePage = () => {
       const currentVendorProfile = JSON.parse(localStorage.getItem('vendor_profile') || '{}');
       const updatedVendorProfile = {
         ...currentVendorProfile,
-        business_name: fullName,
+        business_name: firstName + ' ' + lastName,
         phone: phone,
         business_address: businessAddress,
         business_category: businessCategory,
@@ -487,7 +512,9 @@ const ProfilePage = () => {
         user: {
           ...currentVendorProfile.user,
           email: email,
-          full_name: fullName
+          first_name: firstName,
+          last_name: lastName,
+          full_name: firstName + ' ' + lastName
         }
       };
 
@@ -606,7 +633,7 @@ const ProfilePage = () => {
                   ) : profilePicture ? (
                     <img src={profilePicture} alt="Profile" style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover' }} />
                   ) : (
-                    <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, fontWeight: 700, color: '#10b981' }}>{(fullName || 'U')[0]}</div>
+                    <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, fontWeight: 700, color: '#10b981' }}>{(firstName || 'U')[0]}</div>
                   )}
                   {editMode && (
                     <button
@@ -642,7 +669,7 @@ const ProfilePage = () => {
                   />
                 </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, fontSize: 22 }}>{fullName || 'User'}</div>
+              <div style={{ fontWeight: 700, fontSize: 22 }}>{firstName && lastName ? `${firstName} ${lastName}` : firstName || 'User'}</div>
               <div style={{ color: '#888', fontSize: 16 }}>{email}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '8px' }}>
                 <div style={{ color: '#10b981', fontSize: 14, fontWeight: '600', textTransform: 'capitalize' }}>
@@ -652,9 +679,17 @@ const ProfilePage = () => {
               </div>
         </div>
             {!editMode ? (
-              <button type="button" onClick={() => setEditMode(true)} style={{ background: '#10b981', color: '#fff', fontWeight: 700, fontSize: 16, border: 'none', borderRadius: 8, padding: '10px 28px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Edit2 size={18} /> Edit
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button type="button" onClick={() => setEditMode(true)} style={{ background: '#10b981', color: '#fff', fontWeight: 700, fontSize: 16, border: 'none', borderRadius: 8, padding: '10px 28px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Edit2 size={18} /> Edit
+                </button>
+                <button type="button" onClick={() => {
+                  localStorage.clear();
+                  window.location.href = '/login';
+                }} style={{ background: '#ef4444', color: '#fff', fontWeight: 700, fontSize: 16, border: 'none', borderRadius: 8, padding: '10px 28px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <LogOut size={18} /> Logout
+                </button>
+              </div>
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <button type="button" onClick={() => setEditMode(false)} style={{ background: '#6b7280', color: '#fff', fontWeight: 700, fontSize: 16, border: 'none', borderRadius: 8, padding: '10px 20px', cursor: 'pointer' }}>
@@ -670,9 +705,15 @@ const ProfilePage = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px', marginBottom: 32 }}>
         <div>
             <label style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <User size={16} color="#10b981" /> Full Name
+              <User size={16} color="#10b981" /> First Name
             </label>
-              <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Full Name" style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6, boxSizing: 'border-box' }} disabled={!editMode} />
+              <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="First Name" style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6, boxSizing: 'border-box' }} disabled={!editMode} />
+        </div>
+        <div>
+            <label style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <User size={16} color="#10b981" /> Last Name
+            </label>
+              <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Last Name" style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: 16, marginTop: 6, boxSizing: 'border-box' }} disabled={!editMode} />
         </div>
         <div>
             <label style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -979,32 +1020,6 @@ const ProfilePage = () => {
             </div>
           )}
 
-          {/* Notifications Section */}
-          <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 2px 12px #f3f4f6', border: '1.5px solid #f3f4f6', marginBottom: 32, padding: 32 }}>
-            <div style={{ fontWeight: 700, fontSize: 20, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10 }}>
-              <Bell size={24} color="#10b981" /> Notifications
-        </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-              <div>
-          <div style={{ fontWeight: 700, fontSize: 16 }}>Email Notifications</div>
-                <div style={{ color: '#888', fontSize: 15 }}>Receive updates about your Order/Bookings via email</div>
-              </div>
-              <label className="switch">
-                <input type="checkbox" checked={emailNotifications} onChange={e => setEmailNotifications(e.target.checked)} disabled={!editMode} />
-                <span className="slider round"></span>
-              </label>
-        </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div>
-          <div style={{ fontWeight: 700, fontSize: 16 }}>Push Notification</div>
-                <div style={{ color: '#888', fontSize: 15 }}>Get notified when order is Sent</div>
-              </div>
-              <label className="switch">
-                <input type="checkbox" checked={pushNotifications} onChange={e => setPushNotifications(e.target.checked)} disabled={!editMode} />
-                <span className="slider round"></span>
-              </label>
-        </div>
-      </div>
           {/* Privacy & Security Section */}
           <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 2px 12px #f3f4f6', border: '1.5px solid #f3f4f6', marginBottom: 32, padding: 32 }}>
             <div style={{ fontWeight: 700, fontSize: 20, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10 }}>

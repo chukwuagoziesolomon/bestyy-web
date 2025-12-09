@@ -138,39 +138,14 @@ const MobileDashboardHome: React.FC = () => {
       {/* Header */}
         <UserHeader />
 
-      {/* Welcome Section */}
-      <div style={{ 
-          padding: '24px 16px 20px',
-        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-        color: 'white',
-          marginBottom: '24px',
-          marginTop: '8px'
-      }}>
-        <h2 style={{ 
-          margin: '0 0 8px 0', 
-          fontSize: '20px',
-          fontWeight: 600,
-          lineHeight: '1.3'
-        }}>
-          Welcome back, {firstName}!
-        </h2>
-        <p style={{ 
-          margin: 0, 
-          fontSize: '13px',
-          opacity: 0.9,
-          lineHeight: '1.4'
-        }}>
-          Track your orders and manage your account
-        </p>
-      </div>
-
       {/* Quick Actions */}
       <div style={{ 
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
         gap: '12px',
         padding: '0 16px 24px',
-        marginBottom: '16px'
+        marginBottom: '16px',
+        paddingBottom: '100px'
       }}>
         <button 
           onClick={() => navigate('/user/orders')}

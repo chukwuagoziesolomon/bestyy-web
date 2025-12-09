@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, MapPin, Star, HelpCircle, User, HeadphonesIcon, Package, Store } from 'lucide-react';
+import { Home, MapPin, Star, HelpCircle, User, HeadphonesIcon, Package, Store, LogOut } from 'lucide-react';
 import { useLocation, Link } from 'react-router-dom';
 
 const navLinks = [
@@ -87,6 +87,23 @@ const Sidebar: React.FC = () => {
             {link.label}
           </Link>
         ))}
+        <button
+          onClick={() => {
+            localStorage.clear();
+            window.location.href = '/login';
+          }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 12, padding: '0.85rem 2.2rem', borderRadius: 8,
+            border: 'none', background: 'none', cursor: 'pointer',
+            color: '#ef4444', fontWeight: 600, fontSize: 16, width: '100%', textAlign: 'left',
+            transition: 'background 0.2s',
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.background = '#fef2f2'}
+          onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+        >
+          <span style={{ display: 'flex', alignItems: 'center' }}><LogOut size={20} /></span>
+          Logout
+        </button>
       </div>
       {/* Remove in-sidebar WhatsApp button: now handled globally as floating chat */}
     </aside>

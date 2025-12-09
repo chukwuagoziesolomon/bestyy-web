@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Edit2, Save } from 'lucide-react';
 import MobileHeader from '../components/MobileHeader';
+import UserBottomNavigation from '../components/UserBottomNavigation';
 import { useResponsive } from '../hooks/useResponsive';
 
-import { fetchUserProfile, updateUserProfile, fetchVendorProfile, updateVendorProfile, fetchCourierProfile, updateCourierProfile, uploadUserProfileImage, uploadVendorImages, uploadCourierImages } from '../api';
+import { getUserMe, fetchUserProfile, updateUserProfile, fetchVendorProfile, updateVendorProfile, fetchCourierProfile, updateCourierProfile, uploadUserProfileImage, uploadVendorImages, uploadCourierImages } from '../api';
 
 import { showError, showSuccess } from '../toast';
 
@@ -18,15 +19,12 @@ const MobileProfileSettingsPage: React.FC = () => {
   // Image upload state
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   
-  // Form state
+  // Form state - matching API response structure
   const [formData, setFormData] = useState({
-    fullName: '',
-    nickName: '',
-    language: 'English',
+    first_name: '',
+    last_name: '',
     email: '',
     phone: '',
-    emailNotifications: true,
-    pushNotifications: true,
     profilePicture: null as string | null,
     previewPicture: null as string | null
   });
@@ -79,19 +77,29 @@ const MobileProfileSettingsPage: React.FC = () => {
       } else if (isCourier) {
         profileData = await fetchCourierProfile(token);
       } else {
+        // First fetch basic user info from /api/user/me/
+        const userMe = await getUserMe(token);
+        // Then fetch full profile from /api/user/profile/
         profileData = await fetchUserProfile(token);
+        
+        // Merge the data from both endpoints
+        profileData = {
+          ...profileData,
+          email: userMe.email || profileData.email,
+          username: userMe.username || profileData.username,
+          first_name: userMe.first_name || profileData.first_name,
+          last_name: userMe.last_name || profileData.last_name,
+          phone: userMe.phone || profileData.phone,
+        };
       }
 
       setFormData(prev => ({
         ...prev,
-        fullName: profileData.business_name || profileData.user?.first_name + ' ' + profileData.user?.last_name || profileData.first_name + ' ' + profileData.last_name || '',
-        nickName: profileData.user?.first_name || profileData.first_name || '',
+        first_name: profileData.business_name || profileData.first_name || '',
+        last_name: profileData.last_name || '',
         email: profileData.user?.email || profileData.email || '',
         phone: profileData.phone || profileData.user?.phone || '',
-        profilePicture: profileData.logo || profileData.profile_picture || null,
-        language: profileData.language || 'English',
-        emailNotifications: profileData.email_notifications || true,
-        pushNotifications: profileData.push_notifications || true
+        profilePicture: profileData.logo || profileData.profile_picture || null
       }));
 
       console.log('Profile fields populated from API data');
@@ -112,8 +120,8 @@ const MobileProfileSettingsPage: React.FC = () => {
 
         setFormData(prev => ({
           ...prev,
-          fullName: vendor.business_name || vendor.user?.full_name || '',
-          nickName: vendor.user?.first_name || '',
+          first_name: vendor.business_name || vendor.user?.first_name || '',
+          last_name: vendor.user?.last_name || '',
           email: vendor.user?.email || vendor.email || '',
           profilePicture: vendor.logo || null
         }));
@@ -134,8 +142,8 @@ const MobileProfileSettingsPage: React.FC = () => {
 
         setFormData(prev => ({
           ...prev,
-          fullName: user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || '',
-          nickName: user.first_name || '',
+          first_name: user.first_name || '',
+          last_name: user.last_name || '',
           email: user.email || ''
         }));
 
@@ -155,7 +163,8 @@ const MobileProfileSettingsPage: React.FC = () => {
 
         setFormData(prev => ({
           ...prev,
-          fullName: pending.fullName || pending.businessName || '',
+          first_name: pending.first_name || pending.firstName || '',
+          last_name: pending.last_name || pending.lastName || '',
           email: pending.email || '',
           phone: pending.phone || ''
         }));
@@ -241,6 +250,19 @@ const MobileProfileSettingsPage: React.FC = () => {
             profilePicture: imageUrl,
             previewPicture: null
           }));
+          // Save to localStorage so UserHeader/Sidebar reflect immediately
+          if (imageUrl) {
+            localStorage.setItem('profile_image', imageUrl);
+            // Also update user object in localStorage if present
+            const savedUser = localStorage.getItem('user');
+            if (savedUser) {
+              try {
+                const userData = JSON.parse(savedUser);
+                userData.profile_image = imageUrl;
+                localStorage.setItem('user', JSON.stringify(userData));
+              } catch (e) {}
+            }
+          }
         }
 
         showSuccess('Profile picture updated successfully!');
@@ -276,33 +298,24 @@ const MobileProfileSettingsPage: React.FC = () => {
       let updateData;
       if (isVendor) {
         updateData = {
-          business_name: formData.fullName,
+          business_name: formData.first_name + ' ' + formData.last_name,
           phone: formData.phone,
-          email: formData.email,
-          first_name: formData.nickName,
-          language: formData.language,
-          email_notifications: formData.emailNotifications,
-          push_notifications: formData.pushNotifications
+          email: formData.email
         };
         await updateVendorProfile(token, updateData);
       } else if (isCourier) {
         updateData = {
           phone: formData.phone,
           email: formData.email,
-          first_name: formData.nickName,
-          language: formData.language,
-          email_notifications: formData.emailNotifications,
-          push_notifications: formData.pushNotifications
+          first_name: formData.first_name,
+          last_name: formData.last_name
         };
         await updateCourierProfile(token, updateData);
       } else {
         updateData = {
-          first_name: formData.nickName,
-          last_name: formData.fullName.split(' ').slice(1).join(' ') || '',
-          phone: formData.phone,
-          language: formData.language,
-          email_notifications: formData.emailNotifications,
-          push_notifications: formData.pushNotifications
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          phone: formData.phone
         };
         await updateUserProfile(token, updateData);
       }
@@ -311,11 +324,12 @@ const MobileProfileSettingsPage: React.FC = () => {
       const currentVendorProfile = JSON.parse(localStorage.getItem('vendor_profile') || '{}');
       const updatedVendorProfile = {
         ...currentVendorProfile,
-        business_name: formData.fullName,
+        business_name: formData.first_name + ' ' + formData.last_name,
         user: {
           ...currentVendorProfile.user,
           email: formData.email,
-          first_name: formData.nickName
+          first_name: formData.first_name,
+          last_name: formData.last_name
         }
       };
       localStorage.setItem('vendor_profile', JSON.stringify(updatedVendorProfile));
@@ -336,7 +350,7 @@ const MobileProfileSettingsPage: React.FC = () => {
   };
 
   const displayPicture = formData.previewPicture || formData.profilePicture;
-  const displayName = formData.nickName || formData.fullName || 'User';
+  const displayName = formData.first_name || 'User';
 
   return (
     <div style={{
@@ -457,7 +471,7 @@ const MobileProfileSettingsPage: React.FC = () => {
 
           {/* Form Fields */}
           <div style={{ marginBottom: '32px' }}>
-            {/* Full Name */}
+            {/* First Name */}
             <div style={{ marginBottom: '20px' }}>
               <label style={{
                 display: 'block',
@@ -466,12 +480,12 @@ const MobileProfileSettingsPage: React.FC = () => {
                 marginBottom: '8px',
                 fontWeight: '500'
               }}>
-                Full Name
+                First Name
               </label>
               <input
                 type="text"
-                value={formData.fullName}
-                onChange={(e) => handleInputChange('fullName', e.target.value)}
+                value={formData.first_name}
+                onChange={(e) => handleInputChange('first_name', e.target.value)}
                 placeholder="Your First Name"
                 style={{
                   width: '100%',
@@ -487,7 +501,7 @@ const MobileProfileSettingsPage: React.FC = () => {
               />
             </div>
 
-            {/* Nick Name */}
+            {/* Last Name */}
             <div style={{ marginBottom: '20px' }}>
               <label style={{
                 display: 'block',
@@ -496,13 +510,13 @@ const MobileProfileSettingsPage: React.FC = () => {
                 marginBottom: '8px',
                 fontWeight: '500'
               }}>
-                Nick Name
+                Last Name
               </label>
               <input
                 type="text"
-                value={formData.nickName}
-                onChange={(e) => handleInputChange('nickName', e.target.value)}
-                placeholder="Your First Name"
+                value={formData.last_name}
+                onChange={(e) => handleInputChange('last_name', e.target.value)}
+                placeholder="Your Last Name"
                 style={{
                   width: '100%',
                   padding: '16px',
@@ -515,38 +529,6 @@ const MobileProfileSettingsPage: React.FC = () => {
                   boxSizing: 'border-box'
                 }}
               />
-            </div>
-
-            {/* Language */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{
-                display: 'block',
-                fontSize: '14px',
-                color: '#333',
-                marginBottom: '8px',
-                fontWeight: '500'
-              }}>
-                Language
-              </label>
-              <select
-                value={formData.language}
-                onChange={(e) => handleInputChange('language', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '16px',
-                  backgroundColor: '#f5f5f5',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  color: '#333',
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
-              >
-                <option value="English">English</option>
-                <option value="French">French</option>
-                <option value="Spanish">Spanish</option>
-              </select>
             </div>
 
             {/* Email */}
@@ -610,119 +592,7 @@ const MobileProfileSettingsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Notifications Section */}
-          <div style={{ marginBottom: '32px' }}>
-            <h3 style={{
-              fontSize: '18px',
-              fontWeight: '600',
-              color: '#333',
-              margin: '0 0 20px 0'
-            }}>
-              Notifications
-            </h3>
 
-            {/* Email Notifications */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              justifyContent: 'space-between',
-              marginBottom: '24px',
-              paddingBottom: '24px',
-              borderBottom: '1px solid #f0f0f0'
-            }}>
-              <div style={{ flex: 1, marginRight: '16px' }}>
-                <div style={{
-                  fontSize: '16px',
-                  fontWeight: '500',
-                  color: '#333',
-                  marginBottom: '4px'
-                }}>
-                  Email Notifications
-                </div>
-                <div style={{
-                  fontSize: '14px',
-                  color: '#666',
-                  lineHeight: '1.4'
-                }}>
-                  Receive updates about your Order/Bookings via email
-                </div>
-              </div>
-              <div
-                onClick={() => handleInputChange('emailNotifications', !formData.emailNotifications)}
-                style={{
-                  width: '48px',
-                  height: '28px',
-                  backgroundColor: formData.emailNotifications ? '#10b981' : '#e5e7eb',
-                  borderRadius: '14px',
-                  position: 'relative',
-                  cursor: 'pointer',
-                  transition: 'background-color 0.2s'
-                }}
-              >
-                <div style={{
-                  width: '24px',
-                  height: '24px',
-                  backgroundColor: 'white',
-                  borderRadius: '50%',
-                  position: 'absolute',
-                  top: '2px',
-                  left: formData.emailNotifications ? '22px' : '2px',
-                  transition: 'left 0.2s',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-                }} />
-              </div>
-            </div>
-
-            {/* Push Notifications */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              justifyContent: 'space-between',
-              marginBottom: '32px'
-            }}>
-              <div style={{ flex: 1, marginRight: '16px' }}>
-                <div style={{
-                  fontSize: '16px',
-                  fontWeight: '500',
-                  color: '#333',
-                  marginBottom: '4px'
-                }}>
-                  Push Notification
-                </div>
-                <div style={{
-                  fontSize: '14px',
-                  color: '#666',
-                  lineHeight: '1.4'
-                }}>
-                  Get notified when order is delivered
-                </div>
-              </div>
-              <div
-                onClick={() => handleInputChange('pushNotifications', !formData.pushNotifications)}
-                style={{
-                  width: '48px',
-                  height: '28px',
-                  backgroundColor: formData.pushNotifications ? '#10b981' : '#e5e7eb',
-                  borderRadius: '14px',
-                  position: 'relative',
-                  cursor: 'pointer',
-                  transition: 'background-color 0.2s'
-                }}
-              >
-                <div style={{
-                  width: '24px',
-                  height: '24px',
-                  backgroundColor: 'white',
-                  borderRadius: '50%',
-                  position: 'absolute',
-                  top: '2px',
-                  left: formData.pushNotifications ? '22px' : '2px',
-                  transition: 'left 0.2s',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-                }} />
-              </div>
-            </div>
-          </div>
 
           {/* Save Changes Button - Moved up for better visibility */}
           <div style={{ 
@@ -848,6 +718,11 @@ const MobileProfileSettingsPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Bottom Navigation */}
+      <div style={{ paddingBottom: '80px' }}>
+        <UserBottomNavigation currentPath="/user/profile" />
+      </div>
     </div>
   );
 };

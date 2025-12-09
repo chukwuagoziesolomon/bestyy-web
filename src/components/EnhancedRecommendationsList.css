@@ -1,3 +1,63 @@
+/* Horizontal Scroll Section for Mobile */
+.horizontal-scroll-cards {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 32px 0 28px;
+  margin-bottom: 18px;
+  scrollbar-width: thin;
+  scrollbar-color: #e5e7eb #fff;
+}
+
+.horizontal-scroll-cards::-webkit-scrollbar {
+  height: 6px;
+}
+.horizontal-scroll-cards::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 6px;
+}
+.horizontal-scroll-cards > * {
+  min-width: 80px;
+  max-width: 100px;
+  height: 110px;
+  background: #f8fafc;
+  border-radius: 18px;
+  box-shadow: 0 2px 8px rgba(16,24,40,0.04);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  color: #222;
+  margin-bottom: 0;
+  border: 2px solid transparent;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+.horizontal-scroll-cards > *.active {
+  border: 2px solid #ef4444;
+  box-shadow: 0 4px 16px rgba(239,68,68,0.08);
+}
+
+@media (max-width: 768px) {
+  .horizontal-scroll-cards {
+    gap: 10px;
+    padding: 0 20px 0 22px;
+  }
+  .horizontal-scroll-cards > * {
+    min-width: 70px;
+    max-width: 90px;
+    height: 90px;
+    font-size: 12px;
+  }
+  .horizontal-scroll-cards > * {
+    min-width: 80px;
+    max-width: 100px;
+    height: 100px;
+    font-size: 13px;
+  }
+}
 /* Enhanced Recommendations List Styles */
 .enhanced-recommendations-list {
   width: 100%;
@@ -67,21 +127,24 @@
 }
 
 .refresh-button {
-  padding: 8px 16px;
-  background: #667eea;
+  padding: 10px 20px;
+  background: #10b981;
   color: white;
   border: none;
   border-radius: 8px;
   font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
 }
 
 .refresh-button:hover {
-  background: #5a6fd8;
+  background: #059669;
   transform: translateY(-1px);
 }
 
@@ -244,6 +307,7 @@
   background-size: 200% 100%;
   animation: loading 1.5s infinite;
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -287,31 +351,47 @@
   padding: 60px 20px;
 }
 
+.error-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
 .error-message h3 {
   font-size: 24px;
   color: #d32f2f;
   margin-bottom: 12px;
+  margin-top: 0;
 }
 
 .error-message p {
   font-size: 16px;
   color: #666;
   margin-bottom: 24px;
+  line-height: 1.5;
 }
 
 .retry-button {
-  background: #d32f2f;
+  background: #10b981;
   color: white;
   border: none;
   padding: 12px 24px;
-  border-radius: 12px;
+  border-radius: 8px;
   font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .retry-button:hover {
-  background: #b71c1c;
+  background: #059669;
   transform: translateY(-1px);
 }
 
@@ -321,10 +401,20 @@
   padding: 60px 20px;
 }
 
+.empty-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
 .empty-message h3 {
   font-size: 24px;
   color: #666;
   margin-bottom: 12px;
+  margin-top: 0;
 }
 
 .empty-message p {
@@ -348,15 +438,47 @@
 
   .header-main h2 {
     font-size: 24px;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+    hyphens: auto;
+  }
+
+  .location-info {
+    font-size: 13px;
+    flex-wrap: wrap;
   }
 
   .header-controls {
     justify-content: space-between;
+    flex-wrap: wrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .refresh-button {
+    flex-shrink: 0;
   }
 
   .recommendations-grid {
     grid-template-columns: 1fr;
     gap: 16px;
+  }
+
+  /* Make recommendations horizontally scrollable on small screens */
+  .recommendations-grid {
+    display: flex;
+    flex-direction: row;
+    gap: 14px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 12px 12px 18px; /* extra left padding so first card is visible */
+  }
+
+  .recommendations-grid > * {
+    flex: 0 0 auto;
+    min-width: 260px; /* keep vendor cards wide enough to render correctly */
+    max-width: 320px;
   }
 
   .metrics-grid {
@@ -379,6 +501,28 @@
   .slideshow-info {
     padding: 12px 16px;
     font-size: 13px;
+  }
+
+  .enhanced-recommendations-list.error,
+  .enhanced-recommendations-list.empty {
+    padding: 40px 16px;
+  }
+
+  .error-message h3,
+  .empty-message h3 {
+    font-size: 20px;
+  }
+
+  .error-message p,
+  .empty-message p {
+    font-size: 14px;
+    padding: 0 10px;
+  }
+
+  .retry-button,
+  .refresh-button {
+    width: 100%;
+    max-width: 280px;
   }
 }
 

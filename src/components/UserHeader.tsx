@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, User, MessageCircle, Settings, MapPin, Heart } from 'lucide-react';
+import { Menu, User, MessageCircle, Settings, MapPin, Heart, LogOut } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import { useAuth } from '../context/AuthContext';
 import { API_URL } from '../api';
@@ -28,7 +28,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ title, showHamburger = true }) 
       const profileImage = userData.profile_image || userData.profile_picture || userData.avatar;
       if (profileImage) {
         userProfilePic = profileImage.startsWith('http') ? profileImage : 
-                        profileImage.startsWith('/') ? `${API_URL}${profileImage}` : profileImage;
+                        profileImage.startsWith('/') ? `${process.env.REACT_APP_API_URL || ''}${profileImage}` : profileImage;
       }
     } catch (e) {
       // Fallback
@@ -44,7 +44,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ title, showHamburger = true }) 
   const profilePic = localStorage.getItem('profile_image') || localStorage.getItem('profile_picture');
   if (profilePic) {
     userProfilePic = profilePic.startsWith('http') ? profilePic : 
-                    profilePic.startsWith('/') ? `${API_URL}${profilePic}` : profilePic;
+                    profilePic.startsWith('/') ? `${process.env.REACT_APP_API_URL || ''}${profilePic}` : profilePic;
   }
 
   // Close menu when clicking outside
@@ -331,13 +331,40 @@ const UserHeader: React.FC<UserHeaderProps> = ({ title, showHamburger = true }) 
                 fontSize: '16px',
                 color: '#374151',
                 fontWeight: '500',
-                transition: 'all 0.2s ease'
+                transition: 'all 0.2s ease',
+                borderBottom: '1px solid #f3f4f6'
               }}
               onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
               onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
             >
               <MessageCircle size={20} color="#10b981" />
               Help & Support
+            </button>
+            
+            <button
+              onClick={() => {
+                localStorage.clear();
+                window.location.href = '/login';
+              }}
+              style={{
+                width: '100%',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '16px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                fontSize: '16px',
+                color: '#ef4444',
+                fontWeight: '600',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#fef2f2'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+            >
+              <LogOut size={20} color="#ef4444" />
+              Logout
             </button>
           </div>
         </div>

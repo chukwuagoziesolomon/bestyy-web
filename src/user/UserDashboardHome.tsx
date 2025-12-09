@@ -167,19 +167,6 @@ const UserDashboardHome = () => {
 
   return (
     <div style={{ fontFamily: 'Nunito Sans, sans-serif', color: '#111' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
-        <div>
-          <h2 style={{ fontWeight: 600, fontSize: 28, margin: 0 }}>Welcome Back, {user?.first_name || 'User'}!</h2>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-          <Moon size={22} style={{ color: '#222', cursor: 'pointer' }} />
-          <Bell size={22} style={{ color: '#222', cursor: 'pointer' }} />
-          <div style={{ width: 38, height: 38, borderRadius: '50%', backgroundColor: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold' }}>
-            {user?.first_name?.[0]?.toUpperCase() || <User size={20} />}
-          </div>
-        </div>
-      </div>
 
       {/* My Orders */}
       <div style={{ marginBottom: 40 }}>

@@ -278,14 +278,6 @@ const EnhancedExplorePage: React.FC = () => {
 
           <div className="category-item coming-soon">
             <div className="category-icon">
-              <img src="/hotel.png" alt="Hotels" className="category-image" />
-              <span className="coming-soon-badge">Soon</span>
-            </div>
-            <span className="category-name">Hotels</span>
-          </div>
-
-          <div className="category-item coming-soon">
-            <div className="category-icon">
               <img src="/airbnb.png" alt="Airbnb" className="category-image" />
               <span className="coming-soon-badge">Soon</span>
             </div>

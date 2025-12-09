@@ -1,5 +1,6 @@
 // Enhanced Recommendations List Component
 import React, { useState, useEffect } from 'react';
+import { Store, AlertCircle, RefreshCw, MapPin, Utensils } from 'lucide-react';
 import EnhancedVendorCard from './EnhancedVendorCard';
 import PremiumLoadingAnimation from './PremiumLoadingAnimation';
 import { 
@@ -68,9 +69,11 @@ const EnhancedRecommendationsList: React.FC<EnhancedRecommendationsListProps> = 
     return (
       <div className={`enhanced-recommendations-list error ${className}`}>
         <div className="error-message">
-          <h3>⚠️ Unable to load recommendations</h3>
+          <AlertCircle size={48} color="#ef4444" style={{ marginBottom: '16px' }} />
+          <h3>Unable to load recommendations</h3>
           <p>{error}</p>
           <button onClick={handleRefresh} className="retry-button">
+            <RefreshCw size={16} style={{ marginRight: '8px' }} />
             Try Again
           </button>
         </div>
@@ -82,9 +85,11 @@ const EnhancedRecommendationsList: React.FC<EnhancedRecommendationsListProps> = 
     return (
       <div className={`enhanced-recommendations-list empty ${className}`}>
         <div className="empty-message">
-          <h3>🍽️ No restaurants found</h3>
-          <p>No restaurants are currently available in {city}. Try a different city or check back later.</p>
+          <Store size={48} color="#d1d5db" style={{ marginBottom: '16px' }} />
+          <h3>No restaurants found</h3>
+          <p>No restaurants are currently available in your area. Try a different city or check back later.</p>
           <button onClick={handleRefresh} className="refresh-button">
+            <RefreshCw size={16} style={{ marginRight: '8px' }} />
             Refresh
           </button>
         </div>
@@ -92,19 +97,28 @@ const EnhancedRecommendationsList: React.FC<EnhancedRecommendationsListProps> = 
     );
   }
 
-  const displayRecommendations = filterByMealTime ? filteredData.recommendations : data.recommendations;
+  // Filter out vendors with name or category 'Airbnb'
+  const rawRecommendations = filterByMealTime ? filteredData.recommendations : data.recommendations;
+  const displayRecommendations = rawRecommendations.filter(
+    vendor =>
+      vendor.business_name?.toLowerCase() !== 'airbnb' &&
+      vendor.business_category?.toLowerCase() !== 'airbnb'
+  );
 
   return (
     <div className={`enhanced-recommendations-list ${className}`}>
       <div className="recommendations-header">
         <div className="header-main">
           <h2>
-            {data.current_meal_time === 'breakfast' && '🌅 Breakfast Recommendations'}
-            {data.current_meal_time === 'lunch' && '☀️ Lunch Recommendations'}
-            {data.current_meal_time === 'dinner' && '🌙 Dinner Recommendations'}
-            {data.current_meal_time === 'snacks' && '🍿 Snack Recommendations'}
+            {data.current_meal_time === 'breakfast' && 'Breakfast Recommendations'}
+            {data.current_meal_time === 'lunch' && 'Lunch Recommendations'}
+            {data.current_meal_time === 'dinner' && 'Dinner Recommendations'}
+            {data.current_meal_time === 'snacks' && 'Snack Recommendations'}
           </h2>
-          <p className="location-info">📍 {data.city} • {data.total_vendors} restaurants</p>
+          <p className="location-info">
+            <MapPin size={16} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
+            {data.city} • {data.total_vendors} restaurants
+          </p>
         </div>
 
         <div className="header-controls">
@@ -117,16 +131,16 @@ const EnhancedRecommendationsList: React.FC<EnhancedRecommendationsListProps> = 
                 className="meal-select"
               >
                 <option value="all">All Meals</option>
-                <option value="breakfast">🌅 Breakfast</option>
-                <option value="lunch">☀️ Lunch</option>
-                <option value="dinner">🌙 Dinner</option>
-                <option value="snacks">🍿 Snacks</option>
+                <option value="breakfast">Breakfast</option>
+                <option value="lunch">Lunch</option>
+                <option value="dinner">Dinner</option>
+                <option value="snacks">Snacks</option>
               </select>
             </div>
           )}
 
           <button onClick={handleRefresh} className="refresh-button" title="Refresh recommendations">
-            🔄
+            <RefreshCw size={18} />
           </button>
         </div>
       </div>
@@ -142,7 +156,7 @@ const EnhancedRecommendationsList: React.FC<EnhancedRecommendationsListProps> = 
 
       {data.slideshow_enabled && (
         <div className="slideshow-info">
-          ✨ Interactive slideshow enabled - hover over restaurant images to explore their menu!
+          Interactive slideshow enabled - hover over restaurant images to explore their menu!
         </div>
       )}
 
