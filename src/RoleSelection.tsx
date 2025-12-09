@@ -18,6 +18,7 @@ const roles = [
     img: ['/courier1.png', '/courier2.png'], // phone, bike man
     bg: '/courier3.png', // shadowlike background
     desc: 'Sign up as a rider',
+    comingSoon: true,
   },
 ];
 
@@ -28,6 +29,13 @@ const RoleSelection = () => {
   const handleNext = () => {
     // Navigate to unified signup with pre-selected role
     const roleMap = ['user', 'vendor', 'courier'];
+    const selectedRole = roles[selected];
+    
+    // Prevent navigation if coming soon
+    if (selectedRole.comingSoon) {
+      return;
+    }
+    
     navigate('/signup', { state: { preSelectedRole: roleMap[selected] } });
   };
 
@@ -39,8 +47,9 @@ const RoleSelection = () => {
         {roles.map((role, idx) => (
           <div
             key={role.label}
-            className={`role-selection__card${selected === idx ? ' role-selection__card--active' : ''}`}
-            onClick={() => setSelected(idx)}
+            className={`role-selection__card${selected === idx ? ' role-selection__card--active' : ''}${role.comingSoon ? ' role-selection__card--disabled' : ''}`}
+            onClick={() => !role.comingSoon && setSelected(idx)}
+            style={{ cursor: role.comingSoon ? 'not-allowed' : 'pointer' }}
           >
             {role.bg && (
               <img src={role.bg} alt="Courier Background" className="role-selection__bg" />
@@ -54,6 +63,11 @@ const RoleSelection = () => {
               <img src={role.img[0]} alt={role.label} className="role-selection__img" />
             )}
             <div className="role-selection__label">{role.label}</div>
+            {role.comingSoon && (
+              <div className="role-selection__coming-soon">
+                <span>Coming Soon</span>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -62,7 +76,13 @@ const RoleSelection = () => {
           <span key={idx} className={`role-selection__dot${selected === idx ? ' role-selection__dot--active' : ''}`}></span>
         ))}
       </div>
-      <button className="role-selection__next" onClick={handleNext}>Next</button>
+      <button 
+        className={`role-selection__next${roles[selected]?.comingSoon ? ' role-selection__next--disabled' : ''}`} 
+        onClick={handleNext}
+        disabled={roles[selected]?.comingSoon}
+      >
+        {roles[selected]?.comingSoon ? 'Coming Soon' : 'Next'}
+      </button>
     </div>
   );
 };
