@@ -87,7 +87,10 @@ const EnhancedExplorePage: React.FC = () => {
     const performSearch = async () => {
       if (searchTerm.length >= 2) {
         try {
-          const response = await vendorAutocompleteApi.autocompleteSearch(searchTerm, { limit: 5 });
+          const response = await vendorAutocompleteApi.autocompleteSearch(searchTerm, { 
+            limit: 5,
+            location: city
+          });
           setAutocompleteResults(response.results);
           setShowAutocomplete(true);
         } catch (error) {

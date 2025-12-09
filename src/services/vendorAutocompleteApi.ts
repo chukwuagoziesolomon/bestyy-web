@@ -16,6 +16,12 @@ export interface VendorAutocompleteResult {
   closing_hours: string;
   product_count: number;
   phone: string;
+  matching_products?: Array<{
+    id: number;
+    name: string;
+    price: number;
+    description: string;
+  }>;
 }
 
 export interface AutocompleteResponse {
@@ -49,6 +55,9 @@ class VendorAutocompleteService {
       limit?: number;
       location?: string;
       category?: string;
+      food?: string;
+      min_price?: number;
+      max_price?: number;
     }
   ): Promise<AutocompleteResponse> {
     const params = new URLSearchParams();
@@ -57,6 +66,9 @@ class VendorAutocompleteService {
     if (options?.limit) params.append('limit', options.limit.toString());
     if (options?.location) params.append('location', options.location);
     if (options?.category) params.append('category', options.category);
+    if (options?.food) params.append('food', options.food);
+    if (options?.min_price !== undefined) params.append('min_price', options.min_price.toString());
+    if (options?.max_price !== undefined) params.append('max_price', options.max_price.toString());
 
     try {
       const response = await fetch(

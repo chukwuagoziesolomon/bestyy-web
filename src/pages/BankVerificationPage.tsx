@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, CreditCard, Building2, CheckCircle, Upload } from 'lucide-react';
 import { showError, showSuccess } from '../toast';
-import { verifyBankAccount } from '../api';
+import { verifyBankAccount, fetchSupportedBanks } from '../api';
 import PremiumLoadingAnimation from '../components/PremiumLoadingAnimation';
 
 // Add spinner animation and responsive styles
@@ -53,6 +53,20 @@ const BankVerificationPage = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
+  const [supportedBanks, setSupportedBanks] = useState<any[]>([]);
+
+  // Fetch supported banks on component mount
+  useEffect(() => {
+    const loadSupportedBanks = async () => {
+      try {
+        const response = await fetchSupportedBanks();
+        setSupportedBanks(response.banks || []);
+      } catch (error) {
+        console.error('Failed to fetch supported banks:', error);
+      }
+    };
+    loadSupportedBanks();
+  }, []);
 
 
 
@@ -319,9 +333,7 @@ const BankVerificationPage = () => {
               }}>
                 Bank Name
               </label>
-              <input
-                type="text"
-                placeholder="Enter your bank name (e.g., Access Bank, GTBank)"
+              <select
                 value={formData.bank_name}
                 onChange={(e) => handleInputChange('bank_name', e.target.value)}
                 style={{
@@ -334,7 +346,7 @@ const BankVerificationPage = () => {
                   background: '#fff',
                   boxSizing: 'border-box',
                   transition: 'all 0.2s ease',
-                  fontFamily: 'inherit'
+                  cursor: 'pointer'
                 }}
                 onFocus={(e) => {
                   e.target.style.borderColor = '#10b981';
@@ -344,7 +356,14 @@ const BankVerificationPage = () => {
                   e.target.style.borderColor = '#e5e7eb';
                   e.target.style.boxShadow = 'none';
                 }}
-              />
+              >
+                <option value="">Select your bank</option>
+                {supportedBanks.map((bank) => (
+                  <option key={bank.code} value={bank.name}>
+                    {bank.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div style={{ marginBottom: '24px' }}>

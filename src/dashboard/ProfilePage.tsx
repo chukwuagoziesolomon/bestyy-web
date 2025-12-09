@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { showError, showSuccess } from '../toast';
 import { Edit2, Camera, Building2, Bell, Shield, Clock, MapPin, Truck, User, Mail, Phone, CreditCard, LogOut } from 'lucide-react';
 import ImageUpload from '../components/ImageUpload';
-import { getUserMe, fetchUserProfile, updateUserProfile, fetchVendorProfile, updateVendorProfile, fetchCourierProfile, updateCourierProfile, uploadUserProfileImage, uploadVendorImages, uploadCourierImages } from '../api';
+import { getUserMe, fetchUserProfile, updateUserProfile, fetchVendorProfile, updateVendorProfile, fetchCourierProfile, updateCourierProfile, uploadUserProfileImage, uploadVendorImages, uploadCourierImages, updateVendorBankDetails, fetchSupportedBanks } from '../api';
 
 const ProfilePage = () => {
 
@@ -31,6 +31,8 @@ const ProfilePage = () => {
   const [bankAccountNumber, setBankAccountNumber] = useState('');
   const [bankName, setBankName] = useState('');
   const [bankCode, setBankCode] = useState('');
+  const [supportedBanks, setSupportedBanks] = useState<any[]>([]);
+  const [bankVerified, setBankVerified] = useState(false);
   const [previewPicture, setPreviewPicture] = useState<string | null>(null);
   const [previewCoverPhoto, setPreviewCoverPhoto] = useState<string | null>(null);
   const [selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null);
@@ -264,6 +266,16 @@ const ProfilePage = () => {
           // Fallback to localStorage if no token
           const hasLocalData = populateFormFromLocalStorage();
           setProfileData(true);
+        }
+
+        // Fetch supported banks for vendors
+        if (isVendor) {
+          try {
+            const banksResponse = await fetchSupportedBanks(token);
+            setSupportedBanks(banksResponse.banks || []);
+          } catch (error) {
+            console.error('Failed to fetch supported banks:', error);
+          }
         }
       } catch (error) {
         console.error('Failed to load profile:', error);
@@ -887,8 +899,7 @@ const ProfilePage = () => {
               }}>
                 <Shield size={20} color="#059669" />
                 <div style={{ fontSize: 14, color: '#047857', lineHeight: 1.4 }}>
-                  <strong>Bank details are verified and secure.</strong> This information is used for payment processing and cannot be edited here. 
-                  To update bank details, please use the <strong>Bank Verification</strong> section.
+                  <strong>Bank details are verified and secure.</strong> You can update your bank information below. Changes may require re-verification.
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px', marginBottom: 24 }}>
@@ -896,10 +907,13 @@ const ProfilePage = () => {
                   <label style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Building2 size={16} color="#10b981" /> Bank Name
                   </label>
-                  <input
-                    type="text"
-                    value={bankName || 'Not provided'}
-                    readOnly
+                  <select
+                    value={bankName}
+                    onChange={(e) => {
+                      const selectedBank = supportedBanks.find(bank => bank.name === e.target.value);
+                      setBankName(e.target.value);
+                      setBankCode(selectedBank?.code || '');
+                    }}
                     style={{ 
                       width: '100%', 
                       padding: 12, 
@@ -907,11 +921,17 @@ const ProfilePage = () => {
                       border: '1.5px solid #e5e7eb', 
                       fontSize: 16, 
                       marginTop: 6,
-                      backgroundColor: '#f9fafb',
-                      color: '#6b7280',
+                      backgroundColor: '#fff',
                       boxSizing: 'border-box'
                     }}
-                  />
+                  >
+                    <option value="">Select Bank</option>
+                    {supportedBanks.map((bank) => (
+                      <option key={bank.code} value={bank.name}>
+                        {bank.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -919,8 +939,9 @@ const ProfilePage = () => {
                   </label>
                   <input
                     type="text"
-                    value={bankAccountNumber ? `${'*'.repeat(6)}${bankAccountNumber.slice(-4)}` : 'Not provided'}
-                    readOnly
+                    value={bankAccountNumber}
+                    onChange={(e) => setBankAccountNumber(e.target.value)}
+                    placeholder="Enter account number"
                     style={{ 
                       width: '100%', 
                       padding: 12, 
@@ -928,12 +949,53 @@ const ProfilePage = () => {
                       border: '1.5px solid #e5e7eb', 
                       fontSize: 16, 
                       marginTop: 6,
-                      backgroundColor: '#f9fafb',
-                      color: '#6b7280',
+                      backgroundColor: '#fff',
                       boxSizing: 'border-box'
                     }}
                   />
                 </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                <button
+                  onClick={async () => {
+                    if (!bankName || !bankAccountNumber) {
+                      showError('Please fill in all bank details');
+                      return;
+                    }
+                    
+                    try {
+                      const token = localStorage.getItem('access_token');
+                      if (!token) {
+                        showError('Authentication required');
+                        return;
+                      }
+                      
+                      await updateVendorBankDetails(token, {
+                        bank_account_number: bankAccountNumber,
+                        bank_name: bankName,
+                        bank_code: bankCode
+                      });
+                      
+                      showSuccess('Bank details updated successfully');
+                      setBankVerified(false); // Reset verification status
+                    } catch (error) {
+                      console.error('Failed to update bank details:', error);
+                      showError('Failed to update bank details');
+                    }
+                  }}
+                  style={{
+                    padding: '12px 24px',
+                    backgroundColor: '#10b981',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 8,
+                    fontSize: 16,
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Update Bank Details
+                </button>
               </div>
             </div>
           )}

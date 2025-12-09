@@ -1154,6 +1154,30 @@ export async function fetchVendorProfileLegacy(token: string) {
   return response.json();
 }
 
+export async function updateVendorBankDetails(token: string, bankData: {
+  bank_account_number: string;
+  bank_name: string;
+  bank_code?: string;
+}) {
+  const response = await fetch(`${API_URL}/api/user/vendor/profile/`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(bankData),
+  });
+  if (!response.ok) {
+    let errorMsg = 'Failed to update bank details';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData?.error || errorData?.message || errorMsg;
+    } catch {}
+    throw new Error(errorMsg);
+  }
+  return response.json();
+}
+
 export async function updateVendorProfile(token: string, profileData: any, options: { method?: 'PATCH' | 'PUT' } = {}) {
   const method = options.method || 'PATCH';
   const response = await fetch(`${API_URL}/api/user/vendors/me/`, {
@@ -2328,7 +2352,7 @@ export async function checkVerificationStatus(phone: string) {
 }
 
 export async function verifyWhatsAppSignup(phone: string, code: string) {
-  const response = await fetch(`${API_URL}/api/auth/verify-whatsapp-signup/`, {
+  const response = await fetch(`${API_URL}/api/user/verification/verify-whatsapp-signup/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ phone, code }),
