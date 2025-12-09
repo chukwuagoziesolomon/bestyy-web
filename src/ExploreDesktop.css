@@ -1267,10 +1267,22 @@
     text-align: center;
   }
 
+  .autocomplete-empty svg {
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+
   .autocomplete-empty p {
-    margin: 16px 0 0 0;
-    font-size: 16px;
+    margin: 4px 0 0 0;
+    font-size: 14px;
     color: #6b7280;
+  }
+
+  .autocomplete-empty p:first-of-type {
+    font-size: 16px;
+    font-weight: 600;
+    color: #374151;
+    margin: 8px 0 0 0;
   }
 }
 

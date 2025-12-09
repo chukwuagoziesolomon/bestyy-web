@@ -96,6 +96,7 @@ const EnhancedExplorePage: React.FC = () => {
         } catch (error) {
           console.error('Search error:', error);
           setAutocompleteResults([]);
+          setShowAutocomplete(true);
         }
       } else {
         setAutocompleteResults([]);
@@ -105,7 +106,7 @@ const EnhancedExplorePage: React.FC = () => {
 
     const debounceTimer = setTimeout(performSearch, 300);
     return () => clearTimeout(debounceTimer);
-  }, [searchTerm]);
+  }, [searchTerm, city]);
 
   const handleVendorClick = (vendor: EnhancedVendorRecommendation) => {
     const profileUrl = getVendorProfileUrl(vendor.business_name, vendor.id);
@@ -166,21 +167,38 @@ const EnhancedExplorePage: React.FC = () => {
             </form>
 
             {/* Autocomplete Results */}
-            {showAutocomplete && autocompleteResults.length > 0 && (
+            {showAutocomplete && (
               <div className="autocomplete-dropdown">
-                {autocompleteResults.map((result) => (
-                  <div
-                    key={result.id}
-                    className="autocomplete-item"
-                    onClick={() => handleSearchResultClick(result)}
-                  >
-                    <img src={result.logo || '/default-vendor.png'} alt={result.business_name} className="autocomplete-logo" />
-                    <div className="autocomplete-details">
-                      <h4 className="autocomplete-name">{result.business_name}</h4>
-                      <p className="autocomplete-info">{result.category || 'Restaurant'}</p>
+                {autocompleteResults.length > 0 ? (
+                  autocompleteResults.map((result) => (
+                    <div
+                      key={result.id}
+                      className="autocomplete-item"
+                      onClick={() => handleSearchResultClick(result)}
+                    >
+                      <img src={result.logo || '/default-vendor.png'} alt={result.business_name} className="autocomplete-logo" />
+                      <div className="autocomplete-details">
+                        <h4 className="autocomplete-name">{result.business_name}</h4>
+                        <p className="autocomplete-info">{result.category || 'Restaurant'}</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="autocomplete-empty">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ color: '#9ca3af' }}>
+                      <circle cx="11" cy="11" r="8"/>
+                      <path d="m21 21-4.35-4.35"/>
+                    </svg>
+                    <div>
+                      <p style={{ margin: '8px 0 0 0', fontSize: '16px', fontWeight: '600', color: '#374151' }}>
+                        No results found
+                      </p>
+                      <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#6b7280' }}>
+                        Try searching for restaurants, cuisine, or dishes in {city}
+                      </p>
                     </div>
                   </div>
-                ))}
+                )}
               </div>
             )}
           </div>

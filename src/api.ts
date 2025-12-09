@@ -2352,7 +2352,7 @@ export async function checkVerificationStatus(phone: string) {
 }
 
 export async function verifyWhatsAppSignup(phone: string, code: string) {
-  const response = await fetch(`${API_URL}/api/user/verification/verify-whatsapp-signup/`, {
+  const response = await fetch(`${API_URL}/api/auth/verify-whatsapp-signup/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ phone, code }),
