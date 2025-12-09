@@ -43,8 +43,24 @@ const BankVerificationPage = () => {
   const userType = location.state?.userType || 'vendor';
   const signupResponse = location.state?.signupResponse;
 
-  // Get token from localStorage (prioritize fresh tokens) or signup response
-  const token = localStorage.getItem('access_token') || signupResponse?.tokens?.access;
+  // Get token from multiple sources - prioritize fresh tokens
+  const getAuthToken = () => {
+    // 1. Check localStorage first (most reliable)
+    const localToken = localStorage.getItem('access_token');
+    if (localToken) return localToken;
+    
+    // 2. Check signup response tokens
+    const signupToken = signupResponse?.tokens?.access;
+    if (signupToken) return signupToken;
+    
+    // 3. Check navigation state tokens
+    const navToken = location.state?.tokens?.access;
+    if (navToken) return navToken;
+    
+    return null;
+  };
+
+  const token = getAuthToken();
 
   const [formData, setFormData] = useState({
     bank_name: '',
@@ -116,13 +132,15 @@ const BankVerificationPage = () => {
       console.log('Token being used:', token);
       console.log('Token from localStorage:', localStorage.getItem('access_token'));
       console.log('Signup response tokens:', signupResponse?.tokens);
+      console.log('Navigation state tokens:', location.state?.tokens);
 
-      // Ensure we have a token - prioritize localStorage for fresh tokens
-      const authToken = localStorage.getItem('access_token') || token;
+      // Ensure we have a token - use the getAuthToken function
+      const authToken = getAuthToken();
       if (!authToken) {
         console.error('No authentication token available');
-        showError('Authentication required. Please try logging in again.');
-        navigate('/login');
+        showError('Authentication required. Please complete phone verification first.');
+        // Instead of redirecting to login, redirect back to signup
+        navigate('/signup');
         return;
       }
 

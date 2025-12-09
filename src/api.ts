@@ -16,6 +16,7 @@ const PUBLIC_ENDPOINTS = [
   '/api/user/search/',
   '/api/user/menu/',  // Public menu items
   '/api/public/',  // Any public API endpoints
+  '/api/auth/verification-status/',
 ];
 
 // Helper function to check if endpoint is public
