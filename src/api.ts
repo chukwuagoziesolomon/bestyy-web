@@ -1160,7 +1160,7 @@ export async function updateVendorBankDetails(token: string, bankData: {
   bank_name: string;
   bank_code?: string;
 }) {
-  const response = await fetch(`${API_URL}/api/user/vendor/profile/`, {
+  const response = await fetch(`${API_URL}/api/user/vendors/profile/`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
