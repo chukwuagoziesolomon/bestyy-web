@@ -29,6 +29,7 @@ const ProfilePage = () => {
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
   // Bank information states
   const [bankAccountNumber, setBankAccountNumber] = useState('');
+  const [bankAccountName, setBankAccountName] = useState('');
   const [bankName, setBankName] = useState('');
   const [bankCode, setBankCode] = useState('');
   const [supportedBanks, setSupportedBanks] = useState<any[]>([]);
@@ -215,6 +216,7 @@ const ProfilePage = () => {
             
             // Set bank information
             setBankAccountNumber(apiProfileData.bank_account_number || '');
+            setBankAccountName(apiProfileData.bank_account_name || '');
             setBankName(apiProfileData.bank_name || '');
             setBankCode(apiProfileData.bank_code || '');
           } else if (isCourier) {
@@ -954,11 +956,32 @@ const ProfilePage = () => {
                     }}
                   />
                 </div>
+                <div>
+                  <label style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <User size={16} color="#10b981" /> Account Name
+                  </label>
+                  <input
+                    type="text"
+                    value={bankAccountName}
+                    onChange={(e) => setBankAccountName(e.target.value)}
+                    placeholder="Enter account name"
+                    style={{ 
+                      width: '100%', 
+                      padding: 12, 
+                      borderRadius: 8, 
+                      border: '1.5px solid #e5e7eb', 
+                      fontSize: 16, 
+                      marginTop: 6,
+                      backgroundColor: '#fff',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
                 <button
                   onClick={async () => {
-                    if (!bankName || !bankAccountNumber) {
+                    if (!bankName || !bankAccountNumber || !bankAccountName) {
                       showError('Please fill in all bank details');
                       return;
                     }
@@ -972,6 +995,7 @@ const ProfilePage = () => {
                       
                       await updateVendorBankDetails(token, {
                         bank_account_number: bankAccountNumber,
+                        bank_account_name: bankAccountName,
                         bank_name: bankName,
                         bank_code: bankCode
                       });

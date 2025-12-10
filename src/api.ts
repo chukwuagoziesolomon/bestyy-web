@@ -1157,16 +1157,27 @@ export async function fetchVendorProfileLegacy(token: string) {
 
 export async function updateVendorBankDetails(token: string, bankData: {
   bank_account_number: string;
+  bank_account_name: string;
   bank_name: string;
   bank_code?: string;
 }) {
-  const response = await fetch(`${API_URL}/api/user/vendors/profile/`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-    },
-    body: JSON.stringify(bankData),
+  const headers: any = {
+    'Content-Type': 'application/json',
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_URL}/api/user/verification/verify-bank/`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      account_number: bankData.bank_account_number,
+      account_name: bankData.bank_account_name,
+      bank_name: bankData.bank_name,
+      bank_code: bankData.bank_code
+    }),
   });
   if (!response.ok) {
     let errorMsg = 'Failed to update bank details';
@@ -1181,7 +1192,7 @@ export async function updateVendorBankDetails(token: string, bankData: {
 
 export async function updateVendorProfile(token: string, profileData: any, options: { method?: 'PATCH' | 'PUT' } = {}) {
   const method = options.method || 'PATCH';
-  const response = await fetch(`${API_URL}/api/user/vendors/me/`, {
+  const response = await fetch(`${API_URL}/api/user/vendors/profile/`, {
     method,
     headers: {
       'Content-Type': 'application/json',
