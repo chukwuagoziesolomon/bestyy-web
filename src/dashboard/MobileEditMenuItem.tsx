@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Camera } from 'lucide-react';
 import VendorHeader from '../components/VendorHeader';
 import VendorBottomNavigation from '../components/VendorBottomNavigation';
+import VariantGroupManager from '../components/VariantGroupManager';
 
 type MenuItemData = {
   dish_name: string;
@@ -11,11 +13,12 @@ type MenuItemData = {
   otherCategory?: string;
   image?: File | string;
   available: boolean;
+  description?: string;
 };
 
 interface MobileEditMenuItemProps {
-  formData: MenuItemData;
-  setFormData: React.Dispatch<React.SetStateAction<MenuItemData>>;
+  formData: MenuItemData & { variants?: any[] };
+  setFormData: React.Dispatch<React.SetStateAction<MenuItemData & { variants?: any[] }>>;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
   handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleSave: () => void;
@@ -36,6 +39,17 @@ const MobileEditMenuItem: React.FC<MobileEditMenuItemProps> = ({
 }) => {
   const navigate = useNavigate();
 
+  useEffect(() => {
+    console.log('MobileEditMenuItem mounted. initial formData:', formData);
+  }, []);
+
+  useEffect(() => {
+    console.log('MobileEditMenuItem formData updated:', formData);
+  }, [formData]);
+
+  // Debug panel visibility flag (kept true while troubleshooting)
+  const showDebug = true;
+
   return (
     <div style={{
       fontFamily: 'Nunito Sans, sans-serif',
@@ -46,6 +60,12 @@ const MobileEditMenuItem: React.FC<MobileEditMenuItemProps> = ({
       <VendorHeader />
       
       <div style={{ padding: '16px' }}>
+        {showDebug && (
+          <div style={{ background: '#111827', color: '#d1d5db', padding: 12, borderRadius: 8, fontSize: 12, marginBottom: 12, whiteSpace: 'pre-wrap' }}>
+            <strong style={{ display: 'block', marginBottom: 8 }}>DEBUG: formData</strong>
+            <code style={{ display: 'block', maxHeight: 160, overflow: 'auto' }}>{JSON.stringify(formData, null, 2)}</code>
+          </div>
+        )}
         <div style={{
           background: 'white',
           borderRadius: '12px',
@@ -155,6 +175,37 @@ const MobileEditMenuItem: React.FC<MobileEditMenuItemProps> = ({
                   outline: 'none'
                 }}
                 placeholder="Enter dish name"
+              />
+            </div>
+
+
+            {/* Item Description */}
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '14px',
+                fontWeight: '600',
+                color: '#374151',
+                marginBottom: '8px'
+              }}>
+                Item Description
+              </label>
+              <textarea
+                name="description"
+                value={formData.description || ''}
+                onChange={handleInputChange}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  background: '#fff',
+                  outline: 'none',
+                  minHeight: '80px',
+                  resize: 'vertical'
+                }}
+                placeholder="Enter item description"
               />
             </div>
 
@@ -284,6 +335,15 @@ const MobileEditMenuItem: React.FC<MobileEditMenuItemProps> = ({
             </div>
           </div>
 
+          {/* Variant Groups */}
+          <div style={{ marginTop: 16 }}>
+            <VariantGroupManager
+              groups={(formData as any).variants || []}
+              onChange={(groups) => setFormData(prev => ({ ...(prev as any), variants: groups }))}
+              disabled={loading}
+            />
+          </div>
+
           {/* Action Buttons */}
           <div style={{
             display: 'flex',
@@ -307,7 +367,10 @@ const MobileEditMenuItem: React.FC<MobileEditMenuItemProps> = ({
               Delete
             </button>
             <button
-              onClick={handleSave}
+              onClick={() => {
+                console.log('MobileEditMenuItem: Save button clicked', { formData });
+                handleSave();
+              }}
               disabled={loading}
               style={{
                 flex: 1,

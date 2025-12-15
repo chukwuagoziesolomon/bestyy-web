@@ -126,8 +126,9 @@ const Checkout: React.FC = () => {
 
       const summaryData = {
         cart_items: vendorCartItems.map(item => ({
-          menu_item_id: item.id,
-          quantity: item.quantity
+          product_id: item.id,
+          quantity: item.quantity,
+          variants: item.variants || { extras: [], addons: [], substitutes: [] }
         })),
         delivery_address: deliveryAddress,
         vendor_id: parseInt(vendorId!)

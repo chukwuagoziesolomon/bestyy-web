@@ -13,6 +13,12 @@ export interface CartItem {
   vendorName: string;
   quantity: number;
   specialInstructions?: string;
+  variants?: {
+    size?: number;
+    extras: number[];
+    addons: number[];
+    substitutes: number[];
+  };
 }
 
 interface CartState {
@@ -35,11 +41,22 @@ const initialState: CartState = {
   totalAmount: 0,
 };
 
+const variantsEqual = (v1?: CartItem['variants'], v2?: CartItem['variants']): boolean => {
+  if (!v1 && !v2) return true;
+  if (!v1 || !v2) return false;
+  return (
+    v1.size === v2.size &&
+    JSON.stringify(v1.extras.sort()) === JSON.stringify(v2.extras.sort()) &&
+    JSON.stringify(v1.addons.sort()) === JSON.stringify(v2.addons.sort()) &&
+    JSON.stringify(v1.substitutes.sort()) === JSON.stringify(v2.substitutes.sort())
+  );
+};
+
 const cartReducer = (state: CartState, action: CartAction): CartState => {
   switch (action.type) {
     case 'ADD_ITEM': {
       const existingItemIndex = state.items.findIndex(
-        item => item.id === action.payload.id && item.vendorId === action.payload.vendorId
+        item => item.id === action.payload.id && item.vendorId === action.payload.vendorId && variantsEqual(item.variants, action.payload.variants)
       );
 
       let newItems: CartItem[];

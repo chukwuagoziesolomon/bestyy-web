@@ -4,7 +4,7 @@ import { Camera } from 'lucide-react';
 import { useResponsive } from '../hooks/useResponsive';
 import { createMenuItem } from '../api';
 import MobileAddMenu from './MobileAddMenu';
-import VariantManager, { MenuVariant } from '../components/VariantManager';
+import VariantGroupManager, { VariantGroup } from '../components/VariantGroupManager';
 
 const AddMenuItemPage: React.FC = () => {
   const navigate = useNavigate();
@@ -17,7 +17,7 @@ const AddMenuItemPage: React.FC = () => {
     price: '1500',
     available_now: true,
     quantity: 50,
-    variants: [] as MenuVariant[]
+    variants: [] as VariantGroup[]
   });
 
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -61,16 +61,39 @@ const AddMenuItemPage: React.FC = () => {
         throw new Error('No authentication token found');
       }
 
-      // Prepare data for API
+
+      // Transform variant groups to flat variant/options array for API
+      // Map group names to allowed type values
+      const allowedTypes = ['size', 'extra', 'addon', 'substitute'] as const;
+      const mapGroupNameToType = (name: string): 'size' | 'extra' | 'addon' | 'substitute' => {
+        const lower = name.trim().toLowerCase();
+        if (allowedTypes.includes(lower as any)) return lower as any;
+        // fallback: if group name contains a type keyword, use it
+        for (const t of allowedTypes) {
+          if (lower.includes(t)) return t;
+        }
+        return 'extra'; // default fallback
+      };
+      const flatVariants = formData.variants.flatMap(group =>
+        group.options.map(option => ({
+          name: option.name,
+          type: mapGroupNameToType(group.name),
+          price_modifier: option.price_modifier,
+          is_required: group.required,
+          is_available: option.is_available,
+          sort_order: option.sort_order
+        }))
+      );
+
       const menuData = {
         dish_name: formData.dish_name,
         item_description: formData.item_description,
         price: formData.price,
         category: formData.category,
+        image: selectedImage || undefined,
         available_now: formData.available_now,
         quantity: formData.quantity,
-        image: selectedImage || undefined,
-        variants: formData.variants
+        variants: flatVariants
       };
 
       // Call API
@@ -544,10 +567,10 @@ const AddMenuItemPage: React.FC = () => {
               </label>
             </div>
 
-            {/* Variant Manager */}
+            {/* Variant Group Manager */}
             <div style={{ marginTop: '24px' }}>
-              <VariantManager
-                variants={formData.variants}
+              <VariantGroupManager
+                groups={formData.variants}
                 onChange={(variants) => setFormData(prev => ({ ...prev, variants }))}
                 disabled={loading}
               />

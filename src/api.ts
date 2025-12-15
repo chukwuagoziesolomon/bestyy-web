@@ -1293,6 +1293,7 @@ export async function listMenuItems(token: string) {
 
 
 export async function getMenuItem(token: string, id: string) {
+  console.log('API: getMenuItem', { url: `${API_URL}/api/user/vendors/menu/${id}/`, token: token ? '***' : '(none)' });
   const response = await fetch(`${API_URL}/api/user/vendors/menu/${id}/`, {
     method: 'GET',
     headers: {
@@ -1300,11 +1301,13 @@ export async function getMenuItem(token: string, id: string) {
       'Authorization': `Bearer ${token}`,
     },
   });
+  console.log('API: getMenuItem response status', response.status);
   if (!response.ok) {
     let errorMsg = 'Failed to fetch menu item';
     try {
       const errorData = await response.json();
-      errorMsg = errorData?.message || errorMsg;
+      console.log('API: getMenuItem error body', errorData);
+      errorMsg = errorData?.message || errorData?.detail || errorMsg;
     } catch {}
     throw new Error(errorMsg);
   }
@@ -1328,6 +1331,10 @@ export async function updateMenuItem(token: string, id: string, item: any) {
     if (item.image instanceof File) {
       formData.append('image', item.image);
     }
+    // Add variants if provided
+    if (item.variants && item.variants.length > 0) {
+      formData.append('variants', JSON.stringify(item.variants));
+    }
 
     response = await fetch(`${API_URL}/api/user/vendors/menu/${id}/`, {
       method: 'PATCH',
@@ -1349,6 +1356,10 @@ export async function updateMenuItem(token: string, id: string, item: any) {
     // Add image URL if provided (string URL)
     if (item.image) {
       payload.image = item.image;
+    }
+    // Add variants if provided
+    if (item.variants && item.variants.length > 0) {
+      payload.variants = item.variants;
     }
 
     response = await fetch(`${API_URL}/api/user/vendors/menu/${id}/`, {

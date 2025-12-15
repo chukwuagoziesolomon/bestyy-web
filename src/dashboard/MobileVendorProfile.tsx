@@ -12,16 +12,16 @@ const MobileVendorProfile: React.FC = () => {
   
   // Profile data state
   const [profileData, setProfileData] = useState({
-    businessName: localStorage.getItem('businessName') || 'Business Name',
+    business_name: localStorage.getItem('businessName') || 'Business Name',
     email: localStorage.getItem('vendorEmail') || 'vendor@example.com',
     phone: localStorage.getItem('vendorPhone') || '+234 000 000 0000',
-    address: localStorage.getItem('vendorAddress') || 'Business Address',
-    description: localStorage.getItem('vendorDescription') || 'Business Description',
+    business_address: localStorage.getItem('vendorAddress') || 'Business Address',
+    business_description: localStorage.getItem('vendorDescription') || 'Business Description',
     logo: localStorage.getItem('businessLogo') || null,
-    verificationStatus: localStorage.getItem('vendorVerificationStatus') || 'pending',
-    bankName: '',
-    bankAccountNumber: '',
-    bankCode: ''
+    verification_status: localStorage.getItem('vendorVerificationStatus') || 'pending',
+    bank_name: '',
+    bank_account_number: '',
+    bank_code: ''
   });
 
   const [tempData, setTempData] = useState(profileData);
@@ -39,10 +39,10 @@ const MobileVendorProfile: React.FC = () => {
       const token = localStorage.getItem('access_token');
       if (token) {
         const updateData = {
-          business_name: tempData.businessName,
+          business_name: tempData.business_name,
           phone: tempData.phone,
-          business_address: tempData.address,
-          business_description: tempData.description,
+          business_address: tempData.business_address,
+          business_description: tempData.business_description,
           logo: tempData.logo
         };
         await updateVendorProfile(token, updateData);
@@ -51,14 +51,13 @@ const MobileVendorProfile: React.FC = () => {
       setProfileData(tempData);
 
       // Save to localStorage as backup
-      localStorage.setItem('businessName', tempData.businessName);
+      localStorage.setItem('businessName', tempData.business_name);
       localStorage.setItem('vendorEmail', tempData.email);
       localStorage.setItem('vendorPhone', tempData.phone);
-      localStorage.setItem('vendorAddress', tempData.address);
-      localStorage.setItem('vendorDescription', tempData.description);
+      localStorage.setItem('vendorAddress', tempData.business_address);
+      localStorage.setItem('vendorDescription', tempData.business_description);
       if (tempData.logo) {
         localStorage.setItem('businessLogo', tempData.logo);
-        
         // Also update vendor_profile in localStorage
         const existingVendorProfile = localStorage.getItem('vendor_profile');
         if (existingVendorProfile) {
@@ -66,7 +65,7 @@ const MobileVendorProfile: React.FC = () => {
             const vendorProfile = JSON.parse(existingVendorProfile);
             vendorProfile.logo = tempData.logo;
             vendorProfile.businessLogo = tempData.logo;
-            vendorProfile.business_name = tempData.businessName;
+            vendorProfile.business_name = tempData.business_name;
             localStorage.setItem('vendor_profile', JSON.stringify(vendorProfile));
             console.log('📦 Updated vendor_profile on save');
           } catch (e) {
@@ -175,28 +174,28 @@ const MobileVendorProfile: React.FC = () => {
           }));
           
           setProfileData({
-            businessName: profileData.business_name || 'Business Name',
+            business_name: profileData.business_name || 'Business Name',
             email: 'vendor@example.com', // Email not available in vendor profile endpoint
             phone: profileData.phone || '+234 000 000 0000',
-            address: profileData.business_address || 'Business Address',
-            description: profileData.business_description || 'Business Description',
+            business_address: profileData.business_address || 'Business Address',
+            business_description: profileData.business_description || 'Business Description',
             logo: profileData.logo || null,
-            verificationStatus: profileData.verification_status || 'pending',
-            bankName: profileData.bank_name || '',
-            bankAccountNumber: profileData.bank_account_number || '',
-            bankCode: profileData.bank_code || ''
+            verification_status: profileData.verification_status || 'pending',
+            bank_name: profileData.bank_name || '',
+            bank_account_number: profileData.bank_account_number || '',
+            bank_code: profileData.bank_code || ''
           });
           setTempData({
-            businessName: profileData.business_name || 'Business Name',
+            business_name: profileData.business_name || 'Business Name',
             email: 'vendor@example.com', // Email not available in vendor profile endpoint
             phone: profileData.phone || '+234 000 000 0000',
-            address: profileData.business_address || 'Business Address',
-            description: profileData.business_description || 'Business Description',
+            business_address: profileData.business_address || 'Business Address',
+            business_description: profileData.business_description || 'Business Description',
             logo: profileData.logo || null,
-            verificationStatus: profileData.verification_status || 'pending',
-            bankName: profileData.bank_name || '',
-            bankAccountNumber: profileData.bank_account_number || '',
-            bankCode: profileData.bank_code || ''
+            verification_status: profileData.verification_status || 'pending',
+            bank_name: profileData.bank_name || '',
+            bank_account_number: profileData.bank_account_number || '',
+            bank_code: profileData.bank_code || ''
           });
         }
       } catch (error) {
@@ -295,8 +294,8 @@ const MobileVendorProfile: React.FC = () => {
             {isEditing ? (
               <input
                 type="text"
-                value={tempData.businessName}
-                onChange={(e) => handleInputChange('businessName', e.target.value)}
+                value={tempData.business_name}
+                onChange={(e) => handleInputChange('business_name', e.target.value)}
                 style={{
                   width: '100%',
                   padding: '8px 12px',
@@ -310,7 +309,7 @@ const MobileVendorProfile: React.FC = () => {
                 }}
               />
             ) : (
-              profileData.businessName
+              profileData.business_name
             )}
           </h2>
 
@@ -495,8 +494,8 @@ const MobileVendorProfile: React.FC = () => {
               </label>
               {isEditing ? (
                 <textarea
-                  value={tempData.address}
-                  onChange={(e) => handleInputChange('address', e.target.value)}
+                  value={tempData.business_address}
+                  onChange={(e) => handleInputChange('business_address', e.target.value)}
                   placeholder="e.g., Lagos, Nigeria"
                   rows={3}
                   style={{
@@ -522,7 +521,7 @@ const MobileVendorProfile: React.FC = () => {
                   lineHeight: '1.5',
                   border: '1px solid #e5e7eb'
                 }}>
-                  {profileData.address || 'Not provided'}
+                  {profileData.business_address || 'Not provided'}
                 </div>
               )}
             </div>
@@ -543,8 +542,8 @@ const MobileVendorProfile: React.FC = () => {
               </label>
               {isEditing ? (
                 <textarea
-                  value={tempData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  value={tempData.business_description}
+                  onChange={(e) => handleInputChange('business_description', e.target.value)}
                   placeholder="Describe your business..."
                   rows={4}
                   style={{
@@ -570,7 +569,7 @@ const MobileVendorProfile: React.FC = () => {
                   lineHeight: '1.5',
                   border: '1px solid #e5e7eb'
                 }}>
-                  {profileData.description || 'Not provided'}
+                  {profileData.business_description || 'Not provided'}
                 </div>
               )}
             </div>
@@ -633,9 +632,9 @@ const MobileVendorProfile: React.FC = () => {
                 border: '1px solid #e5e7eb',
                 borderRadius: '8px',
                 fontSize: '16px',
-                color: profileData.bankName ? '#1f2937' : '#9ca3af'
+                color: profileData.bank_name ? '#1f2937' : '#9ca3af'
               }}>
-                {profileData.bankName || 'Not provided'}
+                {profileData.bank_name || 'Not provided'}
               </div>
             </div>
             
@@ -655,9 +654,9 @@ const MobileVendorProfile: React.FC = () => {
                 border: '1px solid #e5e7eb',
                 borderRadius: '8px',
                 fontSize: '16px',
-                color: profileData.bankAccountNumber ? '#1f2937' : '#9ca3af'
+                color: profileData.bank_account_number ? '#1f2937' : '#9ca3af'
               }}>
-                {profileData.bankAccountNumber ? `${'*'.repeat(6)}${profileData.bankAccountNumber.slice(-4)}` : 'Not provided'}
+                {profileData.bank_account_number ? `${'*'.repeat(6)}${profileData.bank_account_number.slice(-4)}` : 'Not provided'}
               </div>
             </div>
           </div>

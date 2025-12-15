@@ -1,22 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import EditMenuItemPage from './EditMenuItemPage';
-import MobileEditMenu from './MobileEditMenu';
 
+// Always render the unified edit page; the page itself handles responsive layout.
 const ResponsiveEditMenu: React.FC = () => {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkScreenSize = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-
-    checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
-
-    return () => window.removeEventListener('resize', checkScreenSize);
-  }, []);
-
-  return isMobile ? <MobileEditMenu /> : <EditMenuItemPage />;
+  return <EditMenuItemPage />;
 };
 
 export default ResponsiveEditMenu;

@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getMenuItem, updateMenuItem } from '../api';
 import { showError, showSuccess, showApiError } from '../toast';
+import VariantGroupManager, { VariantGroup } from '../components/VariantGroupManager';
 import '../UserLogin.css'; // Reusing styles
 import { useResponsive } from '../hooks/useResponsive';
 import DesktopEditMenuItem from './DesktopEditMenuItem';
-import MobileEditMenuItem from './MobileEditMenuItem';
 
 type MenuItemData = {
   dish_name: string;
@@ -14,6 +14,11 @@ type MenuItemData = {
   otherCategory?: string;
   image?: File | string; // Can be a File for new uploads or string for existing URL
   available: boolean;
+  description?: string;
+  quantity?: number;
+  video?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 };
 
 const EditMenuItemPage: React.FC = () => {
@@ -21,13 +26,25 @@ const EditMenuItemPage: React.FC = () => {
   const navigate = useNavigate();
   const { isMobile, isTablet } = useResponsive();
 
-  const [formData, setFormData] = useState<MenuItemData>({
+  // Capture initial device type on first mount to avoid switching UIs
+  const [initialIsMobile, setInitialIsMobile] = React.useState<boolean | null>(null);
+  React.useEffect(() => {
+    if (initialIsMobile === null) setInitialIsMobile(isMobile);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const [formData, setFormData] = useState<MenuItemData & { variants?: VariantGroup[] }>({
     dish_name: '',
     price: '',
     category: '',
     otherCategory: '',
     image: undefined,
-    available: true
+    available: true,
+    variants: [],
+    quantity: 0,
+    video: undefined,
+    created_at: undefined,
+    updated_at: undefined
   });
 
   const [loading, setLoading] = useState(false);
@@ -44,24 +61,93 @@ const EditMenuItemPage: React.FC = () => {
       try {
         setLoading(true);
         const response = await getMenuItem(localStorage.getItem('access_token')!, id);
-        
-        // API returns the data directly, not wrapped in success/data structure
-        const item = response;
+          console.log('Fetched menu item response:', response);
+        // Use menu_item key from API response
+        const item = response.menu_item;
+        // Build variant groups: support grouped (variants with options) or flat list
+        let groups: VariantGroup[] = [];
+        if (item.variants && Array.isArray(item.variants)) {
+          if (item.variants.length > 0 && item.variants[0].options) {
+            // already grouped
+            // Correct mapping for variant groups
+            if (Array.isArray(item.variants) && item.variants.length > 0 && item.variants[0].options) {
+              groups = item.variants.map((g: any) => ({
+                name: g.name || '',
+                required: !!g.required,
+                min_select: g.min_select || 0,
+                max_select: g.max_select || 1,
+                sort_order: g.sort_order || 1,
+                options: (g.options || []).map((o: any) => ({
+                  name: o.name || '',
+                  price_modifier: parseFloat(o.price_modifier || 0) || 0,
+                  is_available: o.is_available !== false,
+                  sort_order: o.sort_order || 1
+                }))
+              }));
+            } else {
+              // flat variants -> group by type
+              const byType: Record<string, any> = {};
+              for (const v of item.variants || []) {
+                const type = (v.type || 'extra').toString();
+                if (!byType[type]) {
+                  byType[type] = { name: type, required: !!v.is_required, min_select: 0, max_select: 1, sort_order: 1, options: [] };
+                }
+                byType[type].options.push({
+                  name: v.name || '',
+                  price_modifier: parseFloat(v.price_modifier || 0) || 0,
+                  is_available: v.is_available !== false,
+                  sort_order: v.sort_order || 1
+                });
+              }
+              groups = Object.values(byType);
+            }
+          } else {
+            // flat variants -> group by type
+            const byType: Record<string, VariantGroup> = {};
+            for (const v of item.variants) {
+              const type = (v.type || 'extra').toString();
+              if (!byType[type]) {
+                byType[type] = { name: type, required: !!v.is_required, min_select: 0, max_select: 1, sort_order: 1, options: [] };
+              }
+              byType[type].options.push({
+                name: v.name || '',
+                price_modifier: parseFloat(v.price_modifier || 0) || 0,
+                is_available: v.is_available !== false,
+                sort_order: v.sort_order || 1
+              });
+            }
+            groups = Object.values(byType);
+          }
+        }
+
         setFormData({
           dish_name: item.dish_name || '',
-          price: item.price || '',
+          price: item.price ? item.price.toString() : '',
           category: item.category || '',
           otherCategory: item.otherCategory || '',
           image: item.image || undefined,
-          available: item.available !== false
+          available: item.available_now !== undefined ? item.available_now : true,
+          description: item.item_description || '',
+          quantity: item.quantity ?? 0,
+          video: item.video ?? null,
+          created_at: item.created_at ?? null,
+          updated_at: item.updated_at ?? null,
+          variants: groups
         });
-        
+
         if (item.image) {
           setInitialImage(item.image);
         }
-      } catch (error) {
-        showApiError(error);
-        navigate('/vendor/menu');
+      } catch (error: any) {
+        console.error('Failed to fetch menu item:', error);
+        // Provide clearer message for 404 / not-found cases
+        const message = (error && error.message) ? error.message.toString().toLowerCase() : '';
+        if (message.includes('not found') || message.includes('404')) {
+          showError('Menu item not found or you do not have permission to edit this item.');
+        } else {
+          showApiError(error);
+        }
+        // Do not immediately navigate away so user can see the error and debug
       } finally {
         setLoading(false);
       }
@@ -89,6 +175,7 @@ const EditMenuItemPage: React.FC = () => {
   };
 
   const handleSave = async () => {
+    console.log('EditMenuItemPage.handleSave invoked', { id, formData });
     if (!formData.dish_name.trim()) {
       showError('Dish name is required');
       return;
@@ -106,14 +193,38 @@ const EditMenuItemPage: React.FC = () => {
 
     try {
       setLoading(true);
-      
+
+      // Map variant groups back to flat variants expected by API
+      const allowedTypes = ['size', 'extra', 'addon', 'substitute'] as const;
+      const mapGroupNameToType = (name: string): 'size' | 'extra' | 'addon' | 'substitute' => {
+        const lower = name.trim().toLowerCase();
+        if (allowedTypes.includes(lower as any)) return lower as any;
+        for (const t of allowedTypes) {
+          if (lower.includes(t)) return t;
+        }
+        return 'extra';
+      };
+
+      const flatVariants = (formData.variants || []).flatMap(g =>
+        (g.options || []).map(o => ({
+          name: o.name,
+          type: mapGroupNameToType(g.name),
+          price_modifier: o.price_modifier,
+          is_required: !!g.required,
+          is_available: !!o.is_available,
+          sort_order: o.sort_order
+        }))
+      );
+
       const updateData = {
         dish_name: formData.dish_name,
+        item_description: undefined as any,
         price: formData.price,
         category: formData.category,
-        available: formData.available,
+        available_now: formData.available,
         otherCategory: formData.otherCategory,
-        image: formData.image instanceof File ? formData.image : undefined
+        image: formData.image instanceof File ? formData.image : undefined,
+        variants: flatVariants
       };
 
       await updateMenuItem(localStorage.getItem('access_token')!, id!, updateData);
@@ -156,22 +267,7 @@ const EditMenuItemPage: React.FC = () => {
     );
   }
 
-  // Use responsive components
-  if (isMobile || isTablet) {
-    return (
-      <MobileEditMenuItem
-        formData={formData}
-        setFormData={setFormData}
-        handleInputChange={handleInputChange}
-        handleImageChange={handleImageChange}
-        handleSave={handleSave}
-        handleDelete={handleDelete}
-        loading={loading}
-        initialImage={initialImage}
-      />
-    );
-  }
-
+  // Use a single responsive editor component for all devices
   return (
     <DesktopEditMenuItem
       formData={formData}

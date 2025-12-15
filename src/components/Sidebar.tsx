@@ -39,16 +39,19 @@ const Sidebar: React.FC = () => {
         borderBottom: '1px solid #f1f5f9',
         paddingBottom: 24
       }}>
-        <img 
-          src="/logo.png" 
-          alt="Bestie Logo" 
-          style={{ 
-            width: 100, 
-            height: 38,
-            objectFit: 'contain',
-            filter: 'drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1))'
-          }} 
-        />
+        <Link to="/">
+          <img 
+            src="/logo.png" 
+            alt="Bestie Logo" 
+            style={{ 
+              width: 100, 
+              height: 38,
+              objectFit: 'contain',
+              filter: 'drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1))',
+              cursor: 'pointer'
+            }} 
+          />
+        </Link>
       </div>
       {/* Nav Links */}
       <nav style={{ flex: 1 }}>

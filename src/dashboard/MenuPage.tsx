@@ -54,7 +54,7 @@ const MenuPage: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this menu item?')) {
       try {
-        await deleteMenuItem(id, localStorage.getItem('access_token')!);
+        await deleteMenuItem(localStorage.getItem('access_token')!, id);
         showSuccess('Menu item deleted successfully');
         setMenuItems(prev => prev.filter(item => item.id !== id));
       } catch (error) {

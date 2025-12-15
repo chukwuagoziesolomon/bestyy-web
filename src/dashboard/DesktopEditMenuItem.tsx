@@ -1,19 +1,13 @@
 import React from 'react';
-import { Camera } from 'lucide-react';
-
-type MenuItemData = {
-  dish_name: string;
-  price: string;
-  category: string;
-  otherCategory?: string;
-  image?: File | string;
-  available: boolean;
-};
+import VariantGroupManager from '../components/VariantGroupManager';
+import { useResponsive } from '../hooks/useResponsive';
+import VendorHeader from '../components/VendorHeader';
+import VendorBottomNavigation from '../components/VendorBottomNavigation';
 
 interface DesktopEditMenuItemProps {
-  formData: MenuItemData;
-  setFormData: React.Dispatch<React.SetStateAction<MenuItemData>>;
-  handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+  formData: any;
+  setFormData: (fn: (prev: any) => any) => void;
+  handleInputChange: (e: React.ChangeEvent<any>) => void;
   handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleSave: () => void;
   handleDelete: () => void;
@@ -31,314 +25,167 @@ const DesktopEditMenuItem: React.FC<DesktopEditMenuItemProps> = ({
   loading,
   initialImage
 }) => {
+  const { isMobile } = useResponsive();
+
+  const containerStyle: React.CSSProperties = isMobile
+    ? { display: 'flex', flexDirection: 'column', gap: 16, padding: 12 }
+    : { display: 'flex', gap: 40 };
+
+  const leftStyle: React.CSSProperties = isMobile ? { width: '100%' } : { flex: 1 };
+  const rightStyle: React.CSSProperties = isMobile
+    ? { width: '100%' }
+    : { flex: 2, display: 'flex', flexDirection: 'column', gap: 20 };
+
   return (
-    <div style={{
-      fontFamily: 'Nunito Sans, sans-serif',
-      background: '#f8fafc',
-      minHeight: '100vh',
-      padding: '24px'
-    }}>
-      <div style={{
-        maxWidth: '800px',
-        margin: '0 auto',
-        background: 'white',
-        borderRadius: '12px',
-        padding: '32px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-      }}>
-        <h1 style={{
-          fontSize: '24px',
-          fontWeight: '600',
-          color: '#1f2937',
-          margin: '0 0 24px 0'
-        }}>
-          Edit Menu Item
-        </h1>
-
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '32px'
-        }}>
-          {/* Left Column - Image */}
-          <div>
-            <label style={{
-              display: 'block',
-              fontSize: '14px',
-              fontWeight: '600',
-              color: '#374151',
-              marginBottom: '8px'
-            }}>
-              Item Image
-            </label>
-            <div style={{
-              width: '100%',
-              height: '300px',
-              borderRadius: '8px',
-              border: '2px dashed #d1d5db',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: '#f9fafb',
-              cursor: 'pointer',
-              position: 'relative'
-            }}>
-              {formData.image ? (
-                <img
-                  src={formData.image instanceof File ? URL.createObjectURL(formData.image) : formData.image}
-                  alt="Menu item"
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    borderRadius: '6px'
-                  }}
-                />
-              ) : initialImage ? (
-                <img
-                  src={initialImage}
-                  alt="Current menu item"
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    borderRadius: '6px'
-                  }}
-                />
-              ) : (
-                <>
-                  <Camera size={48} color="#9ca3af" />
-                  <p style={{
-                    fontSize: '16px',
-                    color: '#6b7280',
-                    margin: '12px 0 0 0'
-                  }}>
-                    Click to upload image
-                  </p>
-                </>
-              )}
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: '100%',
-                  opacity: 0,
-                  cursor: 'pointer'
-                }}
+    <div
+      style={{
+        fontFamily: 'Nunito Sans, sans-serif',
+        background: isMobile ? '#f8fafc' : 'transparent',
+        minHeight: isMobile ? '100vh' : undefined,
+      }}
+    >
+      {isMobile && <VendorHeader />}
+      <div style={containerStyle}>
+        <div style={leftStyle}>
+          <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#374151', marginBottom: 8 }}>
+            Dish Image
+          </label>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f9fafb', cursor: 'pointer', position: 'relative' }}>
+            {formData.image ? (
+              <img
+                src={formData.image instanceof File ? URL.createObjectURL(formData.image) : formData.image}
+                alt="Menu item"
+                style={{ width: '100%', height: 'auto', borderRadius: 8, marginBottom: 8 }}
               />
-            </div>
-          </div>
-
-          {/* Right Column - Form Fields */}
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '20px'
-          }}>
-            {/* Dish Name */}
-            <div>
-              <label style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: '600',
-                color: '#374151',
-                marginBottom: '8px'
-              }}>
-                Dish Name *
-              </label>
-              <input
-                type="text"
-                name="dish_name"
-                value={formData.dish_name}
-                onChange={handleInputChange}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  background: '#fff',
-                  outline: 'none'
-                }}
-                placeholder="Enter dish name"
+            ) : initialImage ? (
+              <img
+                src={initialImage}
+                alt="Current menu item"
+                style={{ width: '100%', height: 'auto', borderRadius: 8, marginBottom: 8 }}
               />
-            </div>
-
-            {/* Category */}
-            <div>
-              <label style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: '600',
-                color: '#374151',
-                marginBottom: '8px'
-              }}>
-                Category *
-              </label>
-              <select
-                name="category"
-                value={formData.category}
-                onChange={handleInputChange}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  background: '#fff',
-                  outline: 'none'
-                }}
-              >
-                <option value="">Select category</option>
-                <option value="appetizers">Appetizers</option>
-                <option value="main-course">Main Course</option>
-                <option value="desserts">Desserts</option>
-                <option value="beverages">Beverages</option>
-                <option value="sides">Sides</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-
-            {/* Other Category */}
-            {formData.category === 'other' && (
-              <div>
-                <label style={{
-                  display: 'block',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  color: '#374151',
-                  marginBottom: '8px'
-                }}>
-                  Specify Category
-                </label>
-                <input
-                  type="text"
-                  name="otherCategory"
-                  value={formData.otherCategory || ''}
-                  onChange={handleInputChange}
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    fontSize: '16px',
-                    background: '#fff',
-                    outline: 'none'
-                  }}
-                  placeholder="Enter custom category"
-                />
-              </div>
+            ) : (
+              <span style={{ color: '#9ca3af' }}>No image selected</span>
             )}
-
-            {/* Price */}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
+            />
+          </div>
+        </div>
+        <div style={rightStyle}>
+          <div>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#374151', marginBottom: 8 }}>
+              Dish Name *
+            </label>
+            <input
+              type="text"
+              name="dish_name"
+              value={formData.dish_name}
+              onChange={handleInputChange}
+              style={{ width: '100%', padding: '12px 16px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 16, background: '#fff', outline: 'none' }}
+              placeholder="Enter dish name"
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#374151', marginBottom: 8 }}>
+              Item Description
+            </label>
+            <textarea
+              name="description"
+              value={formData.description || ''}
+              onChange={handleInputChange}
+              style={{ width: '100%', padding: '14px 16px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 15, background: '#fff', outline: 'none', marginTop: 6, minHeight: 120, resize: 'vertical' }}
+              placeholder="Describe the dish, ingredients, portion size, or any notes for customers"
+            />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
             <div>
-              <label style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: '600',
-                color: '#374151',
-                marginBottom: '8px'
-              }}>
-                Price *
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#374151', marginBottom: 8 }}>
+                Price
               </label>
               <input
                 type="text"
                 name="price"
                 value={formData.price}
                 onChange={handleInputChange}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  background: '#fff',
-                  outline: 'none'
-                }}
-                placeholder="Enter price (e.g., 1500)"
+                style={{ width: '100%', padding: '12px 16px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 16, background: '#fff', outline: 'none' }}
+                placeholder="Enter price"
               />
             </div>
 
-            {/* Availability */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '12px',
-              background: '#f9fafb',
-              borderRadius: '8px'
-            }}>
-              <input
-                type="checkbox"
-                name="available"
-                checked={formData.available}
-                onChange={handleInputChange}
-                style={{
-                  width: '18px',
-                  height: '18px',
-                  accentColor: '#10b981'
-                }}
-              />
-              <label style={{
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#374151',
-                margin: 0
-              }}>
-                Available for order
+            <div>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#374151', marginBottom: 8 }}>
+                Category
               </label>
+              <input
+                type="text"
+                name="category"
+                value={formData.category}
+                onChange={handleInputChange}
+                style={{ width: '100%', padding: '12px 16px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 16, background: '#fff', outline: 'none' }}
+                placeholder="Category"
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#374151', marginBottom: 8 }}>
+                Quantity
+              </label>
+              <input
+                type="number"
+                name="quantity"
+                value={formData.quantity ?? 0}
+                onChange={handleInputChange}
+                style={{ width: '100%', padding: '12px 16px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 16, background: '#fff', outline: 'none' }}
+                placeholder="Quantity"
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#374151', marginBottom: 8 }}>
+                Video URL
+              </label>
+              <input
+                type="text"
+                name="video"
+                value={formData.video || ''}
+                onChange={handleInputChange}
+                style={{ width: '100%', padding: '12px 16px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 16, background: '#fff', outline: 'none' }}
+                placeholder="Video URL (optional)"
+              />
+            </div>
+
+            <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 12 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: 'block', fontSize: '12px', color: '#6b7280' }}>Created</label>
+                <div style={{ fontSize: 13, color: '#374151' }}>{formData.created_at ? new Date(formData.created_at).toLocaleString() : '—'}</div>
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: 'block', fontSize: '12px', color: '#6b7280' }}>Last Updated</label>
+                <div style={{ fontSize: 13, color: '#374151' }}>{formData.updated_at ? new Date(formData.updated_at).toLocaleString() : '—'}</div>
+              </div>
             </div>
           </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          gap: '16px',
-          marginTop: '32px',
-          paddingTop: '24px',
-          borderTop: '1px solid #e5e7eb'
-        }}>
-          <button
-            onClick={handleDelete}
-            style={{
-              padding: '12px 24px',
-              border: 'none',
-              borderRadius: '8px',
-              background: '#ef4444',
-              color: '#fff',
-              fontSize: '16px',
-              fontWeight: '600',
-              cursor: 'pointer'
-            }}
-          >
-            Delete
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={loading}
-            style={{
-              padding: '12px 24px',
-              border: 'none',
-              borderRadius: '8px',
-              background: loading ? '#9ca3af' : '#10b981',
-              color: '#fff',
-              fontSize: '16px',
-              fontWeight: '600',
-              cursor: loading ? 'not-allowed' : 'pointer'
-            }}
-          >
-            {loading ? 'Saving...' : 'Save Changes'}
-          </button>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 16, marginTop: 32, paddingTop: 24, borderTop: '1px solid #e5e7eb' }}>
+            <button
+              onClick={handleDelete}
+              style={{ padding: '12px 24px', border: 'none', borderRadius: 8, background: '#ef4444', color: '#fff', fontSize: 16, fontWeight: 600, cursor: 'pointer' }}
+            >
+              Delete
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={loading}
+              style={{ padding: '12px 24px', border: 'none', borderRadius: 8, background: loading ? '#9ca3af' : '#10b981', color: '#fff', fontSize: 16, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer' }}
+            >
+              {loading ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
         </div>
       </div>
+      {isMobile && <VendorBottomNavigation currentPath="/vendor/menu" />}
     </div>
   );
 };
