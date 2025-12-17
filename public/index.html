@@ -2,14 +2,28 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <link rel="icon" href="%PUBLIC_URL%/logo.png" sizes="192x192" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#000000" />
+    <meta name="description" content="Bestie — discover and order from local restaurants. Manage orders, menus, and subscriptions with Bestie." />
+    <!-- Open Graph / Facebook -->
+    <meta property="og:title" content="Bestie — Local food discovery & ordering" />
+    <meta property="og:description" content="Discover nearby restaurants, manage your menu, and get orders with Bestie." />
+    <meta property="og:image" content="%PUBLIC_URL%/logo192.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="/" />
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Bestie — Local food discovery & ordering" />
+    <meta name="twitter:description" content="Discover nearby restaurants, manage your menu, and get orders with Bestie." />
+    <meta name="twitter:image" content="%PUBLIC_URL%/logo192.png" />
+    <link rel="canonical" href="/" />
+    <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
     <meta
       name="description"
       content="Web site created using create-react-app"
     />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo.png" />
     <link href="https://fonts.googleapis.com/css?family=Montserrat:400,500,600,700,900&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;900&display=swap" rel="stylesheet">
     <!--
@@ -17,6 +31,17 @@
       user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
     -->
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <!-- JSON-LD Organization -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Bestie",
+        "url": "/",
+        "logo": "%PUBLIC_URL%/logo192.png",
+        "sameAs": []
+      }
+    </script>
     <!--
       Notice the use of %PUBLIC_URL% in the tags above.
       It will be replaced with the URL of the `public` folder during the build.
@@ -26,7 +51,7 @@
       work correctly both with client-side routing and a non-root public URL.
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
-    <title>React App</title>
+    <title>Bestie</title>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

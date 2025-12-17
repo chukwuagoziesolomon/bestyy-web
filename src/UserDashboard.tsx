@@ -88,7 +88,7 @@ const UserDashboard: React.FC = () => {
       <nav className="dashboard-navbar">
         <div className="navbar-left">
           <div className="logo-section">
-            <img src="/logo.png" alt="Bestyy Logo" className="navbar-logo-img" />
+            <img src="/logo.png" alt="Bestie Logo" className="navbar-logo-img" />
             <div className="location-section">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="location-icon">
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>

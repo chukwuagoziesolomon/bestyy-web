@@ -63,7 +63,7 @@ const UserLogin: React.FC<UserLoginProps> = ({ isSignUp = false }) => {
     <div className="user-login__bg">
       <div className="user-login__card">
         <div className="user-login__logo">
-          <img src="/logo.png" alt="Bestyy Logo" />
+          <img src="/logo.png" alt="Bestie Logo" />
         </div>
         <h1 className="user-login__title">Welcome to Bestyy</h1>
         <p className="user-login__subtitle">Your Gateway to your WhatsApp AI bestie</p>
@@ -111,7 +111,7 @@ const UserLogin: React.FC<UserLoginProps> = ({ isSignUp = false }) => {
             {isLoading ? (
               <div className="logo-loading-container">
                 <div className="logo-loading-spinner">
-                  <img src="/logo.png" alt="Bestyy Logo" />
+                  <img src="/logo.png" alt="Bestie Logo" />
                 </div>
                 <div className="logo-loading-text">Logging in...</div>
               </div>

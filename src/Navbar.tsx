@@ -10,7 +10,7 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ darkMode, toggleDarkMode }) => (
   <nav className="navbar">
     <div className="navbar-left">
-      <img src="/logo.png" alt="Bestyy Logo" className="logo" />
+      <img src="/logo.png" alt="Bestie Logo" className="logo" />
     </div>
     
     <div className="navbar-right">

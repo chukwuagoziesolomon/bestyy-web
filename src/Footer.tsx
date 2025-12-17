@@ -9,26 +9,6 @@ interface FooterProps {
 const Footer: React.FC<FooterProps> = ({ className = '' }) => {
   const handleSocialClick = (platform: string) => {
     console.log(`${platform} clicked`);
-    // Add your social media navigation logic here
-  };
-
-  const handleNavClick = (section: string) => {
-    console.log(`${section} clicked`);
-    // Add your navigation logic here
-  };
-
-  const handleContactClick = (type: 'phone' | 'email' | 'whatsapp') => {
-    switch (type) {
-      case 'phone':
-        window.open('tel:+19998887764');
-        break;
-      case 'email':
-        window.open('mailto:hello@bestie.com');
-        break;
-      case 'whatsapp':
-        window.open('https://wa.me/19998887764');
-        break;
-    }
   };
 
   return (
@@ -36,35 +16,40 @@ const Footer: React.FC<FooterProps> = ({ className = '' }) => {
       <div className="footer-container">
         {/* Navigation Section */}
         <div className="footer-section">
-          <h3 className="nav-item" onClick={() => handleNavClick('home')}>
-            HOME <span className="superscript">4</span>
+          <h3 className="nav-item">
+            <a href="/">HOME</a> <span className="superscript">4</span>
           </h3>
-          <h3 className="nav-item" onClick={() => handleNavClick('how-it-works')}>
-            HOW IT WORKS <span className="superscript">27</span>
+          <h3 className="nav-item">
+            <a href="/#how-it-works">HOW IT WORKS</a> <span className="superscript">27</span>
           </h3>
-          <h3 className="nav-item" onClick={() => handleNavClick('features')}>
-            FEATURES
+          <h3 className="nav-item">
+            <a href="/#features">FEATURES</a>
           </h3>
-          <h3 className="nav-item" onClick={() => handleNavClick('faqs')}>
-            FAQ'S
+          <h3 className="nav-item">
+            <a href="/#faq">FAQ'S</a>
           </h3>
         </div>
 
         {/* Contact Section */}
         <div className="footer-section contact-section">
-          <p className="contact-item" onClick={() => handleContactClick('phone')}>
-            +1 999 888-77-64
+          <p className="contact-item">
+            <a href="tel:+2349132518599">+234 913 251 8599</a>
           </p>
-          <p className="contact-item" onClick={() => handleContactClick('email')}>
-            hello@bestie.com
+          <p className="contact-item">
+            <a href="mailto:info@bestyyexpress.com">info@bestyyexpress.com</a>
           </p>
-          <button
+          <p className="contact-item">
+            <a href="mailto:support@bestyyexpress.com">support@bestyyexpress.com</a>
+          </p>
+          <a
             className="whatsapp-link"
-            onClick={() => handleContactClick('whatsapp')}
+            href="https://wa.me/2349132518599"
+            target="_blank"
+            rel="noopener noreferrer"
           >
             Whatsapp
             <span className="arrow">↗</span>
-          </button>
+          </a>
         </div>
 
         {/* Partners Section */}
@@ -108,12 +93,7 @@ const Footer: React.FC<FooterProps> = ({ className = '' }) => {
 
       {/* Footer Bottom - Right Side */}
       <div className="footer-bottom">
-        <button
-          className="privacy-link"
-          onClick={() => handleNavClick('privacy')}
-        >
-          Privacy
-        </button>
+        <a className="privacy-link" href="/terms">Privacy</a>
         
         <button
           className="behance-icon"

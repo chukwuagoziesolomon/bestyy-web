@@ -31,6 +31,42 @@
     margin-bottom: 8px;
     letter-spacing: 0.5px;
   }
+
+  .footer-section h3 a {
+    color: #fff;
+    text-decoration: none;
+    font-weight: 400;
+    font-size: 24px;
+    letter-spacing: 0.5px;
+    transition: opacity 0.3s;
+  }
+  .footer-section h3 a:visited,
+  .footer-section h3 a:active {
+    color: #fff;
+  }
+  .footer-section h3 a:hover {
+    opacity: 0.7;
+    text-decoration: underline;
+  }
+
+  /* Contact Section Links - match Become Partners style */
+  .contact-section .contact-item a {
+    color: #fff;
+    text-decoration: none;
+    font-weight: 400;
+    font-size: 20px;
+    letter-spacing: 0.5px;
+    transition: opacity 0.3s;
+    display: inline-block;
+  }
+  .contact-section .contact-item a:visited,
+  .contact-section .contact-item a:active {
+    color: #fff;
+  }
+  .contact-section .contact-item a:hover {
+    opacity: 0.7;
+    text-decoration: underline;
+  }
   
   .nav-item {
     cursor: pointer;

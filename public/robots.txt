@@ -1,3 +1,5 @@
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Allow: /
+Sitemap: https://www.bestyyexpress.com/sitemap.xml
+# If you host on Namecheap, the sitemap above will be served from your domain root after you upload the build.
