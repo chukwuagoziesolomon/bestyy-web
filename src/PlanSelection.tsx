@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useResponsive } from './hooks/useResponsive';
+import Sidebar from './components/Sidebar';
+import VendorSidebar from './components/VendorSidebar';
 import { checkSubscriptionStatus } from './api';
 import './UserLogin.css';
 
@@ -278,8 +280,9 @@ const PlanSelection = () => {
 
   // Desktop Layout (existing)
   return (
-    <>
-      <div style={{ minHeight: '100vh', background: '#fafbfb', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3.5rem 0 2.5rem 0' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#fafbfb' }}>
+      {userType === 'vendor' ? <VendorSidebar /> : <Sidebar />}
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3.5rem 0 2.5rem 0' }}>
         <h2 style={{ fontWeight: 900, fontSize: '2.5rem', textAlign: 'center', marginBottom: '1.1rem', letterSpacing: '-1px' }}>
           Choose the <span style={{ color: '#10b981' }}>Plan</span> That<br />Grows With You
         </h2>
@@ -287,7 +290,7 @@ const PlanSelection = () => {
           Unlock more visibility, badges, and insights with Bestie Pro or keep it simple with Free. You can change anytime from your dashboard.
         </h3>
 
-        <div className="plan-cards-row">
+        <div className="plan-cards-row" style={{ width: '100%', maxWidth: 1100, padding: '0 2rem' }}>
           {plans.map((plan) => (
             <div key={plan.id} className={`plan-card ${plan.plan_type === 'free' ? 'plan-card--free' : 'plan-card--pro'}`}>
               <div className="plan-card__title">{plan.name}</div>
@@ -327,9 +330,8 @@ const PlanSelection = () => {
             </div>
           ))}
         </div>
-      </div>
-
-    </>
+      </main>
+    </div>
   );
 };
 

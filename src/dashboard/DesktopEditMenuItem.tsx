@@ -100,11 +100,9 @@ const DesktopEditMenuItem: React.FC<DesktopEditMenuItemProps> = ({
               placeholder="Describe the dish, ingredients, portion size, or any notes for customers"
             />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#374151', marginBottom: 8 }}>
-                Price
-              </label>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#374151', marginBottom: 8 }}>Price</label>
               <input
                 type="text"
                 name="price"
@@ -116,9 +114,7 @@ const DesktopEditMenuItem: React.FC<DesktopEditMenuItemProps> = ({
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#374151', marginBottom: 8 }}>
-                Category
-              </label>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#374151', marginBottom: 8 }}>Category</label>
               <input
                 type="text"
                 name="category"
@@ -130,13 +126,11 @@ const DesktopEditMenuItem: React.FC<DesktopEditMenuItemProps> = ({
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#374151', marginBottom: 8 }}>
-                Quantity
-              </label>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#374151', marginBottom: 8 }}>Quantity</label>
               <input
                 type="number"
                 name="quantity"
-                value={formData.quantity ?? 0}
+                value={formData.quantity ?? ''}
                 onChange={handleInputChange}
                 style={{ width: '100%', padding: '12px 16px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 16, background: '#fff', outline: 'none' }}
                 placeholder="Quantity"
@@ -144,9 +138,7 @@ const DesktopEditMenuItem: React.FC<DesktopEditMenuItemProps> = ({
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#374151', marginBottom: 8 }}>
-                Video URL
-              </label>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#374151', marginBottom: 8 }}>Video URL</label>
               <input
                 type="text"
                 name="video"
@@ -157,7 +149,7 @@ const DesktopEditMenuItem: React.FC<DesktopEditMenuItemProps> = ({
               />
             </div>
 
-            <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 12 }}>
+            <div style={{ display: 'flex', gap: 12 }}>
               <div style={{ flex: 1 }}>
                 <label style={{ display: 'block', fontSize: '12px', color: '#6b7280' }}>Created</label>
                 <div style={{ fontSize: 13, color: '#374151' }}>{formData.created_at ? new Date(formData.created_at).toLocaleString() : '—'}</div>

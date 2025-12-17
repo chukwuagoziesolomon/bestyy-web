@@ -252,42 +252,7 @@ const DesktopVendorDashboard: React.FC = () => {
       minHeight: '100vh',
       padding: '24px'
     }}>
-      {/* Verification Banner */}
-      <div style={{
-        background: '#fef3c7',
-        border: '1px solid #f59e0b',
-        borderRadius: '12px',
-        padding: '16px',
-        marginBottom: '24px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px'
-      }}>
-        <div style={{ color: '#92400e', fontSize: '20px' }}>⚠️</div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: '16px', fontWeight: '600', color: '#92400e', marginBottom: '4px' }}>
-            Complete Your Verification
-          </div>
-          <div style={{ fontSize: '14px', color: '#92400e' }}>
-            Verify your WhatsApp and bank account to start receiving orders and payouts. Go to Profile Settings to complete verification.
-          </div>
-        </div>
-        <button
-          onClick={() => window.location.href = '/vendor/profile'}
-          style={{
-            background: '#f59e0b',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '8px',
-            padding: '8px 16px',
-            fontSize: '14px',
-            fontWeight: '600',
-            cursor: 'pointer'
-          }}
-        >
-          Verify Now
-        </button>
-      </div>
+      {/* Verification Banner removed per request */}
 
       {/* Header */}
       <div style={{

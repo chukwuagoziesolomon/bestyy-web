@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Edit, Trash2, Search, Filter, RefreshCw } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useResponsive } from '../hooks/useResponsive';
-import { fetchVendorStockItems, toggleStockItemAvailability, fetchStockSummary } from '../api';
+import { fetchVendorStockItems, toggleStockItemAvailability, fetchStockSummary, deleteMenuItem } from '../api';
+import { showError, showSuccess } from '../toast';
+import ConfirmModal from '../components/ConfirmModal';
 import { getMenuItemImageUrl, getFallbackImageUrl } from '../utils/imageUtils';
 import MobileVendorStock from './MobileVendorStock';
 
@@ -58,6 +61,7 @@ interface StockSummaryResponse {
 
 const StockPage: React.FC = () => {
   const { isMobile, isTablet } = useResponsive();
+  const navigate = useNavigate();
   
   // API state management
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
@@ -65,6 +69,9 @@ const StockPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [togglingItems, setTogglingItems] = useState<Set<number>>(new Set());
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<number | null>(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
   
   // Filtering state
   const [filters, setFilters] = useState({
@@ -133,14 +140,32 @@ const StockPage: React.FC = () => {
     }
 
     try {
-      setTogglingItems(prev => new Set(prev).add(itemId));
-      
+      setTogglingItems(prev => {
+        const s = new Set(prev);
+        s.add(itemId);
+        return s;
+      });
+
+      console.log('Toggling availability for', itemId);
       const response = await toggleStockItemAvailability(token, itemId);
-      
-      // Update local state with the response data
-      setStockItems(prev => prev.map(item => 
-        item.id === itemId ? { ...item, available_now: response.item.available_now } : item
-      ));
+      console.log('toggleStockItemAvailability response:', response);
+
+      // Determine new availability from response (support multiple shapes)
+      let newAvailable: boolean | undefined;
+      if (response && typeof response === 'object') {
+        if ('item' in response && response.item && typeof response.item.available_now !== 'undefined') {
+          newAvailable = !!response.item.available_now;
+        } else if (typeof (response as any).available_now !== 'undefined') {
+          newAvailable = !!(response as any).available_now;
+        }
+      }
+
+      // Fallback: flip current value if API didn't return a clear value
+      if (typeof newAvailable === 'undefined') {
+        setStockItems(prev => prev.map(item => item.id === itemId ? { ...item, available_now: !item.available_now } : item));
+      } else {
+        setStockItems(prev => prev.map(item => item.id === itemId ? { ...item, available_now: newAvailable } : item));
+      }
       
       // Refresh summary data
       fetchStockSummaryData();
@@ -195,13 +220,43 @@ const StockPage: React.FC = () => {
   }
 
   const handleEdit = (id: number) => {
-    console.log('Edit item:', id);
-    // Navigate to edit page or open edit modal
+    // Navigate to the unified edit page for this menu item
+    navigate(`/vendor/menu/edit/${id}`);
   };
 
   const handleDelete = (id: number) => {
-    console.log('Delete item:', id);
-    // Show confirmation dialog and delete item
+    setItemToDelete(id);
+    setConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+    const id = itemToDelete;
+    setConfirmOpen(false);
+    setItemToDelete(null);
+    const token = getToken();
+    if (!token) {
+      setError('No authentication token found');
+      return;
+    }
+    try {
+      setConfirmLoading(true);
+      await deleteMenuItem(token, String(id));
+      setStockItems(prev => prev.filter(i => i.id !== id));
+      showSuccess('Menu item deleted');
+      fetchStockSummaryData();
+    } catch (err: any) {
+      console.error('Failed to delete menu item', err);
+      showError(err?.message || 'Failed to delete menu item');
+      setError(err?.message || 'Failed to delete menu item');
+    } finally {
+      setConfirmLoading(false);
+    }
+  };
+
+  const cancelDelete = () => {
+    setConfirmOpen(false);
+    setItemToDelete(null);
   };
 
   return (
@@ -772,6 +827,13 @@ const StockPage: React.FC = () => {
           </table>
         </div>
       </div>
+        <ConfirmModal
+          isOpen={confirmOpen}
+          title="Delete Menu Item"
+          message="Are you sure you want to delete this menu item? This action cannot be undone."
+          onConfirm={confirmDelete}
+          onCancel={cancelDelete}
+        />
     </div>
   );
 };

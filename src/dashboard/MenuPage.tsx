@@ -4,6 +4,7 @@ import { Plus, Edit, Trash2, Star, Eye, EyeOff } from 'lucide-react';
 import { fetchVendorMenuItems, deleteMenuItem, API_URL } from '../api';
 import { getMenuItemImageUrl, getFallbackImageUrl } from '../utils/imageUtils';
 import { showError, showSuccess, showApiError } from '../toast';
+import ConfirmModal from '../components/ConfirmModal';
 import { useResponsive } from '../hooks/useResponsive';
 import VendorHeader from '../components/VendorHeader';
 import VendorBottomNavigation from '../components/VendorBottomNavigation';
@@ -32,6 +33,9 @@ const MenuPage: React.FC = () => {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   useEffect(() => {
     fetchMenuItems();
@@ -51,16 +55,31 @@ const MenuPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this menu item?')) {
-      try {
-        await deleteMenuItem(localStorage.getItem('access_token')!, id);
-        showSuccess('Menu item deleted successfully');
-        setMenuItems(prev => prev.filter(item => item.id !== id));
-      } catch (error) {
-        showApiError(error);
-      }
+  const handleDelete = (id: string) => {
+    setItemToDelete(id);
+    setConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+    const id = itemToDelete;
+    setConfirmOpen(false);
+    setItemToDelete(null);
+    try {
+      setConfirmLoading(true);
+      await deleteMenuItem(localStorage.getItem('access_token')!, id);
+      showSuccess('Menu item deleted successfully');
+      setMenuItems(prev => prev.filter(item => item.id !== id));
+    } catch (error) {
+      showApiError(error);
+    } finally {
+      setConfirmLoading(false);
     }
+  };
+
+  const cancelDelete = () => {
+    setConfirmOpen(false);
+    setItemToDelete(null);
   };
 
   const toggleAvailability = async (id: string, currentStatus: boolean) => {
@@ -175,6 +194,16 @@ const MenuPage: React.FC = () => {
         </div>
 
         {/* Menu Items Grid */}
+        <ConfirmModal
+          isOpen={confirmOpen}
+          title="Delete Menu Item"
+          message="Are you sure you want to delete this menu item? This action cannot be undone."
+          onConfirm={confirmDelete}
+          onCancel={cancelDelete}
+          confirmText="Delete"
+          cancelText="Cancel"
+          confirming={confirmLoading}
+        />
         {loading ? (
           <div style={{
             display: 'flex',
